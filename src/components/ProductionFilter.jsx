@@ -38,9 +38,13 @@ const ProductionFilter = ({ onFilteredData, data }) => {
   const [openSummaryModal, setOpenSummaryModal] = useState(false);
   const [pdfSummary, setPdfSummary] = useState("");
 
-  // ✅ Export PDF (with summary)
-  const handleGeneratePDF = () => {
-    setOpenSummaryModal(true);
+  // ✅ Export PDF options
+  const handleGeneratePDF = (withSummary = false) => {
+    if (withSummary) {
+      setOpenSummaryModal(true);
+    } else {
+      exportPDF(false);
+    }
   };
 
   // 🔹 Filtering logic
@@ -328,7 +332,7 @@ const ProductionFilter = ({ onFilteredData, data }) => {
         </Grid>
 
         {/* Export Buttons */}
-        <Grid item xs={12} md={3}>
+        <Grid item xs={12} md={2}>
           <Button
             variant="contained"
             color="success"
@@ -338,14 +342,24 @@ const ProductionFilter = ({ onFilteredData, data }) => {
             Export Excel
           </Button>
         </Grid>
-        <Grid item xs={12} md={3}>
+        <Grid item xs={12} md={2}>
           <Button
             variant="contained"
             color="error"
             fullWidth
-            onClick={handleGeneratePDF}
+            onClick={() => handleGeneratePDF(false)}
           >
-            Export PDF
+            Export PDF (Detailed)
+          </Button>
+        </Grid>
+        <Grid item xs={12} md={2}>
+          <Button
+            variant="outlined"
+            color="error"
+            fullWidth
+            onClick={() => handleGeneratePDF(true)}
+          >
+            Export PDF (With Summary)
           </Button>
         </Grid>
       </Grid>

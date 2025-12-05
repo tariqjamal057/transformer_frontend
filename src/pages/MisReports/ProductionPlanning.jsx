@@ -494,7 +494,7 @@ const ProductionPlanning = () => {
                 <TableCell>Final Ins. Total</TableCell>
                 <TableCell>Actual Supplied Total</TableCell>
                 <TableCell>
-                  Balance Due To Be Ins. During Current Month
+                  Balance due to be Insp. Current month
                 </TableCell>
                 <TableCell>Balance Pending</TableCell>
                 <TableCell>Tfr Sr. No.</TableCell>

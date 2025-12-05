@@ -456,6 +456,9 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
 
     // Build dynamic sheet name
     let sheetName = "Information of new G.P. transformers";
+    if (selectedDate) {
+      sheetName += ` - Date: ${selectedDate.format("DD-MM-YYYY")}`;
+    }
     if (selectedCompany !== "all") {
       sheetName += ` - Firm: ${selectedCompany}`;
     }
@@ -512,7 +515,18 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
   const exportPDF = () => {
     const doc = new jsPDF();
 
-    doc.text("Information of new G.P. transformers", 14, 10);
+    let title = "Information of new G.P. transformers";
+    if (selectedDate) {
+      title += ` - Date: ${selectedDate.format("DD-MM-YYYY")}`;
+    }
+    if (selectedCompany !== "all") {
+      title += ` - Firm: ${selectedCompany}`;
+    }
+    if (selectedDiscom !== "all") {
+      title += ` - Discom: ${selectedDiscom}`;
+    }
+
+    doc.text(title, 14, 10);
 
     // Step 1: Prepare data with inspection officers
     const pdfData = filteredData.map((item, index) => ({

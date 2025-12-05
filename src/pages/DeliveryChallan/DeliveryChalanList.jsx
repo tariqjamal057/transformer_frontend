@@ -49,6 +49,8 @@ const DeliveryChalanList = () => {
       },
       challanNo: "CH-1001",
       createdAt: "2025-07-22",
+      subSerialNumberFrom: 120,
+      subSerialNumberTo: 140,
       consignorName: "PowerTech Transformers Pvt. Ltd.",
       consignorPhone: "9876543210",
       consignorAddress: "Plot 12, Industrial Zone, Mumbai",
@@ -100,6 +102,8 @@ const DeliveryChalanList = () => {
       },
       challanNo: "CH-1002",
       createdAt: "2025-08-10",
+      subSerialNumberFrom: 241,
+      subSerialNumberTo: 260,
       consignorName: "MegaVolt Electricals Ltd.",
       consignorPhone: "9123456780",
       consignorAddress: "Industrial Plot 88, Pune MIDC, Maharashtra",
@@ -150,6 +154,8 @@ const DeliveryChalanList = () => {
       },
       challanNo: "CH-1003",
       createdAt: "2025-09-20",
+      subSerialNumberFrom: 391,
+      subSerialNumberTo: 410,
       consignorName: "ElectroTech Industries",
       consignorPhone: "9988776655",
       consignorAddress: "Shed No. 21, GIDC Estate, Ahmedabad",
@@ -333,6 +339,7 @@ const DeliveryChalanList = () => {
                   <th>PO Number / Date</th>
                   <th>Challan No</th>
                   <th>Transformer Info</th>
+                  <th>Sub Serial No</th>
                   <th>Inspection Officers</th>
                   <th>Inspection Date</th>
                   <th>Consignor Details</th>
@@ -383,6 +390,11 @@ const DeliveryChalanList = () => {
                           <strong>DI Date:</strong>{" "}
                           {item.finalInspectionDetail.diDate}
                         </div>
+                      </td>
+
+                      {/* Sub Serial No */}
+                      <td>
+                        {item.subSerialNumberFrom} TO {item.subSerialNumberTo}
                       </td>
 
                       {/* Inspection Officers */}

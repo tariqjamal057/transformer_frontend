@@ -129,7 +129,7 @@ const GPExtendedWarrantyFilter = ({ onFilteredData, data }) => {
 
     // Step 5: Create workbook & append worksheet
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "GP Extended Warranty");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "G.P. Extended warranty information");
 
     // Step 6: Save Excel file
     XLSX.writeFile(workbook, "GP_Extended_Warranty.xlsx");

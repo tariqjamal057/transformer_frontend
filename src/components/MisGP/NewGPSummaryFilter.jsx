@@ -92,13 +92,11 @@ const NewGPSummaryFilter = ({ onFilteredData, data }) => {
     if (searchQuery.trim() !== "") {
       result = result.filter(
         (item) =>
-          item.deliverySchedule.tnNumber
-            ?.toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
+          item.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.discom?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           item.deliverySchedule.rating
             ?.toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          item.deliverySchedule.phase?.toLowerCase()
+            .includes(searchQuery.toLowerCase())
       );
     }
 
@@ -159,7 +157,6 @@ const NewGPSummaryFilter = ({ onFilteredData, data }) => {
       "S.No": index + 1,
       Firm: item.companyName || "",
       Discom: item.discom || "",
-      "Tn No": item.deliverySchedule?.tnNumber || "",
       Rating: item.deliverySchedule?.rating || "",
       Phase: item.deliverySchedule?.phase || "",
       Wound: item.deliverySchedule?.wound || "",
@@ -282,7 +279,7 @@ const NewGPSummaryFilter = ({ onFilteredData, data }) => {
         {/* Search */}
         <Grid item size={1}>
           <TextField
-            label="Search TN No"
+            label="Search Firm/Discom/Rating"
             fullWidth
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

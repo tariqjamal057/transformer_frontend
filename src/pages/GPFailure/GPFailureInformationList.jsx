@@ -6,6 +6,9 @@ import { MyContext } from "../../App";
 import { addMonths, format, isAfter } from "date-fns";
 import SearchIcon from "@mui/icons-material/Search";
 import GPFailureInformationModal from "../../components/GPFailureInformationModal";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const GPFailureInformationList = () => {
   const { setProgress, setAlertBox, setIsHideSidebarAndHeader } =
@@ -365,7 +368,21 @@ const GPFailureInformationList = () => {
             }}
           />
 
-          <div className="d-flex align-items-center">
+          <div className="d-flex align-items-center gap-2">
+            <Button
+              variant="contained"
+              color="success"
+              onClick={exportExcel}
+            >
+              Export Excel
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={exportPDF}
+            >
+              Export PDF
+            </Button>
             <Link to={"/add-GPFailureInformation"}>
               <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
             </Link>

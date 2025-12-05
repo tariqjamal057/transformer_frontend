@@ -118,7 +118,7 @@ const SupplyGPExpiredStatementFilter = ({ onFilteredData, data }) => {
   const exportPDF = () => {
     const doc = new jsPDF();
 
-    doc.text("Final Inspection Report", 14, 10);
+    doc.text("Supply G.P. Expired Statement", 14, 10);
 
     // Step 1: Prepare data with inspection officers
     const pdfData = filteredData.map((item, index) => ({
@@ -153,7 +153,7 @@ const SupplyGPExpiredStatementFilter = ({ onFilteredData, data }) => {
     });
 
     // Step 5: Save
-    doc.save("FinalInspection.pdf");
+    doc.save("SupplyGPExpiredStatement.pdf");
   };
 
   return (

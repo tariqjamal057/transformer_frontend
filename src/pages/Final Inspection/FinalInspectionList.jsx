@@ -355,6 +355,14 @@ const FinalInspectionList = () => {
                       </td>
 
                       <td>
+                        {item.consignees?.map((consignee, idx) => (
+                          <div key={idx} className="mb-1">
+                            {consignee.subSnNumber}
+                          </div>
+                        ))}
+                      </td>
+
+                      <td>
                         <div className="d-flex flex-wrap justify-content-center gap-1">
                           {item.inspectionOfficers.map((officer, idx) => (
                             <span
