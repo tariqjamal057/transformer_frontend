@@ -335,8 +335,10 @@ const MaterialOfferedButNominationPending = () => {
         onFilteredData={setFilteredData}
         data={inspectionData}
         text= "Awaiting Nomination"
-        onExportPDF={true} 
+        onExportPDF={true}
         onExportExcel={true}
+        sheetName="Material offered but Nomination pending detail"
+        pdfTitle="Material Offered But Nomination Pending"
       />
 
       <Paper sx={{ p: 2, mt: 3 }}>

@@ -454,6 +454,15 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
       return;
     }
 
+    // Build dynamic sheet name
+    let sheetName = "Information of new G.P. transformers";
+    if (selectedCompany !== "all") {
+      sheetName += ` - Firm: ${selectedCompany}`;
+    }
+    if (selectedDiscom !== "all") {
+      sheetName += ` - Discom: ${selectedDiscom}`;
+    }
+
     // Step 1: Prepare data same as PDF
     const excelData = filteredData.map((item, index) => ({
       "S.No": index + 1,
@@ -493,24 +502,23 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
 
     // Step 5: Create workbook & append worksheet
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Final Inspection");
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 
     // Step 6: Save Excel file
-    XLSX.writeFile(workbook, "FinalInspection.xlsx");
+    XLSX.writeFile(workbook, `${sheetName}.xlsx`);
   };
 
   // ✅ Export PDF
   const exportPDF = () => {
     const doc = new jsPDF();
 
-    doc.text("Final Inspection Report", 14, 10);
+    doc.text("Information of new G.P. transformers", 14, 10);
 
     // Step 1: Prepare data with inspection officers
     const pdfData = filteredData.map((item, index) => ({
       "S.No": index + 1,
       "Company Name": item.companyName,
       Discom: item.discom,
-      "Tn No": item.deliverySchedule.tnNumber,
       Rating: item.deliverySchedule.rating,
       Phase: item.deliverySchedule.phase,
       Wound: item.deliverySchedule.wound,
@@ -551,7 +559,7 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
     });
 
     // Step 5: Save
-    doc.save("FinalInspection.pdf");
+    doc.save("Information of new G.P. transformers.pdf");
   };
 
   return (
@@ -593,22 +601,12 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
           </TextField>
         </Grid>
 
-        {/* Calendar */}
-        <Grid item xs={12} md={3}>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker
-              label="Created Date"
-              value={selectedDate}
-              onChange={(newVal) => setSelectedDate(newVal)}
-              slotProps={{ textField: { fullWidth: true } }}
-            />
-          </LocalizationProvider>
-        </Grid>
+
 
         {/* Search */}
         <Grid item xs={12} md={3}>
           <TextField
-            label="Search TN No"
+            label="Search"
             fullWidth
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

@@ -113,6 +113,7 @@ const ProductionFilter = ({ onFilteredData, data }) => {
         "S.No": index + 1,
         "Firm Name": item.companyName || "",
         Discom: item.discom || "",
+        "TN No.": item.deliverySchedule?.tnNumber || "",
         Rating: item.deliverySchedule?.rating || "",
         Phase: item.deliverySchedule?.phase || "",
         Wound: item.deliverySchedule?.wound || "Copper",
@@ -196,7 +197,7 @@ const ProductionFilter = ({ onFilteredData, data }) => {
       "Offered Ins. Total": item.offeredForInspectionTotal || "",
       "Final Ins. Total": item.finalInspectionTotal || "",
       "Actual Supplied Total": item.actualSuppliedTotal || "",
-      "Bal. To Be Inspected During Current Month":
+      "Balance due to be Insp. Current month":
         item.balanceDueToBeInspectedInCurrentMonth || "",
       "Balance Pending": item.balancePending || "",
       "Tfr Sr. No.": item.snNumber || "",

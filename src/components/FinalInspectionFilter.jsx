@@ -29,6 +29,8 @@ const FiltersComponent = ({
   text,
   onExportPDF = true,
   onExportExcel = true,
+  sheetName = "FinalInspection",
+  pdfTitle = "Final Inspection Report",
 }) => {
   const [selectedCompany, setSelectedCompany] = useState("all");
   const [selectedDiscom, setSelectedDiscom] = useState("all");
@@ -191,8 +193,8 @@ const FiltersComponent = ({
     // ✅ Export to Excel
     const ws = XLSX.utils.json_to_sheet(excelData, { skipHeader: false });
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "FinalInspection");
-    XLSX.writeFile(wb, "FinalInspectionMisReport.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, `${sheetName}.xlsx`);
   };
 
   // ✅ Export Excel (merged consignees in one row)
@@ -295,8 +297,8 @@ const FiltersComponent = ({
     // Step 4: Export Excel
     const ws = XLSX.utils.json_to_sheet(cleanedData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "FinalInspection");
-    XLSX.writeFile(wb, "FinalInspectionMisReport.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, `${sheetName}.xlsx`);
   };
 
   // ✅ Click handler decides which function to run
@@ -312,7 +314,7 @@ const FiltersComponent = ({
   const exportPDF = () => {
     const doc = new jsPDF();
 
-    doc.text("Final Inspection Report", 14, 10);
+    doc.text(pdfTitle, 14, 10);
 
     // Step 1: Prepare data with inspection officers
     const pdfData = filteredData.map((item, index) => ({
@@ -441,7 +443,7 @@ const FiltersComponent = ({
           Consignee: c?.consignee?.name || "",
           "SR No.": c?.subSnNumber || "",
           Qty: c?.quantity || "",
-          Dispatch: c?.dispatch || "",
+          "Dispatch qty.": c?.dispatch || "",
           Pending: c?.pending || "",
         });
       });

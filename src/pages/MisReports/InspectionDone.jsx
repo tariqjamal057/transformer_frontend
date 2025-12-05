@@ -196,8 +196,10 @@ const InspectionDone = () => {
         onFilteredData={setFilteredData}
         data={inspectionData}
         text= "Awaiting for D.I."
-        onExportPDF={true} 
+        onExportPDF={true}
         onExportExcel={true}
+        sheetName="Inspection done but DI pending"
+        pdfTitle="Inspection Done But DI Pending"
       />
 
       <Paper sx={{ p: 2, mt: 3 }}>

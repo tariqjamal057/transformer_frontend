@@ -333,8 +333,10 @@ const DIReceived = () => {
         onFilteredData={setFilteredData}
         data={inspectionData}
         text="Dispatch Pending"
-        onExportPDF={false} 
-        onExportExcel={false}
+        onExportPDF={true}
+        onExportExcel={true}
+        sheetName="Material inspected DI received but dispatch pending"
+        pdfTitle="Material Inspected DI Received But Dispatch Pending"
       />
 
       <Paper sx={{ p: 2, mt: 3 }}>

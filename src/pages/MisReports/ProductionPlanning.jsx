@@ -195,7 +195,6 @@ export const getDummyFinalInspectionDetails = () => {
 
 const SinglePhaseTable = () => {
   const rows = [
-    { rating: "5 KVA", total: 200, supplyDue: 20, planning: 25 },
     { rating: "10 KVA", total: 300, supplyDue: 30, planning: 35 },
     { rating: "16 KVA", total: 250, supplyDue: 15, planning: 20 },
     { rating: "25 KVA", total: 400, supplyDue: 50, planning: 55 },
@@ -296,7 +295,6 @@ const PowerTransformerTable = () => {
 
 const ThreePhaseTable = () => {
   const rows = [
-    { rating: "5 KVA", total: 150, supplyDue: 10, planning: 12 },
     { rating: "10 KVA", total: 200, supplyDue: 15, planning: 18 },
     { rating: "16 KVA", total: 300, supplyDue: 20, planning: 22 },
     { rating: "25 KVA", total: 400, supplyDue: 25, planning: 28 },

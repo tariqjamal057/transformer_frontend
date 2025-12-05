@@ -2,7 +2,7 @@ import React from "react";
 
 const GPReceiptTemplate = ({ item }) => {
   return (
-    <div className="my-3 p-2" style={{  fontSize: "12px", width: "100%"  }}>
+    <div className="my-3 p-2" style={{ fontSize: "12px", width: "100%" }}>
       {/* Header */}
       <div className="text-center">
         <h5 className="fw-bold">YASH GRANITES</h5>
@@ -13,9 +13,12 @@ const GPReceiptTemplate = ({ item }) => {
       <div className="d-flex justify-content-between mt-3">
         <div>
           <p className="mb-1">
-            <strong>RECEIPTED CHALAN NO</strong>: {item.gpReceiptRecords?.[0]?.selectedChalan || "-"}
+            <strong>RECEIPTED CHALAN NO</strong>:{" "}
+            {item.gpReceiptRecords?.[0]?.selectedChalan || "-"}
           </p>
-          <p className="mb-1">Received following damaged distribution transformers from</p>
+          <p className="mb-1">
+            Received following damaged distribution transformers from
+          </p>
           <p className="mb-1">The Assistant Controller Of Stores</p>
           <p className="mb-1">Jaipur Vidyut Vitran Nigam Limited</p>
           <p className="mb-1">{item.consigneeName}</p>
@@ -35,12 +38,16 @@ const GPReceiptTemplate = ({ item }) => {
       </p>
 
       <p className="fw-bold">
-        RECEIPT IS SUBJECT TO THE SHORTAGES AS MENTIONED AGAINST EACH TRANSFORMER
+        RECEIPT IS SUBJECT TO THE SHORTAGES AS MENTIONED AGAINST EACH
+        TRANSFORMER
       </p>
 
       {/* Table */}
-      <div className="table-responsive" style= {{ overflowX: "auto" }}>
-        <table className="table table-bordered table-sm" style={{ minWidth: "1500px", fontSize: "12px" }}>
+      <div className="table-responsive" style={{ overflowX: "auto" }}>
+        <table
+          className="table table-bordered table-sm"
+          style={{ minWidth: "1500px", fontSize: "12px" }}
+        >
           <thead className="table-light text-center">
             <tr>
               <th>SL NO</th>
@@ -79,7 +86,10 @@ const GPReceiptTemplate = ({ item }) => {
                 <td>{rec.rating}</td>
                 <td>AL</td>
                 <td>SP</td>
-                <td>{rec.deliveryChalanDetails?.finalInspectionDetail?.deliverySchedule?.tnNumber || "-"}</td>
+                <td>
+                  {rec.deliveryChalanDetails?.finalInspectionDetail
+                    ?.deliverySchedule?.tnNumber || "-"}
+                </td>
                 <td>{rec.selectedChalan}</td>
                 <td>{rec.oilLevel}</td>
                 <td>{rec.hvBushing}</td>
@@ -108,11 +118,12 @@ const GPReceiptTemplate = ({ item }) => {
       {/* Footer Totals (just example, you can calculate dynamically if needed) */}
       <div className="mt-4 d-flex justify-content-end">
         <div className="text-end">
-          <p className="mb-1">05 KVA SP - 04 NOS</p>
           <p className="mb-1">10 KVA SP - 00 NOS</p>
           <p className="mb-1">16 KVA SP - 01 NOS</p>
           <p className="mb-1">25 KVA SP - 01 NOS</p>
-          <p className="mb-1 fw-bold">TOTAL - {item.gpReceiptRecords?.length || 0} NOS</p>
+          <p className="mb-1 fw-bold">
+            TOTAL - {item.gpReceiptRecords?.length || 0} NOS
+          </p>
         </div>
       </div>
 
@@ -124,6 +135,5 @@ const GPReceiptTemplate = ({ item }) => {
     </div>
   );
 };
-
 
 export default GPReceiptTemplate;
