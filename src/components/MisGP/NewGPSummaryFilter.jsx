@@ -143,7 +143,7 @@ const NewGPSummaryFilter = ({ onFilteredData, data }) => {
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Final Inspection");
-    XLSX.writeFile(workbook, "FinalInspection.xlsx");
+    XLSX.writeFile(workbook, `${sheetName}.xlsx`);
   };
 
   // ✅ Export PDF (Compact A4 Layout)

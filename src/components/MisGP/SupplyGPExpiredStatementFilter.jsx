@@ -111,7 +111,7 @@ const SupplyGPExpiredStatementFilter = ({ onFilteredData, data }) => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Final Inspection");
 
     // Step 6: Save Excel file
-    XLSX.writeFile(workbook, "FinalInspection.xlsx");
+    XLSX.writeFile(workbook, `${sheetName}.xlsx`);
   };
 
   // ✅ Export PDF
