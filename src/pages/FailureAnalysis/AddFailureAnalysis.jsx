@@ -594,7 +594,6 @@ const AddFailureAnalysis = () => {
         tnNumber,
         wound,
         phase,
-        tnNumber,
         acosName: foundNote?.acosName || "", // ✅ FIX: pull from gpReceiptNotes.acosName
       }));
 
