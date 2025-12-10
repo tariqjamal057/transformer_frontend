@@ -193,12 +193,26 @@ export const getDummyFinalInspectionDetails = () => {
   ];
 };
 
-const SinglePhaseTable = () => {
-  const rows = [
-    { rating: "10 KVA", total: 300, supplyDue: 30, planning: 35 },
-    { rating: "16 KVA", total: 250, supplyDue: 15, planning: 20 },
-    { rating: "25 KVA", total: 400, supplyDue: 50, planning: 55 },
-  ];
+const SinglePhaseTable = ({ data }) => {
+  const singlePhaseData = data.filter(
+    (item) => item.deliverySchedule.phase === "Single Phase"
+  );
+
+  const summary = singlePhaseData.reduce((acc, item) => {
+    const rating = `${item.deliverySchedule.rating} KVA`;
+    if (!acc[rating]) {
+      acc[rating] = { rating, total: 0, supplyDue: 0, planning: 0 };
+    }
+    acc[rating].total += item.deliverySchedule.totalOrderQuantity || 0;
+    acc[rating].supplyDue += item.totalSupplyDueInCurrentMonth || 0;
+    acc[rating].planning += item.plannedForMonth || 0;
+    return acc;
+  }, {});
+
+  const rows = Object.values(summary);
+
+  if (rows.length === 0) return null;
+
 
   return (
     <Paper elevation={4} sx={{ borderRadius: 2, overflow: "hidden" }}>
@@ -243,12 +257,25 @@ const SinglePhaseTable = () => {
   );
 };
 
-const PowerTransformerTable = () => {
-  const rows = [
-    { rating: "3150 KVA", total: 50, supplyDue: 5, planning: 6 },
-    { rating: "5000 KVA", total: 30, supplyDue: 3, planning: 4 },
-    { rating: "8000 KVA", total: 20, supplyDue: 2, planning: 3 },
-  ];
+const PowerTransformerTable = ({ data }) => {
+  const powerData = data.filter(
+    (item) => item.deliverySchedule.phase === "Power"
+  );
+
+  const summary = powerData.reduce((acc, item) => {
+    const rating = `${item.deliverySchedule.rating} KVA`;
+    if (!acc[rating]) {
+      acc[rating] = { rating, total: 0, supplyDue: 0, planning: 0 };
+    }
+    acc[rating].total += item.deliverySchedule.totalOrderQuantity || 0;
+    acc[rating].supplyDue += item.totalSupplyDueInCurrentMonth || 0;
+    acc[rating].planning += item.plannedForMonth || 0;
+    return acc;
+  }, {});
+
+  const rows = Object.values(summary);
+
+  if (rows.length === 0) return null;
 
   return (
     <Paper elevation={4} sx={{ borderRadius: 2, overflow: "hidden" }}>
@@ -293,13 +320,25 @@ const PowerTransformerTable = () => {
   );
 };
 
-const ThreePhaseTable = () => {
-  const rows = [
-    { rating: "10 KVA", total: 200, supplyDue: 15, planning: 18 },
-    { rating: "16 KVA", total: 300, supplyDue: 20, planning: 22 },
-    { rating: "25 KVA", total: 400, supplyDue: 25, planning: 28 },
-    { rating: "40 KVA", total: 180, supplyDue: 8, planning: 10 },
-  ];
+const ThreePhaseTable = ({ data }) => {
+  const threePhaseData = data.filter(
+    (item) => item.deliverySchedule.phase === "Three Phase"
+  );
+
+  const summary = threePhaseData.reduce((acc, item) => {
+    const rating = `${item.deliverySchedule.rating} KVA`;
+    if (!acc[rating]) {
+      acc[rating] = { rating, total: 0, supplyDue: 0, planning: 0 };
+    }
+    acc[rating].total += item.deliverySchedule.totalOrderQuantity || 0;
+    acc[rating].supplyDue += item.totalSupplyDueInCurrentMonth || 0;
+    acc[rating].planning += item.plannedForMonth || 0;
+    return acc;
+  }, {});
+
+  const rows = Object.values(summary);
+
+  if (rows.length === 0) return null;
 
   return (
     <Paper elevation={4} sx={{ borderRadius: 2, overflow: "hidden" }}>
@@ -344,13 +383,25 @@ const ThreePhaseTable = () => {
   );
 };
 
-const InverterDutyTable = () => {
-  const rows = [
-    { rating: "5.5 MVA", total: 40, supplyDue: 3, planning: 5 },
-    { rating: "6.25 MVA", total: 25, supplyDue: 2, planning: 3 },
-    { rating: "12.5 MVA", total: 15, supplyDue: 1, planning: 2 },
-    { rating: "17.6 MVA", total: 10, supplyDue: 1, planning: 2 },
-  ];
+const InverterDutyTable = ({ data }) => {
+  const inverterData = data.filter(
+    (item) => item.deliverySchedule.phase === "Inverter" // Assuming 'Inverter' is a phase type
+  );
+
+  const summary = inverterData.reduce((acc, item) => {
+    const rating = `${item.deliverySchedule.rating} MVA`;
+    if (!acc[rating]) {
+      acc[rating] = { rating, total: 0, supplyDue: 0, planning: 0 };
+    }
+    acc[rating].total += item.deliverySchedule.totalOrderQuantity || 0;
+    acc[rating].supplyDue += item.totalSupplyDueInCurrentMonth || 0;
+    acc[rating].planning += item.plannedForMonth || 0;
+    return acc;
+  }, {});
+
+  const rows = Object.values(summary);
+
+  if (rows.length === 0) return null;
 
   return (
     <Paper elevation={4} sx={{ borderRadius: 2, overflow: "hidden" }}>
@@ -456,16 +507,16 @@ const ProductionPlanning = () => {
 
       <Grid container spacing={3} columns={{ xs: 1, sm: 2 }} sx={{ mt: 3 }}>
         <Grid item size={1}>
-          <SinglePhaseTable />
+          <SinglePhaseTable data={filteredData} />
         </Grid>
         <Grid item size={1}>
-          <PowerTransformerTable />
+          <PowerTransformerTable data={filteredData} />
         </Grid>
         <Grid item size={1}>
-          <ThreePhaseTable />
+          <ThreePhaseTable data={filteredData} />
         </Grid>
         <Grid item size={1}>
-          <InverterDutyTable />
+          <InverterDutyTable data={filteredData} />
         </Grid>
       </Grid>
 

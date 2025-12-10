@@ -37,13 +37,14 @@ const ProductionFilter = ({ onFilteredData, data }) => {
   // ✅ State for Modal & Summary Input
   const [openSummaryModal, setOpenSummaryModal] = useState(false);
   const [pdfSummary, setPdfSummary] = useState("");
+  const [exportType, setExportType] = useState(null); // 'pdf' or 'excel'
 
-  // ✅ Export PDF options
-  const handleGeneratePDF = (withSummary = false) => {
+  const handleGenerateExport = (type, withSummary = false) => {
+    setExportType(type);
     if (withSummary) {
       setOpenSummaryModal(true);
     } else {
-      exportPDF(false);
+      type === "pdf" ? exportPDF() : exportExcel();
     }
   };
 
@@ -111,7 +112,17 @@ const ProductionFilter = ({ onFilteredData, data }) => {
   ];
 
   // ✅ Export Excel (merged consignees in one row)
-  const exportExcel = () => {
+  const exportExcel = (withSummary = false) => {
+    const wb = XLSX.utils.book_new();
+    let ws;
+
+    if (withSummary && pdfSummary.trim() !== "") {
+      ws = XLSX.utils.aoa_to_sheet([[]]);
+      XLSX.utils.sheet_add_aoa(ws, [[`Summary: ${pdfSummary}`]], {
+        origin: "A1",
+      });
+    }
+
     const excelData = filteredData.map((item, index) => {
       return {
         "S.No": index + 1,
@@ -156,14 +167,23 @@ const ProductionFilter = ({ onFilteredData, data }) => {
     });
 
     // Step 4: Export Excel
-    const ws = XLSX.utils.json_to_sheet(cleanedData);
-    const wb = XLSX.utils.book_new();
+    if (ws) {
+      XLSX.utils.sheet_add_json(ws, cleanedData, {
+        origin: "A3",
+        skipHeader: false,
+      });
+    } else {
+      ws = XLSX.utils.json_to_sheet(cleanedData);
+    }
+
     XLSX.utils.book_append_sheet(wb, ws, "FinalInspection");
     XLSX.writeFile(wb, "FinalInspectionMisReport.xlsx");
+    setOpenSummaryModal(false);
+    setPdfSummary("");
   };
 
-  const exportPDF = () => {
-    const doc = new jsPDF("l", "pt", "a3"); // landscape mode for more width
+  const exportPDF = (withSummary = false) => {
+    const doc = new jsPDF("p", "pt", "a4"); // landscape mode for more width
 
     // Title
     doc.setFontSize(16);
@@ -171,7 +191,7 @@ const ProductionFilter = ({ onFilteredData, data }) => {
 
     // ✅ If summary added by user
     let tableStartY = 70; // default Y position for the table
-    if (pdfSummary.trim() !== "") {
+    if (withSummary && pdfSummary.trim() !== "") {
       doc.setFontSize(11);
 
       // Wrap summary text properly for long lines
@@ -188,6 +208,7 @@ const ProductionFilter = ({ onFilteredData, data }) => {
       "S.No": index + 1,
       "Firm Name": item.companyName || "",
       Discom: item.discom || "",
+      "TN No.": item.deliverySchedule?.tnNumber || "",
       Rating: item.deliverySchedule?.rating || "",
       Phase: item.deliverySchedule?.phase || "",
       Wound: item.deliverySchedule?.wound || "Copper",
@@ -223,7 +244,7 @@ const ProductionFilter = ({ onFilteredData, data }) => {
       headStyles: {
         fillColor: [41, 128, 185],
         textColor: 255,
-        fontSize: 7,
+        fontSize: 6,
       },
       alternateRowStyles: { fillColor: [245, 245, 245] },
     });
@@ -232,6 +253,14 @@ const ProductionFilter = ({ onFilteredData, data }) => {
     doc.save("ProductionPlanning.pdf");
     setOpenSummaryModal(false);
     setPdfSummary("");
+  };
+
+  const handleModalGenerate = () => {
+    if (exportType === "pdf") {
+      exportPDF(true);
+    } else if (exportType === "excel") {
+      exportExcel(true);
+    }
   };
 
   return (
@@ -332,32 +361,42 @@ const ProductionFilter = ({ onFilteredData, data }) => {
         </Grid>
 
         {/* Export Buttons */}
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} sm={6} md={3}>
           <Button
             variant="contained"
             color="success"
             fullWidth
-            onClick={exportExcel}
+            onClick={() => handleGenerateExport("excel", false)}
           >
-            Export Excel
+            Export Excel (Detailed)
           </Button>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Button
+            variant="outlined"
+            color="success"
+            fullWidth
+            onClick={() => handleGenerateExport("excel", true)}
+          >
+            Export Excel (With Summary)
+          </Button>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
           <Button
             variant="contained"
             color="error"
             fullWidth
-            onClick={() => handleGeneratePDF(false)}
+            onClick={() => handleGenerateExport("pdf", false)}
           >
             Export PDF (Detailed)
           </Button>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} sm={6} md={3}>
           <Button
             variant="outlined"
             color="error"
             fullWidth
-            onClick={() => handleGeneratePDF(true)}
+            onClick={() => handleGenerateExport("pdf", true)}
           >
             Export PDF (With Summary)
           </Button>
@@ -414,7 +453,11 @@ const ProductionFilter = ({ onFilteredData, data }) => {
             >
               Cancel
             </Button>
-            <Button variant="contained" color="primary" onClick={exportPDF}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleModalGenerate}
+            >
               Generate PDF
             </Button>
           </Box>

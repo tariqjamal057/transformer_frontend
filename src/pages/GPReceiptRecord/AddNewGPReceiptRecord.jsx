@@ -31,6 +31,7 @@ const AddNewGPReceiptRecord = () => {
 
   const [sealNoTimeOfGPReceived, setSealNoTimeOfGPReceived] = useState("");
   const [consigneeTFRSerialNo, setConsigneeTFRSerialNo] = useState("");
+  const [originalTfrSrNo, setOriginalTfrSrNo] = useState("");
 
   //parts missing details state
   const [oilLevel, setOilLevel] = useState("");
@@ -189,6 +190,16 @@ const AddNewGPReceiptRecord = () => {
               />
             </Grid>
 
+            {/* Original Tfr. Sr. No. */}
+            <Grid item size={1}>
+              <TextField
+                fullWidth
+                label="Original Tfr. Sr. No."
+                variant="outlined"
+                value={originalTfrSrNo}
+                onChange={(e) => setOriginalTfrSrNo(e.target.value)}
+              />
+            </Grid>
             {/* Consignee TFR Serial No */}
             <Grid item size={1}>
               <TextField

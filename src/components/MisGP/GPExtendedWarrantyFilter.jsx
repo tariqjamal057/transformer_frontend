@@ -132,14 +132,14 @@ const GPExtendedWarrantyFilter = ({ onFilteredData, data }) => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "G.P. Extended warranty information");
 
     // Step 6: Save Excel file
-    XLSX.writeFile(workbook, "GP_Extended_Warranty.xlsx");
+    XLSX.writeFile(workbook, "G.P. Extended warranty information.xlsx");
   };
 
   // ✅ Export PDF
   const exportPDF = () => {
     const doc = new jsPDF();
-
-    doc.text("Final Inspection Report", 14, 10);
+    
+    doc.text("G.P. Extended warranty information", 14, 10);
 
     // Step 1: Prepare data with inspection officers
     const pdfData = filteredData.map((item, index) => ({

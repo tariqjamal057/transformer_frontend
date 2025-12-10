@@ -366,7 +366,7 @@ const FiltersComponent = ({
 
   // ✅ Export PDF (row-wise expansion like Excel)
   const exportPDFForDiReceived = () => {
-    const doc = new jsPDF("l", "pt", "a3"); // This line only!
+    const doc = new jsPDF("p", "pt", "a4"); 
 
     doc.setFontSize(11);
     doc.text("Final Inspection Report", 14, 10);
@@ -448,7 +448,7 @@ const FiltersComponent = ({
           Consignee: c?.consignee?.name || "",
           "SR No.": c?.subSnNumber || "",
           Qty: c?.quantity || "",
-          "Dispatch qty.": c?.dispatch || "",
+          "Dispatch qty.": c?.dispatch,
           Pending: c?.pending || "",
         });
       });
@@ -480,7 +480,7 @@ const FiltersComponent = ({
       headStyles: {
         fillColor: [41, 128, 185],
         textColor: 255,
-        fontSize: 7,
+        fontSize: 6,
       },
       alternateRowStyles: { fillColor: [245, 245, 245] },
       margin: { left: 15, right: 15 },

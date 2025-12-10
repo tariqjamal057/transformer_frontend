@@ -308,17 +308,18 @@ const FinalInspectionList = () => {
               <thead className="table-primary text-white text-uppercase text-center">
                 <tr>
                   <th>Sr No</th>
+                  <th>Date of Offer</th>
+                  <th>Offered Quantity</th>
                   <th>TN No.</th>
                   <th>Rating</th>
                   <th>Phase</th>
                   <th>Wound</th>
-                  <th>Inspection Date</th>
+                  <th>Offered Sr. No.</th>
+                  <th>Sub Sr. No.</th>
+                  <th>Inspection Officers</th>
                   <th>Nomination Letter No</th>
                   <th>Nomination Date</th>
-                  <th>Date of Offer</th>
-                  <th>Offered Quantity</th>
-                  <th>Serial Numbers</th>
-                  <th>Inspection Officers</th>
+                  <th>Inspection Date</th>
                   <th>Inspected Quantity</th>
                   <th>Total</th>
                   <th>DI No & Date</th>
@@ -331,29 +332,16 @@ const FinalInspectionList = () => {
                   filteredSchedules.map((item, index) => (
                     <tr key={item.id}>
                       <td># {index + 1}</td>
-
-                      <td>{item.deliverySchedule?.tnNumber}</td>
-
-                      <td>{item.deliverySchedule?.rating}</td>
-
-                      <td>{item.deliverySchedule?.phase}</td>
-
-                      <td>{item.deliverySchedule?.wound}</td>
-
-                      <td>{format(new Date(item.inspectionDate), "dd MMM yyyy")}</td>
-
-                      <td>{item.nominationLetterNo}</td>
-
-                      <td>{format(new Date(item.nominationDate), "dd MMM yyyy")}</td>
-
                       <td>{format(new Date(item.offeredDate), "dd MMM yyyy")}</td>
-
                       <td>{item.offeredQuantity}</td>
 
+                      <td>{item.deliverySchedule?.tnNumber}</td>
+                      <td>{item.deliverySchedule?.rating}</td>
+                      <td>{item.deliverySchedule?.phase}</td>
+                      <td>{item.deliverySchedule?.wound}</td>
                       <td>
                         {item.serialNumberFrom} TO {item.serialNumberTo}
                       </td>
-
                       <td>
                         {item.consignees?.map((consignee, idx) => (
                           <div key={idx} className="mb-1">
@@ -361,7 +349,6 @@ const FinalInspectionList = () => {
                           </div>
                         ))}
                       </td>
-
                       <td>
                         <div className="d-flex flex-wrap justify-content-center gap-1">
                           {item.inspectionOfficers.map((officer, idx) => (
@@ -378,16 +365,15 @@ const FinalInspectionList = () => {
                           ))}
                         </div>
                       </td>
-
+                      <td>{item.nominationLetterNo}</td>
+                      <td>{format(new Date(item.nominationDate), "dd MMM yyyy")}</td>
+                      <td>{format(new Date(item.inspectionDate), "dd MMM yyyy")}</td>
                       <td>{item.inspectedQuantity}</td>
-
                       <td>{item.total}</td>
-
                       <td>
                         <div className="fw-semibold">{item.diNo}</div>
                         <div className="text-muted small">{format(new Date(item.diDate), "dd MMM yyyy")}</div>
                       </td>
-
                       <td>
                         {item.deliverySchedule.guaranteePeriodMonths} Months
                       </td>
@@ -406,7 +392,7 @@ const FinalInspectionList = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="14" className="text-center">
+                    <td colSpan="17" className="text-center">
                       No data found
                     </td>
                   </tr>

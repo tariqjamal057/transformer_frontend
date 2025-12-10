@@ -108,7 +108,8 @@ const SupplyGPExpiredStatementFilter = ({ onFilteredData, data }) => {
 
     // Step 5: Create workbook & append worksheet
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Final Inspection");
+    const sheetName = "Supply G.P. Expired Statement";
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 
     // Step 6: Save Excel file
     XLSX.writeFile(workbook, `${sheetName}.xlsx`);
@@ -153,7 +154,7 @@ const SupplyGPExpiredStatementFilter = ({ onFilteredData, data }) => {
     });
 
     // Step 5: Save
-    doc.save("SupplyGPExpiredStatement.pdf");
+    doc.save("Supply G.P. Expired Statement.pdf");
   };
 
   return (

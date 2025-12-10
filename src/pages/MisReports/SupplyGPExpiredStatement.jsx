@@ -176,7 +176,7 @@ const SupplyGPExpiredStatement = () => {
 
       <Paper sx={{ p: 2, mt: 3 }}>
         <Typography variant="h6" mb={1}>
-          G.P. Table
+          Supply G.P. Expired Statement
         </Typography>
 
         <TableContainer sx={{ maxHeight: 520 }}>

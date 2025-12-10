@@ -161,11 +161,14 @@ const DeliveryDetailsList = () => {
                 <tr>
                   <th>Sr No</th>
                   <th>TN Number</th>
-                  <th>Serail Number</th>
+                  <th>Serial No</th>
                   <th>PO Number / Date</th>
                   <th>Challan No</th>
+                  <th>Challan Date</th>
                   <th>Receipted Challan No</th>
                   <th>Receipted Challan Date</th>
+                  <th>Total Qty.</th>
+                  <th>G.P. Expiry Date</th>
                   <th>Transformer Info</th>
                   <th>Inspection Officers</th>
                   <th>Inspection Date</th>
@@ -197,11 +200,20 @@ const DeliveryDetailsList = () => {
                         {/* Challan No */}
                         <td>{dc.challanNo}</td>
 
+                        {/* Challan Date */}
+                        <td>{dc.challanDate}</td>
+
                         {/* Receipted Challan No */}
                         <td>{item.receiptedChallanNo}</td>
 
                         {/* Receipted Challan Date */}
                         <td>{item.receiptedChallanDate}</td>
+
+                        {/* Total Qty. */}
+                        <td>{dc.trData.totalQuantity}</td>
+
+                        {/* G.P. Expiry Date */}
+                        <td>{dc.trData.gpExpiryDate}</td>
 
                         {/* Transformer Info */}
                         <td className="text-start">
@@ -306,7 +318,7 @@ const DeliveryDetailsList = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan="12" className="text-center">
+                    <td colSpan="17" className="text-center">
                       No data found
                     </td>
                   </tr>

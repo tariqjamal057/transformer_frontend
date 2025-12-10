@@ -5,6 +5,8 @@ import { FaPencilAlt } from "react-icons/fa";
 import { MyContext } from "../../App";
 import SearchIcon from "@mui/icons-material/Search";
 import * as XLSX from "xlsx"; // ✅ for Excel export
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import GPReceiptModal from "../../components/GPReceiptModal";
 
 // Dummy Data
@@ -23,6 +25,7 @@ import GPReceiptModal from "../../components/GPReceiptModal";
       selectedChalan: "CH-1005",
       sealNoTimeOfGPReceived: "IAJ 5335 To IAJ 5336",
       consigneeTFRSerialNo: "TFR-9001",
+      originalTfrSrNo: "4908",
       // Parts missing details
       oilLevel: "OK",
       hvBushing: "Present",
@@ -117,6 +120,7 @@ import GPReceiptModal from "../../components/GPReceiptModal";
       selectedChalan: "CH-1005",
       sealNoTimeOfGPReceived: "IAJ 5339 To IAJ 5340",
       consigneeTFRSerialNo: "TFR-9003",
+      originalTfrSrNo: "9003",
       // Parts missing details
       oilLevel: "Slightly Low",
       hvBushing: "Present",
@@ -287,6 +291,7 @@ const NewGPReceiptRecordList = () => {
       "Discom Receipt Note No": item.discomReceiptNoteNo,
       "Discom Receipt Note Date": item.discomReceiptNoteDate,
       "TRF SI No": item.trfsiNo,
+      "Original Tfr. Sr. No.": item.originalTfrSrNo,
       Rating: item.rating,
       Wound:
         item.deliveryChalanDetails?.finalInspectionDetail?.deliverySchedule
@@ -295,7 +300,7 @@ const NewGPReceiptRecordList = () => {
         item.deliveryChalanDetails?.finalInspectionDetail?.deliverySchedule
           ?.phase || "",
       "Poly Seal No": item.polySealNo,
-      "Consignee TFR Serial No": item.consigneeTFRSerialNo,
+      "Discom Tfr. Sr. No.": item.consigneeTFRSerialNo,
       "Seal No Time Of G.P. Received": item.sealNoTimeOfGPReceived,
       "Date Of Supply": item.deliveryChalanDetails?.createdAt,
       "Oil Level": item.oilLevel,
@@ -318,6 +323,85 @@ const NewGPReceiptRecordList = () => {
       error: false,
     });
   };
+
+  // ✅ Print Function
+  const handlePrint = () => {
+    if (!filteredGPReceiptRecords || filteredGPReceiptRecords.length === 0) {
+      setAlertBox({
+        open: true,
+        msg: "No data to print!",
+        error: true,
+      });
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "portrait" });
+    doc.text("New G.P. Receipt Record List", 14, 15);
+
+    const head = [
+      [
+        "Sr No",
+        "Account Receipt Note No",
+        "Date",
+        "SIN No",
+        "Consignee",
+        "Discom Receipt Note No",
+        "Date",
+        "TRF SI No",
+        "Original Tfr. Sr. No.",
+        "Discom Tfr. Sr. No.",
+        "Rating",
+        "Wound",
+        "Phase",
+        "Poly Seal No",
+        "Seal No (Received)",
+        "Date Of Supply",
+        "Remarks",
+      ],
+    ];
+
+    const body = filteredGPReceiptRecords.map((item, index) => [
+      index + 1,
+      item.accountReceiptNoteNo,
+      item.accountReceiptNoteDate,
+      item.sinNo,
+      item.consigneeName,
+      item.discomReceiptNoteNo,
+      item.discomReceiptNoteDate,
+      item.trfsiNo,
+      item.originalTfrSrNo,
+      item.consigneeTFRSerialNo,
+      item.rating,
+      item.deliveryChalanDetails?.finalInspectionDetail?.deliverySchedule?.wound || "",
+      item.deliveryChalanDetails?.finalInspectionDetail?.deliverySchedule?.phase || "",
+      item.polySealNo,
+      item.sealNoTimeOfGPReceived,
+      item.deliveryChalanDetails.createdAt,
+      item.remarks,
+    ]);
+
+    autoTable(doc, {
+      head: head,
+      body: body,
+      startY: 20,
+      styles: {
+        fontSize: 5,
+        cellPadding: 2,
+      },
+      headStyles: {
+        fillColor: [41, 128, 185],
+        fontSize: 5,
+      },
+    });
+
+    // Open print dialog
+    doc.autoPrint();
+    doc.output("dataurlnewwindow"); // This will open the document and the print dialog
+  };
+
+  useEffect(() => {
+    document.title = "New G.P. Receipt Record List";
+  }, []);
 
   return (
     <>
@@ -353,6 +437,15 @@ const NewGPReceiptRecordList = () => {
               <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
             </Link>
 
+            {/* ✅ Print Button */}
+            <Button
+              variant="contained"
+              color="primary"
+              className="ms-3"
+              onClick={handlePrint}
+            >
+              Print
+            </Button>
             {/* ✅ Excel Export Button */}
             <Button
               variant="contained"
@@ -365,6 +458,8 @@ const NewGPReceiptRecordList = () => {
           </div>
         </div>
 
+        {/* Print-specific styles */}
+        <style>{` @media print { .action-col, .action-col * { display: none !important; } } `}</style>
         {/* Table */}
         <div className="card shadow border-0 p-3 mt-4">
           <div className="table-responsive">
@@ -372,21 +467,24 @@ const NewGPReceiptRecordList = () => {
               <thead className="table-primary text-white text-uppercase text-center">
                 <tr>
                   <th>Sr No</th>
-                  <th>Account Receipt Note No / Date</th>
+                  <th>Account Receipt Note No</th>
+                  <th>Account Receipt Note Date</th>
                   <th>SIN No</th>
                   <th>Consignee Name</th>
-                  <th>Discom Receipt Note No / Date</th>
+                  <th>Discom Receipt Note No</th>
+                  <th>Discom Receipt Note Date</th>
                   <th>TRF SI No</th>
+                  <th>Original Tfr. Sr. No.</th>
+                  <th>Discom Tfr. Sr. No.</th>
                   <th>Rating</th>
                   <th>Wound</th>
                   <th>Phase</th>
                   <th>Poly Seal No</th>
-                  <th>Consignee TFR Serial No</th>
                   <th>Seal No Time Of G.P. Received</th>
                   <th>Date Of Supply</th>
                   <th>Parts Condition</th>
                   <th>Remarks</th>
-                  <th>Action</th>
+                  <th className="action-col">Action</th>
                 </tr>
               </thead>
 
@@ -395,21 +493,17 @@ const NewGPReceiptRecordList = () => {
                   filteredGPReceiptRecords.map((item, index) => (
                     <tr key={index}>
                       <td># {index + 1}</td>
-                      <td>
-                        <div>{item.accountReceiptNoteNo}</div>
-                        <div className="text-muted small">
-                          {item.accountReceiptNoteDate}
-                        </div>
-                      </td>
+                      <td>{item.accountReceiptNoteNo}</td>
+                      <td>{item.accountReceiptNoteDate}</td>
                       <td>{item.sinNo}</td>
                       <td>{item.consigneeName}</td>
-                      <td>
-                        <div>{item.discomReceiptNoteNo}</div>
-                        <div className="text-muted small">
-                          {item.discomReceiptNoteDate}
-                        </div>
-                      </td>
+                      <td>{item.discomReceiptNoteNo}</td>
+                      <td>{item.discomReceiptNoteDate}</td>
                       <td>{item.trfsiNo}</td>
+                      {/* This is the new column */}
+                      <td>{item.originalTfrSrNo}</td>
+                      {/* Renamed from Consignee TFR Serial No */}
+                      <td>{item.consigneeTFRSerialNo}</td>
                       <td>{item.rating}</td>
                       <td>
                         {
@@ -424,7 +518,6 @@ const NewGPReceiptRecordList = () => {
                         }
                       </td>
                       <td>{item.polySealNo}</td>
-                      <td>{item.consigneeTFRSerialNo}</td>
                       <td>{item.sealNoTimeOfGPReceived}</td>
                       <td>{item.deliveryChalanDetails.createdAt}</td>
                       <td className="text-start small">
@@ -445,7 +538,7 @@ const NewGPReceiptRecordList = () => {
                         </div>
                       </td>
                       <td className="text-start">{item.remarks}</td>
-                      <td>
+                      <td className="action-col">
                         <button
                           className="btn btn-sm btn-success"
                           onClick={() => handleEditClick(item)}
@@ -457,7 +550,7 @@ const NewGPReceiptRecordList = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={16} className="text-center">
+                    <td colSpan={18} className="text-center">
                       No GP Receipt Records Found
                     </td>
                   </tr>

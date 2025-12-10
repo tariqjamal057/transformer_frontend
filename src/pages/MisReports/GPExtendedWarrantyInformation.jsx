@@ -195,7 +195,7 @@ const GPExtendedWarrantyInformation = () => {
 
       <Paper sx={{ p: 2, mt: 3 }}>
         <Typography variant="h6" mb={1}>
-          G.P. Table
+          G.P. Extended warranty information
         </Typography>
 
         <TableContainer sx={{ maxHeight: 520 }}>

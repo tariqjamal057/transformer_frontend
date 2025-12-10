@@ -321,7 +321,6 @@ export const finalInspectionDetails = [
 const NewGPTransformersFilter = ({ onFilteredData, data }) => {
   const [selectedCompany, setSelectedCompany] = useState("all");
   const [selectedDiscom, setSelectedDiscom] = useState("all");
-  const [selectedDate, setSelectedDate] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const [filteredData, setFilteredData] = useState(data || []);
@@ -338,25 +337,21 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
       result = result.filter((item) => item.discom === selectedDiscom);
     }
 
-    if (selectedDate) {
-      const dateStr = selectedDate.format("YYYY-MM-DD");
-      result = result.filter((item) => item.createdAt === dateStr);
-    }
-
     if (searchQuery.trim() !== "") {
+      const lowercasedQuery = searchQuery.toLowerCase();
       result = result.filter(
         (item) =>
-          item.deliverySchedule.tnNumber
+          item.companyName?.toLowerCase().includes(lowercasedQuery) ||
+          item.discom?.toLowerCase().includes(lowercasedQuery) ||
+          item.deliverySchedule?.rating
             ?.toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          item.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.discom?.toLowerCase().includes(searchQuery.toLowerCase())
+            .includes(lowercasedQuery)
       );
     }
 
     setFilteredData(result);
     onFilteredData(result);
-  }, [data, selectedCompany, selectedDiscom, searchQuery, selectedDate]);
+  }, [data, selectedCompany, selectedDiscom, searchQuery]);
 
   // 🔹 Unique dropdown values from ALL data
   const uniqueCompanies = [...new Set(companies.map((item) => item.name))];
@@ -368,9 +363,7 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
     .filter((item) => {
       return (
         (selectedCompany === "all" || item.companyName === selectedCompany) &&
-        (selectedDiscom === "all" || item.discom === selectedDiscom) &&
-        (!selectedDate ||
-          dayjs(item.createdAt).isSameOrBefore(selectedDate, "day"))
+        (selectedDiscom === "all" || item.discom === selectedDiscom)
       );
     })
     .reduce((sum, item) => sum + (parseInt(item.totalQuantity) || 0), 0);
@@ -379,9 +372,7 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
   const totalReceived = gpFailureDatas.filter((item) => {
     return (
       (selectedCompany === "all" || item.companyName === selectedCompany) &&
-      (selectedDiscom === "all" || item.discom === selectedDiscom) &&
-      (!selectedDate ||
-        dayjs(item.createdAt).isSameOrBefore(selectedDate, "day"))
+      (selectedDiscom === "all" || item.discom === selectedDiscom)
     );
   }).length;
 
@@ -390,9 +381,7 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
     .filter(
       (item) =>
         (selectedCompany === "all" || item.companyName === selectedCompany) &&
-        (selectedDiscom === "all" || item.discom === selectedDiscom) &&
-        (!selectedDate ||
-          dayjs(item.createdAt).isSameOrBefore(selectedDate, "day"))
+        (selectedDiscom === "all" || item.discom === selectedDiscom)
     )
     .reduce((sum, item) => {
       let count = 0;
@@ -411,9 +400,7 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
     .filter(
       (item) =>
         (selectedCompany === "all" || item.companyName === selectedCompany) &&
-        (selectedDiscom === "all" || item.discom === selectedDiscom) &&
-        (!selectedDate ||
-          dayjs(item.createdAt).isSameOrBefore(selectedDate, "day"))
+        (selectedDiscom === "all" || item.discom === selectedDiscom)
     )
     .reduce((sum, item) => {
       let count = 0;
@@ -456,9 +443,6 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
 
     // Build dynamic sheet name
     let sheetName = "Information of new G.P. transformers";
-    if (selectedDate) {
-      sheetName += ` - Date: ${selectedDate.format("DD-MM-YYYY")}`;
-    }
     if (selectedCompany !== "all") {
       sheetName += ` - Firm: ${selectedCompany}`;
     }
@@ -505,7 +489,8 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
 
     // Step 5: Create workbook & append worksheet
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+    const _sheetName = sheetName.length > 30 ? sheetName.slice(0, 30) : sheetName;
+    XLSX.utils.book_append_sheet(workbook, worksheet, _sheetName);
 
     // Step 6: Save Excel file
     XLSX.writeFile(workbook, `${sheetName}.xlsx`);
@@ -516,9 +501,6 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
     const doc = new jsPDF();
 
     let title = "Information of new G.P. transformers";
-    if (selectedDate) {
-      title += ` - Date: ${selectedDate.format("DD-MM-YYYY")}`;
-    }
     if (selectedCompany !== "all") {
       title += ` - Firm: ${selectedCompany}`;
     }
@@ -576,6 +558,12 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
     doc.save("Information of new G.P. transformers.pdf");
   };
 
+  const handleResetFilters = () => {
+    setSelectedCompany("all");
+    setSelectedDiscom("all");
+    setSearchQuery("");
+  };
+
   return (
     <Box sx={{ p: 2, background: "#f5f5f5", borderRadius: "12px" }}>
       <Grid container spacing={2} alignItems="center" mb={3}>
@@ -620,7 +608,7 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
         {/* Search */}
         <Grid item xs={12} md={3}>
           <TextField
-            label="Search"
+            label="Search by Firm, Discom, Rating"
             fullWidth
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -647,6 +635,17 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
             onClick={exportPDF}
           >
             Export PDF
+          </Button>
+        </Grid>
+
+        <Grid item xs={12} md={3}>
+          <Button
+            variant="outlined"
+            color="primary"
+            fullWidth
+            onClick={handleResetFilters}
+          >
+            Clear Filters
           </Button>
         </Grid>
       </Grid>

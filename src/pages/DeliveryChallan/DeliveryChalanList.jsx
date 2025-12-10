@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Button, InputAdornment, TextField, Tooltip } from "@mui/material";
 import { Link } from "react-router-dom";
-import { FaFileDownload, FaPencilAlt } from "react-icons/fa";
+import { FaFileDownload, FaPencilAlt, FaPrint } from "react-icons/fa";
 import { MyContext } from "../../App";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -16,6 +16,7 @@ const DeliveryChalanList = () => {
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedDeliveryChalan, setSelectedDeliveryChalan] = useState(null);
+  const [isPreview, setIsPreview] = useState(false);
 
   // Dummy Data
   const dummyDeliveryChalans = [
@@ -187,6 +188,13 @@ const DeliveryChalanList = () => {
 
   const handleEditClick = (item) => {
     setSelectedDeliveryChalan(item);
+    setIsPreview(false);
+    setOpenModal(true);
+  };
+
+  const handlePreviewClick = (item) => {
+    setSelectedDeliveryChalan(item);
+    setIsPreview(true);
     setOpenModal(true);
   };
 
@@ -476,6 +484,12 @@ const DeliveryChalanList = () => {
                           >
                             <FaPencilAlt />
                           </button>
+                          <button
+                            className="btn btn-sm btn-info text-white"
+                            onClick={() => handlePreviewClick(item)}
+                          >
+                            <FaPrint />
+                          </button>
                           <Tooltip title="Download pdf" placement="top">
                             <button
                               className="btn btn-sm btn-primary"
@@ -506,6 +520,8 @@ const DeliveryChalanList = () => {
           open={openModal}
           handleClose={handleModalClose}
           deliveryChalanData={selectedDeliveryChalan}
+          previewOnly={isPreview}
+          onPrint={() => generatePDF(selectedDeliveryChalan)}
         />
       }
     </>
