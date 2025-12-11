@@ -145,8 +145,11 @@ const FiltersComponent = ({
           ? `${dueOthers}`
           : "";
 
+      const consignees = item.consignees && item.consignees.length > 0 ? item.consignees : [{}];
+
+
       // 👉 Build one row per consignee
-      (item.consignees || []).forEach((c, cIdx) => {
+      consignees.forEach((c, cIdx) => {
         excelData.push({
           "S.No": cIdx === 0 ? index + 1 : "", // show Sr no only for first row
           "Firm Name": cIdx === 0 ? item.companyName : "",
@@ -181,13 +184,10 @@ const FiltersComponent = ({
           Consignee: c.consignee?.name || "",
           "SR No.": c.subSnNumber || "",
           Qty: c.quantity || "",
-          Dispatch: c.dispatch || "",
+          Dispatch: c.dispatch || 0,
           Pending: c.pending || "",
         });
       });
-
-      // 👉 Add blank row after each inspection block
-      excelData.push({});
     });
 
     // ✅ Export to Excel
@@ -448,13 +448,10 @@ const FiltersComponent = ({
           Consignee: c?.consignee?.name || "",
           "SR No.": c?.subSnNumber || "",
           Qty: c?.quantity || "",
-          "Dispatch qty.": c?.dispatch,
+          Dispath: c?.dispatch ?? 0,
           Pending: c?.pending || "",
         });
       });
-
-      // 👉 Add blank row after each inspection block
-      pdfData.push({});
     });
 
     // Step 2: Find non-empty columns

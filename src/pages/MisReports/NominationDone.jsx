@@ -218,8 +218,8 @@ const NominationDone = () => {
         onFilteredData={setFilteredData}
         data={inspectionData}
         text="Awaiting Inspection"
-        onExportPDF={false} 
-        onExportExcel={true}
+        onExportPDF={false}
+        onExportExcel={false}
         sheetName="Nomination Done But Dispatch Pending "
       />
 
