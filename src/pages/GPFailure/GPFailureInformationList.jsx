@@ -372,14 +372,14 @@ const GPFailureInformationList = () => {
             <Button
               variant="contained"
               color="success"
-              onClick={exportExcel}
+              // onClick={exportExcel}
             >
               Export Excel
             </Button>
             <Button
               variant="contained"
               color="error"
-              onClick={exportPDF}
+              // onClick={exportPDF}
             >
               Export PDF
             </Button>

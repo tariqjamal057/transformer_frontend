@@ -523,10 +523,24 @@ const AddOfferLetterAndSealingStatement = () => {
 
   // ✅ Generate Offer Letter Excel (placeholder)
   const generateOfferLetter = () => {
-    let excelData = selectedRecords.map((id, index) => ({
-      "Sr No": index + 1,
-      Message: "Offer letter fields will be defined later",
-    }));
+    let excelData = [];
+
+    selectedRecords.forEach((id, index) => {
+      const gpRecord = dummyGPReceiptRecords.find((rec) => rec.id === id);
+      if (!gpRecord) return;
+
+      const make = gpRecord.deliveryChalanDetails?.consignorName?.split(' ')[0] || "K.I."; // Assuming K.I. is short for Kalpana Industries or similar
+      const yearOfMfg = gpRecord.deliveryChalanDetails?.createdAt ? new Date(gpRecord.deliveryChalanDetails.createdAt).getFullYear() : "N/A";
+
+      excelData.push({
+        "Sr. #": index + 1,
+        "JOB No.": gpRecord.trfsiNo,
+        "Make": make,
+        "Ratings": gpRecord.rating,
+        "TFR Sr.No.": gpRecord.trfsiNo,
+        "Year of Mfg.": yearOfMfg,
+      });
+    });
 
     const ws = XLSX.utils.json_to_sheet(excelData, { skipHeader: false });
     const wb = XLSX.utils.book_new();

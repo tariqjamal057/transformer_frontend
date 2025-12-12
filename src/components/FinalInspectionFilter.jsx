@@ -193,7 +193,7 @@ const FiltersComponent = ({
     // ✅ Export to Excel
     const ws = XLSX.utils.json_to_sheet(excelData, { skipHeader: false });
     const wb = XLSX.utils.book_new();
-    const _sheetName = sheetName.length > 30 ? sheetName.slice(0, 30) : sheetName;
+    const _sheetName = sheetName.slice(0, 30);
 
     XLSX.utils.book_append_sheet(wb, ws, _sheetName);
     XLSX.writeFile(wb, `${sheetName}.xlsx`);
@@ -299,8 +299,7 @@ const FiltersComponent = ({
     // Step 4: Export Excel
     const ws = XLSX.utils.json_to_sheet(cleanedData);
     const wb = XLSX.utils.book_new();
-    console.log(sheetName.length)
-    const _sheetName = sheetName.length > 30 ? sheetName.slice(0, 30) : sheetName;
+    const _sheetName = sheetName.slice(0, 30);
     XLSX.utils.book_append_sheet(wb, ws, _sheetName);
 
     XLSX.writeFile(wb, `${sheetName}.xlsx`);

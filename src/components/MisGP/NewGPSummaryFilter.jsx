@@ -104,6 +104,7 @@ const NewGPSummaryFilter = ({ onFilteredData, data }) => {
     onFilteredData(result);
   }, [
     data,
+    onFilteredData,
     selectedCompanies,
     selectedDiscoms,
     selectedRatings,
@@ -142,13 +143,13 @@ const NewGPSummaryFilter = ({ onFilteredData, data }) => {
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Final Inspection");
-    XLSX.writeFile(workbook, `${sheetName}.xlsx`);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "New GP Summary");
+    XLSX.writeFile(workbook, `NewGPSummary.xlsx`);
   };
 
   // ✅ Export PDF (Compact A4 Layout)
   const exportPDF = () => {
-    const doc = new jsPDF("l", "pt", "a4"); // ⬅️ Landscape A4
+    const doc = new jsPDF("p", "pt", "a4"); // ⬅️ Landscape A4
 
     doc.setFontSize(11);
     doc.text("New GP Summary Report", 40, 30);
@@ -199,6 +200,16 @@ const NewGPSummaryFilter = ({ onFilteredData, data }) => {
     });
 
     doc.save("NewGPSummary_A4.pdf");
+  };
+
+  const handleResetFilters = () => {
+    setSelectedCompanies([]);
+    setSelectedDiscoms([]);
+    setSelectedRatings([]);
+    setSelectedPhases([]);
+    setSelectedWounds([]);
+    setSearchQuery("");
+    setSelectedDate(null);
   };
 
   return (
@@ -264,18 +275,6 @@ const NewGPSummaryFilter = ({ onFilteredData, data }) => {
           </Grid>
         ))}
 
-        {/* Calendar */}
-        <Grid item size={1}>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker
-              label="Select Date"
-              value={selectedDate}
-              onChange={(newVal) => setSelectedDate(newVal)}
-              slotProps={{ textField: { fullWidth: true } }}
-            />
-          </LocalizationProvider>
-        </Grid>
-
         {/* Search */}
         <Grid item size={1}>
           <TextField
@@ -306,6 +305,17 @@ const NewGPSummaryFilter = ({ onFilteredData, data }) => {
             onClick={exportPDF}
           >
             Export PDF
+          </Button>
+        </Grid>
+
+        <Grid item size={1}>
+          <Button
+            variant="outlined"
+            color="primary"
+            fullWidth
+            onClick={handleResetFilters}
+          >
+            Clear Filters
           </Button>
         </Grid>
       </Grid>

@@ -1,5 +1,12 @@
 import { useContext, useState } from "react";
-import { Box, Checkbox, Chip, CircularProgress, ListItemText, OutlinedInput } from "@mui/material";
+import {
+  Box,
+  Checkbox,
+  Chip,
+  CircularProgress,
+  ListItemText,
+  OutlinedInput,
+} from "@mui/material";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import {
   Grid,
@@ -359,17 +366,16 @@ const AddFinalInspection = () => {
               <Grid item size={1}>
                 <TextField
                   fullWidth
-                  label="Wound"
-                  value={tnDetail?.wound || ""}
+                  label="Phase"
+                  value={tnDetail?.phase || ""}
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
-
               <Grid item size={1}>
                 <TextField
                   fullWidth
-                  label="Phase"
-                  value={tnDetail?.phase || ""}
+                  label="Wound"
+                  value={tnDetail?.wound || ""}
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
@@ -569,7 +575,9 @@ const AddFinalInspection = () => {
                   <InputLabel>Select Repaired Transformers</InputLabel>
                   <Select
                     multiple
-                    input={<OutlinedInput label="Select Repaired Transformers" />}
+                    input={
+                      <OutlinedInput label="Select Repaired Transformers" />
+                    }
                     value={selectedTransformers}
                     onChange={(e) => setSelectedTransformers(e.target.value)}
                     renderValue={(selected) =>

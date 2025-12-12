@@ -26,8 +26,8 @@ const PdfTemplate = ({ item }) => (
       {item.finalInspectionDetail.snNumber}
     </Typography>
     <Typography>
-      <strong>DI No / Date:</strong>{" "}
-      {item.finalInspectionDetail.diNo} / {item.finalInspectionDetail.diDate}
+      <strong>DI No / Date:</strong> {item.finalInspectionDetail.diNo} /{" "}
+      {item.finalInspectionDetail.diDate}
     </Typography>
 
     {/* Inspection Info */}
@@ -59,11 +59,11 @@ const PdfTemplate = ({ item }) => (
 
     {/* Material & Description */}
     <Typography mt={2}>
-      <strong>Material:</strong> {item.materialDescription.description}
+      <strong>Material:</strong> {item?.materialDescription?.description}
     </Typography>
     <Typography mt={1}>
       <strong>Description:</strong>{" "}
-      {item.deliveryChallanDescription.description}
+      {item?.deliveryChallanDescription?.description}
     </Typography>
 
     {/* Extra Info */}

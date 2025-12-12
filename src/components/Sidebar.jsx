@@ -82,7 +82,7 @@ const Sidebar = () => {
                 </li>
 
                 <li>
-                    <Link to='/damageTransformer' onClick={handleCloseSidebarOnMobile}>
+                    <Link to='/damageTransformer-list' onClick={handleCloseSidebarOnMobile}>
                         <Button className={`w-100 ${activeTab === 4 ? 'active' : ''}`} onClick={() => setActiveTab(4)}>
                             <span className='icon'><RiFileDamageFill /></span>
                             CTL Failed / Damaged Transformer List

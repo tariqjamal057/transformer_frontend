@@ -489,7 +489,7 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
 
     // Step 5: Create workbook & append worksheet
     const workbook = XLSX.utils.book_new();
-    const _sheetName = sheetName.length > 30 ? sheetName.slice(0, 30) : sheetName;
+    const _sheetName = sheetName.slice(0, 30);
     XLSX.utils.book_append_sheet(workbook, worksheet, _sheetName);
 
     // Step 6: Save Excel file

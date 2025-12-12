@@ -138,7 +138,7 @@ export const getDummyFinalInspectionDetails = () => {
       id: "4",
       deliverySchedule: {
         tnNumber: "TN-001",
-        rating: "5",
+        rating: "8",
         guaranteePeriodMonths: 24,
         phase: "Single Phase",
         status: "Deferred",
@@ -212,7 +212,6 @@ const SinglePhaseTable = ({ data }) => {
   const rows = Object.values(summary);
 
   if (rows.length === 0) return null;
-
 
   return (
     <Paper elevation={4} sx={{ borderRadius: 2, overflow: "hidden" }}>
@@ -384,24 +383,10 @@ const ThreePhaseTable = ({ data }) => {
 };
 
 const InverterDutyTable = ({ data }) => {
-  const inverterData = data.filter(
-    (item) => item.deliverySchedule.phase === "Inverter" // Assuming 'Inverter' is a phase type
-  );
-
-  const summary = inverterData.reduce((acc, item) => {
-    const rating = `${item.deliverySchedule.rating} MVA`;
-    if (!acc[rating]) {
-      acc[rating] = { rating, total: 0, supplyDue: 0, planning: 0 };
-    }
-    acc[rating].total += item.deliverySchedule.totalOrderQuantity || 0;
-    acc[rating].supplyDue += item.totalSupplyDueInCurrentMonth || 0;
-    acc[rating].planning += item.plannedForMonth || 0;
-    return acc;
-  }, {});
-
-  const rows = Object.values(summary);
-
-  if (rows.length === 0) return null;
+  const rows = [
+    { rating: "12.5 MVA", total: 15, supplyDue: 1, planning: 2 },
+    { rating: "17.6 MVA", total: 10, supplyDue: 1, planning: 2 },
+  ];
 
   return (
     <Paper elevation={4} sx={{ borderRadius: 2, overflow: "hidden" }}>
@@ -544,9 +529,7 @@ const ProductionPlanning = () => {
                 <TableCell>Offered For Ins Total</TableCell>
                 <TableCell>Final Ins. Total</TableCell>
                 <TableCell>Actual Supplied Total</TableCell>
-                <TableCell>
-                  Balance due to be Insp. Current month
-                </TableCell>
+                <TableCell>Balance due to be Insp. Current month</TableCell>
                 <TableCell>Balance Pending</TableCell>
                 <TableCell>Tfr Sr. No.</TableCell>
                 <TableCell>Planned For Month</TableCell>
@@ -569,7 +552,9 @@ const ProductionPlanning = () => {
                     <TableCell>{row.deliverySchedule?.tnNumber}</TableCell>
                     <TableCell>{row.deliverySchedule?.rating}</TableCell>
                     <TableCell>{row.deliverySchedule?.phase}</TableCell>
-                    <TableCell>{row.deliverySchedule?.wound || "Copper"}</TableCell>
+                    <TableCell>
+                      {row.deliverySchedule?.wound || "Copper"}
+                    </TableCell>
                     <TableCell>{row.deliverySchedule?.status}</TableCell>
                     <TableCell>
                       {row.deliverySchedule?.scheduleDate

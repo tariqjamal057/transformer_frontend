@@ -46,6 +46,7 @@ import AddFailureAnalysis from "./pages/FailureAnalysis/AddFailureAnalysis";
 import FailureAnalysisList from "./pages/FailureAnalysis/FailureAnalysisList";
 import MaterialOfferedButNominationPending from "./pages/MisReports/MaterialOfferedButNominationPending";
 import MisReportsDashboard from "./pages/MisReports/MisReportsDashboard";
+import DamagedTransformerList from "./pages/Final Inspection/DamagedTransformerList";
 import NominationDone from "./pages/MisReports/NominationDone";
 import InspectionDone from "./pages/MisReports/InspectionDone";
 import DIReceived from "./pages/MisReports/DIReceived";
@@ -199,6 +200,7 @@ function App() {
             <Route exact path="/add-FailureAnalysis" element={<PrivateRoute element={<AddFailureAnalysis />} allowedRoles={["superadmin"]}/>}/>
             <Route exact path="/failureAnalysis-list" element={<PrivateRoute element={<FailureAnalysisList />} allowedRoles={["superadmin"]}/>}/>
             <Route exact path="/mis-reports" element={<PrivateRoute element={<MisReportsDashboard />} allowedRoles={["superadmin"]}/>}/>
+            <Route exact path="/damageTransformer-list" element={<PrivateRoute element={<DamagedTransformerList />} allowedRoles={["superadmin"]}/>}/>
             <Route exact path="/materialOfferedButNominationPending-list" element={<PrivateRoute element={<MaterialOfferedButNominationPending />} allowedRoles={["superadmin"]}/>}/>
             <Route exact path="/nomination-done" element={<PrivateRoute element={<NominationDone />} allowedRoles={["superadmin"]}/>}/>
             <Route exact path="/inspection-done" element={<PrivateRoute element={<InspectionDone />} allowedRoles={["superadmin"]}/>}/>

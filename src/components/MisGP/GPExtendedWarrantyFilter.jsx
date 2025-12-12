@@ -129,7 +129,7 @@ const GPExtendedWarrantyFilter = ({ onFilteredData, data }) => {
 
     // Step 5: Create workbook & append worksheet
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "G.P. Extended warranty information");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "GP Extended Warranty");
 
     // Step 6: Save Excel file
     XLSX.writeFile(workbook, "G.P. Extended warranty information.xlsx");
@@ -181,7 +181,7 @@ const GPExtendedWarrantyFilter = ({ onFilteredData, data }) => {
       head,
       body,
       startY: 20,
-      styles: { fontSize: 9, cellPadding: 3 },
+      styles: { fontSize: 5.5, cellPadding: 1.4 },
       headStyles: { fillColor: [41, 128, 185] }, // blue header
       alternateRowStyles: { fillColor: [245, 245, 245] },
     });
