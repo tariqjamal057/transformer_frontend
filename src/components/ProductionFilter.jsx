@@ -366,19 +366,9 @@ const ProductionFilter = ({ onFilteredData, data }) => {
             variant="contained"
             color="success"
             fullWidth
-            onClick={() => handleGenerateExport("excel", false)}
-          >
-            Export Excel (Detailed)
-          </Button>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Button
-            variant="outlined"
-            color="success"
-            fullWidth
             onClick={() => handleGenerateExport("excel", true)}
           >
-            Export Excel (With Summary)
+            Export Excel
           </Button>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -386,19 +376,9 @@ const ProductionFilter = ({ onFilteredData, data }) => {
             variant="contained"
             color="error"
             fullWidth
-            onClick={() => handleGenerateExport("pdf", false)}
-          >
-            Export PDF (Detailed)
-          </Button>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Button
-            variant="outlined"
-            color="error"
-            fullWidth
             onClick={() => handleGenerateExport("pdf", true)}
           >
-            Export PDF (With Summary)
+            Export PDF
           </Button>
         </Grid>
       </Grid>
@@ -423,17 +403,33 @@ const ProductionFilter = ({ onFilteredData, data }) => {
             p: 4,
           }}
         >
-          <Typography
-            id="summary-modal-title"
-            variant="h6"
-            sx={{
-              mb: 2,
-              textAlign: "center",
-              fontWeight: "bold",
-            }}
-          >
-            Add Summary for PDF
-          </Typography>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <Typography
+              id="summary-modal-title"
+              variant="h6"
+              sx={{
+                mb: 2,
+                textAlign: "center",
+                fontWeight: "bold",
+              }}
+            >
+              Add Summary for{"   "}
+            </Typography>
+
+            <Typography
+              id="summary-modal-title"
+              variant="h6"
+              sx={{
+                textTransform: "uppercase",
+                textAlign: "center",
+                fontWeight: "bold",
+                mb: 2,
+                ml: 1,
+              }}
+            >
+              {"  "}{exportType}
+            </Typography>
+          </div>
 
           <TextField
             label="Enter Summary (optional)"
@@ -458,7 +454,7 @@ const ProductionFilter = ({ onFilteredData, data }) => {
               color="primary"
               onClick={handleModalGenerate}
             >
-              Generate PDF
+              Generate {exportType}
             </Button>
           </Box>
         </Box>
