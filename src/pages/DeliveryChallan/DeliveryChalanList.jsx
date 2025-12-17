@@ -192,12 +192,6 @@ const DeliveryChalanList = () => {
     setOpenModal(true);
   };
 
-  const handlePreviewClick = (item) => {
-    setSelectedDeliveryChalan(item);
-    setIsPreview(true);
-    setOpenModal(true);
-  };
-
   const handleModalClose = () => {
     setOpenModal(false);
     setSelectedDeliveryChalan(null);
@@ -483,12 +477,6 @@ const DeliveryChalanList = () => {
                             onClick={() => handleEditClick(item)}
                           >
                             <FaPencilAlt />
-                          </button>
-                          <button
-                            className="btn btn-sm btn-info text-white"
-                            onClick={() => handlePreviewClick(item)}
-                          >
-                            <FaPrint />
                           </button>
                           <Tooltip title="Download pdf" placement="top">
                             <button

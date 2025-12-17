@@ -221,6 +221,7 @@ const NominationDone = () => {
         onExportPDF={false}
         onExportExcel={false}
         sheetName="Nomination Done But Dispatch Pending "
+        pdfTitle= "Nomination Done But Dispatch Pending"
       />
 
       <Paper sx={{ p: 2, mt: 3 }}>

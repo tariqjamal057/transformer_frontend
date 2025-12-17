@@ -10,196 +10,195 @@ import autoTable from "jspdf-autotable";
 import GPReceiptModal from "../../components/GPReceiptModal";
 
 // Dummy Data
-  const dummyGPReceiptRecords = [
-    {
+const dummyGPReceiptRecords = [
+  {
+    id: "1",
+    accountReceiptNoteNo: "ARN-2025-001",
+    accountReceiptNoteDate: "2025-08-10",
+    sinNo: "SIN-5501",
+    consigneeName: "ABC Power Supply Ltd.",
+    discomReceiptNoteNo: "DRN-9987",
+    discomReceiptNoteDate: "2025-08-12",
+    remarks: "All items received in good condition.",
+    trfsiNo: 4908,
+    rating: "100",
+    selectedChalan: "CH-1005",
+    sealNoTimeOfGPReceived: "IAJ 5335 To IAJ 5336",
+    consigneeTFRSerialNo: "TFR-9001",
+    originalTfrSrNo: "4908",
+    // Parts missing details
+    oilLevel: "OK",
+    hvBushing: "Present",
+    lvBushing: "Present",
+    htMetalParts: "Complete",
+    ltMetalParts: "Complete",
+    mAndpBox: "Available",
+    mAndpBoxCover: "Available",
+    mccb: "Installed",
+    icb: "Installed",
+    copperFlexibleCable: "Available",
+    alWire: "Available",
+    conservator: "OK",
+    radiator: "OK",
+    fuse: "Provided",
+    channel: "OK",
+    core: "Good Condition",
+    polySealNo: "IAJ 5301 To IAJ 5302",
+    deliveryChalanDetails: {
       id: "1",
-      accountReceiptNoteNo: "ARN-2025-001",
-      accountReceiptNoteDate: "2025-08-10",
-      sinNo: "SIN-5501",
-      consigneeName: "ABC Power Supply Ltd.",
-      discomReceiptNoteNo: "DRN-9987",
-      discomReceiptNoteDate: "2025-08-12",
-      remarks: "All items received in good condition.",
-      trfsiNo: 4908,
-      rating: "100",
-      selectedChalan: "CH-1005",
-      sealNoTimeOfGPReceived: "IAJ 5335 To IAJ 5336",
-      consigneeTFRSerialNo: "TFR-9001",
-      originalTfrSrNo: "4908",
-      // Parts missing details
-      oilLevel: "OK",
-      hvBushing: "Present",
-      lvBushing: "Present",
-      htMetalParts: "Complete",
-      ltMetalParts: "Complete",
-      mAndpBox: "Available",
-      mAndpBoxCover: "Available",
-      mccb: "Installed",
-      icb: "Installed",
-      copperFlexibleCable: "Available",
-      alWire: "Available",
-      conservator: "OK",
-      radiator: "OK",
-      fuse: "Provided",
-      channel: "OK",
-      core: "Good Condition",
-      polySealNo: "IAJ 5301 To IAJ 5302",
-      deliveryChalanDetails: {
+      finalInspectionDetail: {
         id: "1",
-        finalInspectionDetail: {
-          id: "1",
-          deliverySchedule: {
-            tnNumber: "TN-001",
-            poDetails: "PO-12345",
-            poDate: "2025-05-10",
-            rating: "100",
-            phase: "100 KVA",
-            wound: "Aluminium",
-            guaranteePeriodMonths: 1,
-            description:
-              "Challan for the supply of high-tension insulators, complete with packing, forwarding, insurance, and all required test certificates for the designated substation.",
-          },
-          offeredDate: "2025-07-12",
-          offeredQuantity: 200,
-          serialNumberFrom: 4907,
-          serialNumberTo: 4911,
-          snNumber: "4907 TO 4911",
-          nominationLetterNo: "NL/2025/001",
-          nominationDate: "2025-07-10",
-          inspectionOfficers: ["Ravi Kumar", "Sunita Sharma"],
-          inspectionDate: "2025-07-13",
-          inspectedQuantity: 100,
-          total: 120,
-          diNo: "DI/2025/1001",
-          diDate: "2025-07-16",
-          shealingDetails: [
-            { trfsiNo: 4907, polySealNo: "IAJ 5301 To IAJ 5302" },
-            { trfsiNo: 4908, polySealNo: "IAJ 5303 To IAJ 5304" },
-            { trfsiNo: 4909, polySealNo: "IAJ 5305 To IAJ 5306" },
-            { trfsiNo: 4910, polySealNo: "IAJ 5307 To IAJ 5308" },
-            { trfsiNo: 4911, polySealNo: "IAJ 5309 To IAJ 5310" },
-          ],
-        },
-        subSerialNumberFrom: 4907,
-        subSerialNumberTo: 4909,
-        challanNo: "CH-1001",
-        createdAt: "2025-06-22",
-        consignorName: "PowerTech Transformers Pvt. Ltd.",
-        consignorPhone: "9876543210",
-        consignorAddress: "Plot 12, Industrial Zone, Mumbai",
-        consignorGST: "27AAACP1234F1Z5",
-        consignorEmail: "powertech@gmail.com",
-        consigneeDetails: {
-          id: "2",
-          name: "ABC Power Solutions Pvt. Ltd.",
-          address:
-            "Plot No. 45, Industrial Area, Sector 18, Gurugram, Haryana - 122015",
-          gstNo: "06ABCDE1234F1Z5",
-        },
-        lorryNo: "MH12AB1234",
-        truckDriverName: "Ramesh Yadav",
-        materialDescription: {
-          materialName: "150 Amp Current Transformer (CT)",
+        deliverySchedule: {
+          tnNumber: "TN-001",
+          poDetails: "PO-12345",
+          poDate: "2025-05-10",
+          rating: "100",
           phase: "100 KVA",
+          wound: "Aluminium",
+          guaranteePeriodMonths: 1,
           description:
-            "100 kVA, 11/0.433 kV, 3-Phase, Oil Cooled Distribution Transformer with Copper Winding, ONAN Cooling, complete with standard fittings and accessories suitable for outdoor installation as per IS 1180.",
+            "Challan for the supply of high-tension insulators, complete with packing, forwarding, insurance, and all required test certificates for the designated substation.",
         },
+        offeredDate: "2025-07-12",
+        offeredQuantity: 200,
+        serialNumberFrom: 4907,
+        serialNumberTo: 4911,
+        snNumber: "4907 TO 4911",
+        nominationLetterNo: "NL/2025/001",
+        nominationDate: "2025-07-10",
+        inspectionOfficers: ["Ravi Kumar", "Sunita Sharma"],
+        inspectionDate: "2025-07-13",
+        inspectedQuantity: 100,
+        total: 120,
+        diNo: "DI/2025/1001",
+        diDate: "2025-07-16",
+        shealingDetails: [
+          { trfsiNo: 4907, polySealNo: "IAJ 5301 To IAJ 5302" },
+          { trfsiNo: 4908, polySealNo: "IAJ 5303 To IAJ 5304" },
+          { trfsiNo: 4909, polySealNo: "IAJ 5305 To IAJ 5306" },
+          { trfsiNo: 4910, polySealNo: "IAJ 5307 To IAJ 5308" },
+          { trfsiNo: 4911, polySealNo: "IAJ 5309 To IAJ 5310" },
+        ],
+      },
+      subSerialNumberFrom: 4907,
+      subSerialNumberTo: 4909,
+      challanNo: "CH-1001",
+      createdAt: "2025-06-22",
+      consignorName: "PowerTech Transformers Pvt. Ltd.",
+      consignorPhone: "9876543210",
+      consignorAddress: "Plot 12, Industrial Zone, Mumbai",
+      consignorGST: "27AAACP1234F1Z5",
+      consignorEmail: "powertech@gmail.com",
+      consigneeDetails: {
+        id: "2",
+        name: "ABC Power Solutions Pvt. Ltd.",
+        address:
+          "Plot No. 45, Industrial Area, Sector 18, Gurugram, Haryana - 122015",
+        gstNo: "06ABCDE1234F1Z5",
+      },
+      lorryNo: "MH12AB1234",
+      truckDriverName: "Ramesh Yadav",
+      materialDescription: {
+        materialName: "150 Amp Current Transformer (CT)",
+        phase: "100 KVA",
+        description:
+          "100 kVA, 11/0.433 kV, 3-Phase, Oil Cooled Distribution Transformer with Copper Winding, ONAN Cooling, complete with standard fittings and accessories suitable for outdoor installation as per IS 1180.",
       },
     },
-    {
-      id: "2",
-      accountReceiptNoteNo: "ARN-2025-002",
-      accountReceiptNoteDate: "2025-08-15",
-      sinNo: "SIN-5502",
-      consigneeName: "Western Power Supply Ltd.",
-      discomReceiptNoteNo: "DRN-9988",
-      discomReceiptNoteDate: "2025-08-17",
-      remarks: "Minor scratches found on radiator, otherwise acceptable.",
-      trfsiNo: 9003,
-      rating: "150",
-      selectedChalan: "CH-1005",
-      sealNoTimeOfGPReceived: "IAJ 5339 To IAJ 5340",
-      consigneeTFRSerialNo: "TFR-9003",
-      originalTfrSrNo: "9003",
-      // Parts missing details
-      oilLevel: "Slightly Low",
-      hvBushing: "Present",
-      lvBushing: "Present",
-      htMetalParts: "Complete",
-      ltMetalParts: "Complete",
-      mAndpBox: "Available",
-      mAndpBoxCover: "Available",
-      mccb: "Installed",
-      icb: "Installed",
-      copperFlexibleCable: "Available",
-      alWire: "Available",
-      conservator: "OK",
-      radiator: "Scratched",
-      fuse: "Provided",
-      channel: "OK",
-      core: "Good Condition",
-      polySealNo: "IAJ 5339 To IAJ 5340",
-      deliveryChalanDetails: {
+  },
+  {
+    id: "2",
+    accountReceiptNoteNo: "ARN-2025-002",
+    accountReceiptNoteDate: "2025-08-15",
+    sinNo: "SIN-5502",
+    consigneeName: "Western Power Supply Ltd.",
+    discomReceiptNoteNo: "DRN-9988",
+    discomReceiptNoteDate: "2025-08-17",
+    remarks: "Minor scratches found on radiator, otherwise acceptable.",
+    trfsiNo: 9003,
+    rating: "150",
+    selectedChalan: "CH-1005",
+    sealNoTimeOfGPReceived: "IAJ 5339 To IAJ 5340",
+    consigneeTFRSerialNo: "TFR-9003",
+    originalTfrSrNo: "9003",
+    // Parts missing details
+    oilLevel: "Slightly Low",
+    hvBushing: "Present",
+    lvBushing: "Present",
+    htMetalParts: "Complete",
+    ltMetalParts: "Complete",
+    mAndpBox: "Available",
+    mAndpBoxCover: "Available",
+    mccb: "Installed",
+    icb: "Installed",
+    copperFlexibleCable: "Available",
+    alWire: "Available",
+    conservator: "OK",
+    radiator: "Scratched",
+    fuse: "Provided",
+    channel: "OK",
+    core: "Good Condition",
+    polySealNo: "IAJ 5339 To IAJ 5340",
+    deliveryChalanDetails: {
+      id: "5",
+      finalInspectionDetail: {
         id: "5",
-        finalInspectionDetail: {
-          id: "5",
-          deliverySchedule: {
-            tnNumber: "TN-005",
-            poDetails: "PO-11122",
-            poDate: "2025-07-01",
-            rating: "150",
-            phase: "150 KVA",
-            wound: "Copper",
-            guaranteePeriodMonths: 24,
-            description:
-              "Challan for supply of resin cast current transformers suitable for medium voltage switchgear.",
-          },
-          offeredDate: "2025-08-12",
-          offeredQuantity: 300,
-          serialNumberFrom: 9001,
-          serialNumberTo: 9004,
-          snNumber: "9001 TO 9004",
-          nominationLetterNo: "NL/2025/005",
-          nominationDate: "2025-08-10",
-          inspectionOfficers: ["Vikram Joshi", "Pooja Thakur"],
-          inspectionDate: "2025-08-14",
-          inspectedQuantity: 150,
-          total: 155,
-          diNo: "DI/2025/1005",
-          diDate: "2025-08-16",
-          shealingDetails: [
-            { trfsiNo: 9001, polySealNo: "IAJ 5335 To IAJ 5336" },
-            { trfsiNo: 9002, polySealNo: "IAJ 5337 To IAJ 5338" },
-            { trfsiNo: 9003, polySealNo: "IAJ 5339 To IAJ 5340" },
-            { trfsiNo: 9004, polySealNo: "IAJ 5341 To IAJ 5342" },
-          ],
-        },
-        subSerialNumberFrom: 9001,
-        subSerialNumberTo: 9003,
-        challanNo: "CH-1005",
-        createdAt: "2025-08-18",
-        consignorName: "VoltSafe Industries",
-        consignorPhone: "9090909090",
-        consignorAddress: "MIDC Industrial Estate, Nagpur",
-        consignorGST: "27VSIN1234P9K8",
-        consignorEmail: "support@voltsafe.com",
-        consigneeDetails: {
-          id: "6",
-          name: "Western Power Supply Ltd.",
-          address: "Shivaji Nagar, Pune - 411005",
-          gstNo: "27WPSL5678Q1R2",
-        },
-        lorryNo: "MH20JK7890",
-        truckDriverName: "Naresh Pawar",
-        materialDescription: {
-          materialName: "150 Amp Resin Cast Current Transformer",
+        deliverySchedule: {
+          tnNumber: "TN-005",
+          poDetails: "PO-11122",
+          poDate: "2025-07-01",
+          rating: "150",
+          phase: "150 KVA",
+          wound: "Copper",
+          guaranteePeriodMonths: 24,
           description:
-            "150 Amp, 11 kV resin cast CT, Class 1 accuracy, 5P10 protection class, used in medium voltage panels.",
+            "Challan for supply of resin cast current transformers suitable for medium voltage switchgear.",
         },
+        offeredDate: "2025-08-12",
+        offeredQuantity: 300,
+        serialNumberFrom: 9001,
+        serialNumberTo: 9004,
+        snNumber: "9001 TO 9004",
+        nominationLetterNo: "NL/2025/005",
+        nominationDate: "2025-08-10",
+        inspectionOfficers: ["Vikram Joshi", "Pooja Thakur"],
+        inspectionDate: "2025-08-14",
+        inspectedQuantity: 150,
+        total: 155,
+        diNo: "DI/2025/1005",
+        diDate: "2025-08-16",
+        shealingDetails: [
+          { trfsiNo: 9001, polySealNo: "IAJ 5335 To IAJ 5336" },
+          { trfsiNo: 9002, polySealNo: "IAJ 5337 To IAJ 5338" },
+          { trfsiNo: 9003, polySealNo: "IAJ 5339 To IAJ 5340" },
+          { trfsiNo: 9004, polySealNo: "IAJ 5341 To IAJ 5342" },
+        ],
+      },
+      subSerialNumberFrom: 9001,
+      subSerialNumberTo: 9003,
+      challanNo: "CH-1005",
+      createdAt: "2025-08-18",
+      consignorName: "VoltSafe Industries",
+      consignorPhone: "9090909090",
+      consignorAddress: "MIDC Industrial Estate, Nagpur",
+      consignorGST: "27VSIN1234P9K8",
+      consignorEmail: "support@voltsafe.com",
+      consigneeDetails: {
+        id: "6",
+        name: "Western Power Supply Ltd.",
+        address: "Shivaji Nagar, Pune - 411005",
+        gstNo: "27WPSL5678Q1R2",
+      },
+      lorryNo: "MH20JK7890",
+      truckDriverName: "Naresh Pawar",
+      materialDescription: {
+        materialName: "150 Amp Resin Cast Current Transformer",
+        description:
+          "150 Amp, 11 kV resin cast CT, Class 1 accuracy, 5P10 protection class, used in medium voltage panels.",
       },
     },
-  ];
-
+  },
+];
 
 const NewGPReceiptRecordList = () => {
   const { setProgress, setAlertBox, setIsHideSidebarAndHeader } =
@@ -335,68 +334,141 @@ const NewGPReceiptRecordList = () => {
       return;
     }
 
-    const doc = new jsPDF({ orientation: "portrait" });
-    doc.text("New G.P. Receipt Record List", 14, 15);
+    // Landscape orientation for A4
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "pt",
+      format: "a4",
+    });
+    const pageWidth = doc.internal.pageSize.getWidth(); // ~842pt
+    const pageHeight = doc.internal.pageSize.getHeight(); // ~595pt
 
+    // Centered title
+    doc.setFontSize(14);
+    doc.setFont(undefined, "bold");
+    doc.text("New G.P. Receipt Record List", pageWidth / 2, 20, {
+      align: "center",
+    });
+
+    // Column headers with line breaks for better fit
     const head = [
       [
-        "Sr No",
-        "Account Receipt Note No",
+        "Sr\nNo",
+        "Account\nReceipt\nNote No",
         "Date",
-        "SIN No",
+        "SIN\nNo",
         "Consignee",
-        "Discom Receipt Note No",
+        "Discom\nReceipt\nNote No",
         "Date",
-        "TRF SI No",
-        "Original Tfr. Sr. No.",
-        "Discom Tfr. Sr. No.",
+        "TRF\nSI No",
+        "Original\nTfr. Sr.\nNo.",
+        "Discom\nTfr. Sr.\nNo.",
         "Rating",
         "Wound",
         "Phase",
-        "Poly Seal No",
-        "Seal No (Received)",
-        "Date Of Supply",
+        "Poly\nSeal\nNo",
+        "Seal No\n(Received)",
+        "Date Of\nSupply",
         "Remarks",
       ],
     ];
 
     const body = filteredGPReceiptRecords.map((item, index) => [
       index + 1,
-      item.accountReceiptNoteNo,
-      item.accountReceiptNoteDate,
-      item.sinNo,
-      item.consigneeName,
-      item.discomReceiptNoteNo,
-      item.discomReceiptNoteDate,
-      item.trfsiNo,
-      item.originalTfrSrNo,
-      item.consigneeTFRSerialNo,
-      item.rating,
-      item.deliveryChalanDetails?.finalInspectionDetail?.deliverySchedule?.wound || "",
-      item.deliveryChalanDetails?.finalInspectionDetail?.deliverySchedule?.phase || "",
-      item.polySealNo,
-      item.sealNoTimeOfGPReceived,
-      item.deliveryChalanDetails.createdAt,
-      item.remarks,
+      item.accountReceiptNoteNo || "",
+      item.accountReceiptNoteDate || "",
+      item.sinNo || "",
+      item.consigneeName || "",
+      item.discomReceiptNoteNo || "",
+      item.discomReceiptNoteDate || "",
+      item.trfsiNo || "",
+      item.originalTfrSrNo || "",
+      item.consigneeTFRSerialNo || "",
+      item.rating || "",
+      item.deliveryChalanDetails?.finalInspectionDetail?.deliverySchedule
+        ?.wound || "",
+      item.deliveryChalanDetails?.finalInspectionDetail?.deliverySchedule
+        ?.phase || "",
+      item.polySealNo || "",
+      item.sealNoTimeOfGPReceived || "",
+      item.deliveryChalanDetails?.createdAt || "",
+      item.remarks || "",
     ]);
 
+    // Adjusted column widths to fit all 17 columns in landscape A4 (~842pt width)
+    // Total available width: ~842 - 30 (margins) = ~812pt
+    const columnStyles = {
+      0: { cellWidth: 28 }, // Sr No
+      1: { cellWidth: 52 }, // Account Receipt Note No
+      2: { cellWidth: 42 }, // Date
+      3: { cellWidth: 38 }, // SIN No
+      4: { cellWidth: 55 }, // Consignee
+      5: { cellWidth: 52 }, // Discom Receipt Note No
+      6: { cellWidth: 42 }, // Date
+      7: { cellWidth: 38 }, // TRF SI No
+      8: { cellWidth: 50 }, // Original Tfr. Sr. No.
+      9: { cellWidth: 50 }, // Discom Tfr. Sr. No.
+      10: { cellWidth: 35 }, // Rating
+      11: { cellWidth: 40 }, // Wound
+      12: { cellWidth: 40 }, // Phase
+      13: { cellWidth: 38 }, // Poly Seal No
+      14: { cellWidth: 45 }, // Seal No (Received)
+      15: { cellWidth: 45 }, // Date Of Supply
+      16: { cellWidth: 52 }, // Remarks
+    };
+
+    const totalTableWidth = Object.values(columnStyles).reduce(
+      (sum, col) => sum + (col.cellWidth || 0),
+      0
+    );
+
+    const horizontalMargin = Math.max((pageWidth - totalTableWidth) / 2, 10);
+
     autoTable(doc, {
-      head: head,
-      body: body,
-      startY: 20,
+      head,
+      body,
+      startY: 30,
+      theme: "grid",
+
       styles: {
-        fontSize: 5,
-        cellPadding: 2,
+        fontSize: 6.5,
+        cellPadding: 1.5,
+        lineColor: [0, 0, 0],
+        lineWidth: 0.5,
+        valign: "middle",
+        halign: "center",
+        overflow: "linebreak",
       },
+
       headStyles: {
-        fillColor: [41, 128, 185],
-        fontSize: 5,
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontSize: 6.5,
+        fontStyle: "bold",
+        minCellHeight: 22,
       },
+
+      columnStyles,
+
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+
+      // ✅ PERFECT CENTERING
+      margin: {
+        top: 30,
+        bottom: 25,
+        left: horizontalMargin,
+        right: horizontalMargin,
+      },
+
+      tableWidth: totalTableWidth,
+      showHead: "everyPage",
     });
 
     // Open print dialog
     doc.autoPrint();
-    doc.output("dataurlnewwindow"); // This will open the document and the print dialog
+    doc.output("dataurlnewwindow");
   };
 
   useEffect(() => {

@@ -17,6 +17,7 @@ import dayjs from "dayjs";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 
 dayjs.extend(isSameOrBefore);
+
 import {
   companies,
   deliverySchedules,
@@ -343,9 +344,7 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
         (item) =>
           item.companyName?.toLowerCase().includes(lowercasedQuery) ||
           item.discom?.toLowerCase().includes(lowercasedQuery) ||
-          item.deliverySchedule?.rating
-            ?.toLowerCase()
-            .includes(lowercasedQuery)
+          item.deliverySchedule?.rating?.toLowerCase().includes(lowercasedQuery)
       );
     }
 
@@ -496,9 +495,12 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
     XLSX.writeFile(workbook, `${sheetName}.xlsx`);
   };
 
-  // ✅ Export PDF
+  // ✅ Export PDF (LANDSCAPE)
   const exportPDF = () => {
-    const doc = new jsPDF();
+    // ✅ Landscape A4
+    const doc = new jsPDF("l", "pt", "a4");
+
+    const pageWidth = doc.internal.pageSize.getWidth();
 
     let title = "Information of new G.P. transformers";
     if (selectedCompany !== "all") {
@@ -508,30 +510,37 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
       title += ` - Discom: ${selectedDiscom}`;
     }
 
-    doc.text(title, 14, 10);
+    // ✅ Centered title
+    doc.setFontSize(11);
+    doc.text(title, pageWidth / 2, 20, { align: "center" });
 
-    // Step 1: Prepare data with inspection officers
+    // Step 1: Prepare data
     const pdfData = filteredData.map((item, index) => ({
       "S.No": index + 1,
-      "Company Name": item.companyName,
-      Discom: item.discom,
-      Rating: item.deliverySchedule.rating,
-      Phase: item.deliverySchedule.phase,
-      Wound: item.deliverySchedule.wound,
-      "Total Qty Supplied (New) Till Date": item.totalSuppliedNewTillDate,
+      "Company Name": item.companyName || "",
+      Discom: item.discom || "",
+      Rating: item.deliverySchedule?.rating || "",
+      Phase: item.deliverySchedule?.phase || "",
+      Wound: item.deliverySchedule?.wound || "",
+      "Total Qty Supplied (New) Till Date": item.totalSuppliedNewTillDate ?? 0,
       "Total Qty Received Under G.P. Till Date":
-        item.totalReceivedUnderGPTillDate,
-      "Total Qty Inspected Till Date": item.totalInspectedTillDate,
-      "Total Qty Dispatched Till Date": item.totalDispatchedTillDate,
+        item.totalReceivedUnderGPTillDate ?? 0,
+      "Total Qty Inspected Till Date": item.totalInspectedTillDate ?? 0,
+      "Total Qty Dispatched Till Date": item.totalDispatchedTillDate ?? 0,
       "Total Qty Pending Including Inspected":
-        item.totalPendingIncludingInspected,
-      "Inspected But Not Dispatched": item.inspectedButNotDispatched,
+        item.totalPendingIncludingInspected ?? 0,
+      "Inspected But Not Dispatched": item.inspectedButNotDispatched ?? 0,
     }));
 
-    // Step 2: Find non-empty columns
+    // Step 2: Find non-empty columns (0 should be allowed)
     const allKeys = Object.keys(pdfData[0] || {});
     const nonEmptyKeys = allKeys.filter((key) =>
-      pdfData.some((row) => row[key] && row[key].toString().trim() !== "")
+      pdfData.some(
+        (row) =>
+          row[key] !== null &&
+          row[key] !== undefined &&
+          row[key].toString().trim() !== ""
+      )
     );
 
     // Step 3: Create head & body dynamically
@@ -541,21 +550,33 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
     autoTable(doc, {
       head,
       body,
-      startY: 20,
+      startY: 35,
+
       styles: {
-        fontSize: 6,
-        cellPadding: 1.5,
+        fontSize: 7,
+        cellPadding: 2,
+        halign: "center",
+        valign: "middle",
       },
+
       headStyles: {
         fillColor: [41, 128, 185],
         textColor: 255,
         fontSize: 7,
+        halign: "center",
       },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
+
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+
+      margin: { left: 20, right: 20 },
+
+      showHead: "everyPage",
     });
 
     // Step 5: Save
-    doc.save("Information of new G.P. transformers.pdf");
+    doc.save("Information_of_new_GP_transformers.pdf");
   };
 
   const handleResetFilters = () => {
@@ -602,8 +623,6 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
             ))}
           </TextField>
         </Grid>
-
-
 
         {/* Search */}
         <Grid item xs={12} md={3}>

@@ -30,7 +30,7 @@ const FiltersComponent = ({
   onExportPDF = true,
   onExportExcel = true,
   sheetName = "FinalInspection",
-  pdfTitle = "Final Inspection Report",
+  pdfTitle,
 }) => {
   const [selectedCompany, setSelectedCompany] = useState("all");
   const [selectedDiscom, setSelectedDiscom] = useState("all");
@@ -145,8 +145,8 @@ const FiltersComponent = ({
           ? `${dueOthers}`
           : "";
 
-      const consignees = item.consignees && item.consignees.length > 0 ? item.consignees : [{}];
-
+      const consignees =
+        item.consignees && item.consignees.length > 0 ? item.consignees : [{}];
 
       // 👉 Build one row per consignee
       consignees.forEach((c, cIdx) => {
@@ -175,7 +175,7 @@ const FiltersComponent = ({
             cIdx === 0 && item.diDate
               ? dayjs(item.diDate).format("DD MMM YYYY")
               : "",
-          "Due Date of Delivery": cIdx === 0 ? dueDateMerged : "",
+          // "Due Date of Delivery": cIdx === 0 ? dueDateMerged : "",
           Inspector:
             item.inspectionOfficers && item.inspectionOfficers[cIdx]
               ? item.inspectionOfficers[cIdx]
@@ -184,7 +184,8 @@ const FiltersComponent = ({
           Consignee: c.consignee?.name || "",
           "SR No.": c.subSnNumber || "",
           Qty: c.quantity || "",
-          Dispatch: c.dispatch || 0,
+          Dispatch:
+            c?.dispatch === null || c?.dispatch === undefined ? "" : c.dispatch,
           Pending: c.pending || "",
         });
       });
@@ -365,10 +366,10 @@ const FiltersComponent = ({
 
   // ✅ Export PDF (row-wise expansion like Excel)
   const exportPDFForDiReceived = () => {
-    const doc = new jsPDF("p", "pt", "a4"); 
+    const doc = new jsPDF("p", "pt", "a4");
 
     doc.setFontSize(11);
-    doc.text("Final Inspection Report", 14, 10);
+    doc.text(pdfTitle, 14, 10);
 
     let pdfData = [];
 
@@ -442,12 +443,14 @@ const FiltersComponent = ({
             cIdx === 0 && item.diDate
               ? dayjs(item.diDate).format("DD MMM YYYY")
               : "",
-          "Due Date of Delivery": cIdx === 0 ? dueDateMerged : "",
+          //"Due Date of Delivery": cIdx === 0 ? dueDateMerged : "",*/}
 
           Consignee: c?.consignee?.name || "",
           "SR No.": c?.subSnNumber || "",
           Qty: c?.quantity || "",
-          Dispath: c?.dispatch ?? 0,
+          Dispatch:
+            c?.dispatch === null || c?.dispatch === undefined ? "" : c.dispatch,
+
           Pending: c?.pending || "",
         });
       });
@@ -455,8 +458,17 @@ const FiltersComponent = ({
 
     // Step 2: Find non-empty columns
     const allKeys = Object.keys(pdfData[0] || {});
-    const nonEmptyKeys = allKeys.filter((key) =>
-      pdfData.some((row) => row[key] && row[key].toString().trim() !== "")
+    const forceColumns = ["Dispatch"];
+
+    const nonEmptyKeys = allKeys.filter(
+      (key) =>
+        forceColumns.includes(key) ||
+        pdfData.some(
+          (row) =>
+            row[key] !== null &&
+            row[key] !== undefined &&
+            row[key].toString().trim() !== ""
+        )
     );
 
     // Step 3: Create head & body dynamically

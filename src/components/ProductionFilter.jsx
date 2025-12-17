@@ -183,73 +183,154 @@ const ProductionFilter = ({ onFilteredData, data }) => {
   };
 
   const exportPDF = (withSummary = false) => {
-    const doc = new jsPDF("p", "pt", "a4"); // landscape mode for more width
+    // Use landscape orientation to fit all columns like the uploaded PDF
+    const doc = new jsPDF("l", "pt", "a4"); // 'l' = landscape mode
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
     // Title
-    doc.setFontSize(16);
-    doc.text("Production Planning Report", 40, 40);
-
-    // ✅ If summary added by user
-    let tableStartY = 70; // default Y position for the table
-    if (withSummary && pdfSummary.trim() !== "") {
-      doc.setFontSize(11);
-
-      // Wrap summary text properly for long lines
-      const splitSummary = doc.splitTextToSize(pdfSummary, 1000); // wrap text width ~1000px
-      doc.text(`Summary:`, 40, 70);
-      doc.text(splitSummary, 110, 70); // start right after “Summary:”
-
-      // Adjust Y start for table based on how long summary is
-      tableStartY = 70 + splitSummary.length * 15;
-    }
-
-    // Step 1: Prepare data
-    const pdfData = filteredData.map((item, index) => ({
-      "S.No": index + 1,
-      "Firm Name": item.companyName || "",
-      Discom: item.discom || "",
-      "TN No.": item.deliverySchedule?.tnNumber || "",
-      Rating: item.deliverySchedule?.rating || "",
-      Phase: item.deliverySchedule?.phase || "",
-      Wound: item.deliverySchedule?.wound || "Copper",
-      Status: item.deliverySchedule?.status || "",
-      "Schedule Date": item.deliverySchedule?.scheduleDate
-        ? dayjs(item.deliverySchedule.scheduleDate).format("DD MMM YYYY")
-        : "",
-      "Total Order Qty": item.deliverySchedule?.totalOrderQuantity || "",
-      "Qty/Month In Schedule": item.quantityPerMonthInSchedule || "",
-      "Supply Due In Current(Month)": item.totalSupplyDueInCurrentMonth || "",
-      "Offered Ins. Total": item.offeredForInspectionTotal || "",
-      "Final Ins. Total": item.finalInspectionTotal || "",
-      "Actual Supplied Total": item.actualSuppliedTotal || "",
-      "Balance due to be Insp. Current month":
-        item.balanceDueToBeInspectedInCurrentMonth || "",
-      "Balance Pending": item.balancePending || "",
-      "Tfr Sr. No.": item.snNumber || "",
-      "Planned For Month": item.plannedForMonth || "",
-    }));
-
-    const head = [Object.keys(pdfData[0] || {})];
-    const body = pdfData.map((row) => Object.values(row));
-
-    // ✅ Step 2: Place table below summary dynamically
-    autoTable(doc, {
-      head,
-      body,
-      startY: tableStartY,
-      styles: {
-        fontSize: 6,
-        cellPadding: 1.5,
-      },
-      headStyles: {
-        fillColor: [41, 128, 185],
-        textColor: 255,
-        fontSize: 6,
-      },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
+    doc.setFontSize(14);
+    doc.setFont(undefined, "bold");
+    doc.text("Production Planning Report", pageWidth / 2, 30, {
+      align: "center",
     });
 
-    // ✅ Step 3: Save and reset modal
+    // Handle Summary if present
+    let tableStartY = 50;
+    if (withSummary && pdfSummary.trim() !== "") {
+      doc.setFontSize(9);
+      doc.setFont(undefined, "normal");
+
+      const summaryText = `Summary: ${pdfSummary}`;
+      const splitSummary = doc.splitTextToSize(summaryText, pageWidth - 80);
+      doc.text(splitSummary, 40, 50);
+
+      tableStartY = 50 + splitSummary.length * 12 + 10;
+    }
+
+    // Prepare data matching the uploaded PDF structure
+    const pdfData = filteredData.map((item, index) => [
+      index + 1, // S.No
+      item.companyName || "",
+      item.discom || "",
+      item.deliverySchedule?.tnNumber || "",
+      item.deliverySchedule?.rating || "",
+      item.deliverySchedule?.phase || "",
+      item.deliverySchedule?.wound || "Copper",
+      item.deliverySchedule?.status || "",
+      item.deliverySchedule?.scheduleDate
+        ? dayjs(item.deliverySchedule.scheduleDate).format("DD MMM YYYY")
+        : "",
+      item.deliverySchedule?.totalOrderQuantity || "",
+      item.quantityPerMonthInSchedule || "",
+      item.totalSupplyDueInCurrentMonth || "",
+      item.offeredForInspectionTotal || "",
+      item.finalInspectionTotal || "",
+      item.actualSuppliedTotal || "",
+      item.balanceDueToBeInspectedInCurrentMonth || "",
+      item.balancePending || "",
+      item.snNumber || "",
+      item.plannedForMonth || "",
+    ]);
+
+    // Column headers matching the uploaded PDF exactly
+    const headers = [
+      "S.No",
+      "Firm Name",
+      "Discom",
+      "TN No.",
+      "Rating",
+      "Phase",
+      "Wound",
+      "Status",
+      "Schedule Date",
+      "Total\nOrder\nQty",
+      "Qty\nPer\nMonth\nIn\nSchedule",
+      "Total\nSupply\nDue In\nCurrent\nMonth",
+      "Offered\nFor Ins\nTotal",
+      "Final\nIns.\nTotal",
+      "Actual\nSupplied\nTotal",
+      "Balance\nDue To Be\nIns.\nDuring\nCurrent\nMonth",
+      "Balance\nPending",
+      "Tfr Sr. No.",
+      "Planned\nFor\nMonth",
+    ];
+
+    // Custom column widths to match the uploaded PDF layout
+    const columnStyles = {
+      0: { cellWidth: 30 }, // S.No
+      1: { cellWidth: 65 }, // Firm Name
+      2: { cellWidth: 40 }, // Discom
+      3: { cellWidth: 40 }, // TN No.
+      4: { cellWidth: 35 }, // Rating
+      5: { cellWidth: 50 }, // Phase
+      6: { cellWidth: 40 }, // Wound
+      7: { cellWidth: 45 }, // Status
+      8: { cellWidth: 55 }, // Schedule Date
+      9: { cellWidth: 35 }, // Total Order Qty
+      10: { cellWidth: 35 }, // Qty Per Month
+      11: { cellWidth: 40 }, // Supply Due
+      12: { cellWidth: 35 }, // Offered Ins
+      13: { cellWidth: 35 }, // Final Ins
+      14: { cellWidth: 35 }, // Actual Supplied
+      15: { cellWidth: 40 }, // Balance Due Ins
+      16: { cellWidth: 35 }, // Balance Pending
+      17: { cellWidth: 55 }, // Tfr Sr. No.
+      18: { cellWidth: 40 }, // Planned For Month
+    };
+
+    autoTable(doc, {
+      head: [headers],
+      body: pdfData,
+      startY: tableStartY,
+      theme: "grid",
+      styles: {
+        fontSize: 7,
+        cellPadding: 2,
+        lineColor: [0, 0, 0],
+        lineWidth: 0.5,
+        valign: "middle",
+        halign: "center",
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontSize: 7,
+        fontStyle: "bold",
+        lineColor: [0, 0, 0],
+        lineWidth: 0.5,
+        halign: "center",
+        valign: "middle",
+        minCellHeight: 25,
+      },
+      bodyStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.5,
+      },
+      columnStyles: columnStyles,
+      alternateRowStyles: {
+        fillColor: [255, 255, 255], // No alternating colors like the uploaded PDF
+      },
+      margin: { top: 40, right: 20, bottom: 30, left: 20 },
+      didDrawPage: function (data) {
+        // Add page numbers at the bottom
+        const pageCount = doc.internal.getNumberOfPages();
+        doc.setFontSize(8);
+        doc.text(
+          `Page ${
+            doc.internal.getCurrentPageInfo().pageNumber
+          } of ${pageCount}`,
+          pageWidth / 2,
+          pageHeight - 15,
+          { align: "center" }
+        );
+      },
+    });
+
+    // Save the PDF
     doc.save("ProductionPlanning.pdf");
     setOpenSummaryModal(false);
     setPdfSummary("");
@@ -427,7 +508,8 @@ const ProductionFilter = ({ onFilteredData, data }) => {
                 ml: 1,
               }}
             >
-              {"  "}{exportType}
+              {"  "}
+              {exportType}
             </Typography>
           </div>
 

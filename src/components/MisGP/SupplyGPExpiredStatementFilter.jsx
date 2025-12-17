@@ -79,6 +79,7 @@ const SupplyGPExpiredStatementFilter = ({ onFilteredData, data }) => {
     // Step 1: Prepare data same as PDF
     const excelData = filteredData.map((item, index) => ({
       "S.No": index + 1,
+      "FirmName" : item.companyName,
       "Tn No": item.deliverySchedule.tnNumber,
       Rating: item.deliverySchedule.rating,
       Phase: item.deliverySchedule.phase,
@@ -124,6 +125,7 @@ const SupplyGPExpiredStatementFilter = ({ onFilteredData, data }) => {
     // Step 1: Prepare data with inspection officers
     const pdfData = filteredData.map((item, index) => ({
       "S.No": index + 1,
+      "FirmName" : item.companyName,
       "Tn No": item.deliverySchedule.tnNumber,
       Rating: item.deliverySchedule.rating,
       Phase: item.deliverySchedule.phase,

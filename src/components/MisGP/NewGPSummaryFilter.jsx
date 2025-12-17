@@ -149,7 +149,7 @@ const NewGPSummaryFilter = ({ onFilteredData, data }) => {
 
   // ✅ Export PDF (Compact A4 Layout)
   const exportPDF = () => {
-    const doc = new jsPDF("p", "pt", "a4"); // ⬅️ Landscape A4
+    const doc = new jsPDF("l", "pt", "a4"); // ⬅️ Landscape A4
 
     doc.setFontSize(11);
     doc.text("New GP Summary Report", 40, 30);
