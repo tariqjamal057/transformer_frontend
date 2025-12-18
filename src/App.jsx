@@ -163,6 +163,7 @@ function App() {
         
 
         <div className={`content ${isHideSidebarAndHeader === true && 'full'} ${isToggleSidebar === true ? 'toggle':''}`}>
+          
           <Routes>
             <Route exact path = "/login" element={<Login/>} />
             <Route exact path="/signup" element={<PrivateRoute element={<Signup />} allowedRoles={["superadmin"]}/>}/>
