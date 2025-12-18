@@ -54,7 +54,7 @@ const Login = () => {
 
   {/*const handleSubmit = (e) => {
     e.preventDefault();
-    const data = { name, loginId, password };
+    const data = { name, loginId, password }
     console.log("Login data", data);
     navigate("/companies")
   };*/}
