@@ -79,7 +79,7 @@ const SupplyGPExpiredStatementFilter = ({ onFilteredData, data }) => {
     // Step 1: Prepare data same as PDF
     const excelData = filteredData.map((item, index) => ({
       "S.No": index + 1,
-      "FirmName" : item.companyName,
+      FirmName: item.companyName,
       "Tn No": item.deliverySchedule.tnNumber,
       Rating: item.deliverySchedule.rating,
       Phase: item.deliverySchedule.phase,
@@ -116,47 +116,153 @@ const SupplyGPExpiredStatementFilter = ({ onFilteredData, data }) => {
     XLSX.writeFile(workbook, `${sheetName}.xlsx`);
   };
 
-  // ✅ Export PDF
+  // ✅ Export PDF 
   const exportPDF = () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF("l", "pt", "a4"); // Landscape A4
 
-    doc.text("Supply G.P. Expired Statement", 14, 10);
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Step 1: Prepare data with inspection officers
-    const pdfData = filteredData.map((item, index) => ({
-      "S.No": index + 1,
-      "FirmName" : item.companyName,
-      "Tn No": item.deliverySchedule.tnNumber,
-      Rating: item.deliverySchedule.rating,
-      Phase: item.deliverySchedule.phase,
-      Wound: item.deliverySchedule.wound,
-      "G.P. Tiers received up to date": item.totalReceivedUnderGPTillDate,
-      "Qty Balance": item.qtyBalance,
-      "Last GP Supply Expiry Date": item.lastGPSupplyExpiryDate,
-    }));
-
-    // Step 2: Find non-empty columns
-    const allKeys = Object.keys(pdfData[0] || {});
-    const nonEmptyKeys = allKeys.filter((key) =>
-      pdfData.some((row) => row[key] && row[key].toString().trim() !== "")
-    );
-
-    // Step 3: Create head & body dynamically
-    const head = [nonEmptyKeys];
-    const body = pdfData.map((row) => nonEmptyKeys.map((key) => row[key]));
-
-    // Step 4: Generate table
-    autoTable(doc, {
-      head,
-      body,
-      startY: 20,
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: [41, 128, 185] }, // blue header
-      alternateRowStyles: { fillColor: [245, 245, 245] },
+    // ✅ Centered title
+    doc.setFontSize(14);
+    doc.setFont(undefined, "bold");
+    doc.text("Supply G.P. Expired Statement", pageWidth / 2, 25, {
+      align: "center",
     });
 
-    // Step 5: Save
-    doc.save("Supply G.P. Expired Statement.pdf");
+    // Step 1: Prepare data as array
+    const pdfData = filteredData.map((item, index) => [
+      index + 1, // S.No
+      item.companyName || "",
+      item.deliverySchedule?.tnNumber || "",
+      item.deliverySchedule?.rating || "",
+      item.deliverySchedule?.phase || "",
+      item.deliverySchedule?.wound || "",
+      item.totalReceivedUnderGPTillDate ?? 0,
+      item.qtyBalance ?? 0,
+      item.lastGPSupplyExpiryDate || "",
+    ]);
+
+    // Column headers
+    const headers = [
+      "S.No",
+      "Firm Name",
+      "Tn No",
+      "Rating",
+      "Phase",
+      "Wound",
+      "G.P. Tiers\nreceived up\nto date",
+      "Qty\nBalance",
+      "Last GP Supply\nExpiry Date",
+    ];
+
+    // Filter out columns with no data
+    const hasDataInColumn = (colIndex) => {
+      return pdfData.some((row) => {
+        const value = row[colIndex];
+        return (
+          value !== null &&
+          value !== undefined &&
+          value.toString().trim() !== ""
+        );
+      });
+    };
+
+    const filteredHeaders = [];
+    const filteredColumnIndices = [];
+
+    headers.forEach((header, index) => {
+      if (hasDataInColumn(index)) {
+        filteredHeaders.push(header);
+        filteredColumnIndices.push(index);
+      }
+    });
+
+    const filteredBody = pdfData.map((row) =>
+      filteredColumnIndices.map((index) => row[index])
+    );
+
+    // Custom column widths
+    const getColumnStyles = () => {
+      const styles = {};
+      const baseWidths = {
+        0: 40, // S.No
+        1: 120, // Firm Name
+        2: 70, // Tn No
+        3: 60, // Rating
+        4: 80, // Phase
+        5: 70, // Wound
+        6: 80, // GP Tiers received
+        7: 70, // Qty Balance
+        8: 100, // Last GP Supply Expiry Date
+      };
+
+      let totalTableWidth = 0;
+
+      filteredColumnIndices.forEach((originalIndex, newIndex) => {
+        const width = baseWidths[originalIndex];
+        styles[newIndex] = { cellWidth: width };
+        totalTableWidth += width;
+      });
+
+      return { styles, totalTableWidth };
+    };
+
+    const { styles: columnStyles, totalTableWidth } = getColumnStyles();
+
+    const horizontalMargin = Math.max((pageWidth - totalTableWidth) / 2, 10);
+
+    autoTable(doc, {
+      head: [filteredHeaders],
+      body: filteredBody,
+      startY: 40,
+      theme: "grid",
+
+      styles: {
+        fontSize: 7,
+        cellPadding: 2,
+        halign: "center",
+        valign: "middle",
+        overflow: "linebreak",
+        lineColor: [0, 0, 0],
+        lineWidth: 0.5,
+      },
+
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontSize: 7,
+        fontStyle: "bold",
+        minCellHeight: 25,
+      },
+
+      columnStyles,
+
+      margin: {
+        top: 40,
+        bottom: 25,
+        left: horizontalMargin,
+        right: horizontalMargin,
+      },
+
+      tableWidth: totalTableWidth,
+      showHead: "everyPage",
+      didDrawPage: function (data) {
+        const pageCount = doc.internal.getNumberOfPages();
+        doc.setFontSize(8);
+        doc.setFont(undefined, "normal");
+        doc.text(
+          `Page ${
+            doc.internal.getCurrentPageInfo().pageNumber
+          } of ${pageCount}`,
+          pageWidth / 2,
+          pageHeight - 12,
+          { align: "center" }
+        );
+      },
+    });
+
+    doc.save("Supply_GP_Expired_Statement.pdf");
   };
 
   return (

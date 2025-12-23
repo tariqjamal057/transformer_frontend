@@ -317,59 +317,172 @@ const FiltersComponent = ({
 
   // ✅ Export PDF
   const exportPDF = () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF("l", "pt", "a4"); // Landscape A4
 
-    doc.text(pdfTitle, 14, 10);
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Step 1: Prepare data with inspection officers
-    const pdfData = filteredData.map((item, index) => ({
-      "S.No": index + 1,
-      "Offered Date": item.offeredDate || "",
-      "Firm Name": item.companyName || "",
-      discom: item.discom || "",
-      "TN No.": item.deliverySchedule?.tnNumber || "",
-      "Material Name": `${item.deliverySchedule?.rating || ""} KVA ${
+    // ✅ Centered title
+    doc.setFontSize(14);
+    doc.setFont(undefined, "bold");
+    doc.text(pdfTitle, pageWidth / 2, 25, { align: "center" });
+
+    // Step 1: Prepare data as array
+    const pdfData = filteredData.map((item, index) => [
+      index + 1, // S.No
+      item.offeredDate ? dayjs(item.offeredDate).format("DD MMM YYYY") : "",
+      item.companyName || "",
+      item.discom || "",
+      item.deliverySchedule?.tnNumber || "",
+      `${item.deliverySchedule?.rating || ""} KVA ${
         item.deliverySchedule?.phase || ""
       }`,
-      "Tfr.Serial No.": item.snNumber || "",
-      "Offered Qty": item.offeredQuantity || "",
-      "Inspection Officers": item.inspectionOfficers?.length
-        ? item.inspectionOfficers.join(", ")
+      item.snNumber || "",
+      item.offeredQuantity || 0,
+      item.inspectionOfficers?.length ? item.inspectionOfficers.join(", ") : "",
+      item.inspectionDate
+        ? dayjs(item.inspectionDate).format("DD MMM YYYY")
         : "",
-      "Date Of Inspection": item.inspectionDate || "",
-      "Inspected Qty.": item.inspectedQuantity || "",
-    }));
+      item.inspectedQuantity || 0,
+    ]);
 
-    // Step 2: Find non-empty columns
-    const allKeys = Object.keys(pdfData[0] || {});
-    const nonEmptyKeys = allKeys.filter((key) =>
-      pdfData.some((row) => row[key] && row[key].toString().trim() !== "")
-    );
+    // Column headers
+    const headers = [
+      "S.No",
+      "Offered\nDate",
+      "Firm Name",
+      "Discom",
+      "TN No.",
+      "Material\nName",
+      "Tfr.Serial\nNo.",
+      "Offered\nQty",
+      "Inspection\nOfficers",
+      "Date Of\nInspection",
+      "Inspected\nQty.",
+    ];
 
-    // Step 3: Create head & body dynamically
-    const head = [nonEmptyKeys];
-    const body = pdfData.map((row) => nonEmptyKeys.map((key) => row[key]));
+    // Filter out columns with no data
+    const hasDataInColumn = (colIndex) => {
+      return pdfData.some((row) => {
+        const value = row[colIndex];
+        return (
+          value !== null &&
+          value !== undefined &&
+          value.toString().trim() !== ""
+        );
+      });
+    };
 
-    // Step 4: Generate table
-    autoTable(doc, {
-      head,
-      body,
-      startY: 20,
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: [41, 128, 185] }, // blue header
-      alternateRowStyles: { fillColor: [245, 245, 245] },
+    const filteredHeaders = [];
+    const filteredColumnIndices = [];
+
+    headers.forEach((header, index) => {
+      if (hasDataInColumn(index)) {
+        filteredHeaders.push(header);
+        filteredColumnIndices.push(index);
+      }
     });
 
-    // Step 5: Save
+    const filteredBody = pdfData.map((row) =>
+      filteredColumnIndices.map((index) => row[index])
+    );
+
+    // Custom column widths
+    const getColumnStyles = () => {
+      const styles = {};
+      const baseWidths = {
+        0: 35, // S.No
+        1: 60, // Offered Date
+        2: 100, // Firm Name
+        3: 60, // Discom
+        4: 60, // TN No.
+        5: 80, // Material Name
+        6: 70, // Tfr Serial No
+        7: 50, // Offered Qty
+        8: 120, // Inspection Officers
+        9: 70, // Date Of Inspection
+        10: 60, // Inspected Qty
+      };
+
+      let totalTableWidth = 0;
+
+      filteredColumnIndices.forEach((originalIndex, newIndex) => {
+        const width = baseWidths[originalIndex];
+        styles[newIndex] = { cellWidth: width };
+        totalTableWidth += width;
+      });
+
+      return { styles, totalTableWidth };
+    };
+
+    const { styles: columnStyles, totalTableWidth } = getColumnStyles();
+
+    const horizontalMargin = Math.max((pageWidth - totalTableWidth) / 2, 10);
+
+    autoTable(doc, {
+      head: [filteredHeaders],
+      body: filteredBody,
+      startY: 40,
+      theme: "grid",
+
+      styles: {
+        fontSize: 7,
+        cellPadding: 2,
+        halign: "center",
+        valign: "middle",
+        overflow: "linebreak",
+        lineColor: [0, 0, 0],
+        lineWidth: 0.5,
+      },
+
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontSize: 7,
+        fontStyle: "bold",
+        minCellHeight: 25,
+      },
+
+      columnStyles,
+
+      margin: {
+        top: 40,
+        bottom: 25,
+        left: horizontalMargin,
+        right: horizontalMargin,
+      },
+
+      tableWidth: totalTableWidth,
+      showHead: "everyPage",
+      didDrawPage: function (data) {
+        const pageCount = doc.internal.getNumberOfPages();
+        doc.setFontSize(8);
+        doc.setFont(undefined, "normal");
+        doc.text(
+          `Page ${
+            doc.internal.getCurrentPageInfo().pageNumber
+          } of ${pageCount}`,
+          pageWidth / 2,
+          pageHeight - 12,
+          { align: "center" }
+        );
+      },
+    });
+
     doc.save(`${sheetName}.pdf`);
   };
 
-  // ✅ Export PDF (row-wise expansion like Excel)
+  // ✅ Export PDF - DI Received (Table Format with Row Expansion)
   const exportPDFForDiReceived = () => {
-    const doc = new jsPDF("p", "pt", "a4");
+    const doc = new jsPDF("l", "pt", "a4"); // Landscape A4
 
-    doc.setFontSize(11);
-    doc.text(pdfTitle, 14, 10);
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    // ✅ Centered title
+    doc.setFontSize(14);
+    doc.setFont(undefined, "bold");
+    doc.text(pdfTitle, pageWidth / 2, 25, { align: "center" });
 
     let pdfData = [];
 
@@ -412,89 +525,191 @@ const FiltersComponent = ({
 
       // 👉 Build one row per consignee
       (item.consignees || [{}]).forEach((c, cIdx) => {
-        pdfData.push({
-          "S.No": cIdx === 0 ? index + 1 : "",
-          "Offered Date":
-            cIdx === 0 && item.offeredDate
-              ? dayjs(item.offeredDate).format("DD MMM YYYY")
-              : "",
-          "Firm Name": cIdx === 0 ? item.companyName : "",
-          Discom: cIdx === 0 ? item.discom : "",
-          "TN No.": cIdx === 0 ? item.deliverySchedule?.tnNumber : "",
-          Material:
-            cIdx === 0
-              ? `${item.deliverySchedule?.rating || ""} KVA ${
-                  item.deliverySchedule?.phase || ""
-                }`
-              : "",
-          "TFR Serail No": cIdx === 0 ? item.snNumber : "",
-          "Offered Qty": cIdx === 0 ? item.offeredQuantity : "",
-          Inspectors:
-            item.inspectionOfficers && item.inspectionOfficers[cIdx]
-              ? item.inspectionOfficers[cIdx]
-              : "",
-          "Inspection Date":
-            cIdx === 0 && item.inspectionDate
-              ? dayjs(item.inspectionDate).format("DD MMM YYYY")
-              : "",
-          "Inspected Qty": cIdx === 0 ? item.inspectedQuantity : "",
-          "DI No.": cIdx === 0 ? item.diNo : "",
-          "DI Date":
-            cIdx === 0 && item.diDate
-              ? dayjs(item.diDate).format("DD MMM YYYY")
-              : "",
-          //"Due Date of Delivery": cIdx === 0 ? dueDateMerged : "",*/}
-
-          Consignee: c?.consignee?.name || "",
-          "SR No.": c?.subSnNumber || "",
-          Qty: c?.quantity || "",
-          Dispatch:
-            c?.dispatch === null || c?.dispatch === undefined ? "" : c.dispatch,
-
-          Pending: c?.pending || "",
-        });
+        pdfData.push([
+          cIdx === 0 ? index + 1 : "", // S.No
+          cIdx === 0 && item.offeredDate
+            ? dayjs(item.offeredDate).format("DD MMM YYYY")
+            : "",
+          cIdx === 0 ? item.companyName : "",
+          cIdx === 0 ? item.discom : "",
+          cIdx === 0 ? item.deliverySchedule?.tnNumber : "",
+          cIdx === 0
+            ? `${item.deliverySchedule?.rating || ""} KVA ${
+                item.deliverySchedule?.phase || ""
+              }`
+            : "",
+          cIdx === 0 ? item.snNumber : "",
+          cIdx === 0 ? item.offeredQuantity : "",
+          item.inspectionOfficers && item.inspectionOfficers[cIdx]
+            ? item.inspectionOfficers[cIdx]
+            : "",
+          cIdx === 0 && item.inspectionDate
+            ? dayjs(item.inspectionDate).format("DD MMM YYYY")
+            : "",
+          cIdx === 0 ? item.inspectedQuantity : "",
+          cIdx === 0 ? item.diNo : "",
+          cIdx === 0 && item.diDate
+            ? dayjs(item.diDate).format("DD MMM YYYY")
+            : "",
+          c?.consignee?.name || "",
+          c?.subSnNumber || "",
+          c?.quantity || "",
+          c?.dispatch === null || c?.dispatch === undefined ? "" : c.dispatch,
+          c?.pending || "",
+        ]);
       });
     });
 
-    // Step 2: Find non-empty columns
-    const allKeys = Object.keys(pdfData[0] || {});
-    const forceColumns = ["Dispatch"];
+    // Column headers
+    const headers = [
+      "S.No",
+      "Offered\nDate",
+      "Firm\nName",
+      "Discom",
+      "TN No.",
+      "Material",
+      "TFR\nSerial\nNo",
+      "Offered\nQty",
+      "Inspectors",
+      "Inspection\nDate",
+      "Inspected\nQty",
+      "DI No.",
+      "DI Date",
+      "Consignee",
+      "SR No.",
+      "Qty",
+      "Dispatch",
+      "Pending",
+    ];
 
-    const nonEmptyKeys = allKeys.filter(
-      (key) =>
-        forceColumns.includes(key) ||
-        pdfData.some(
-          (row) =>
-            row[key] !== null &&
-            row[key] !== undefined &&
-            row[key].toString().trim() !== ""
-        )
+    // Force include "Dispatch" and "Pending" columns even if empty
+    const forceColumns = [16, 17]; // Index of "Dispatch" and "Pending"
+
+    const hasDataInColumn = (colIndex) => {
+      if (forceColumns.includes(colIndex)) return true;
+
+      return pdfData.some((row) => {
+        const value = row[colIndex];
+        return (
+          value !== null &&
+          value !== undefined &&
+          value.toString().trim() !== ""
+        );
+      });
+    };
+
+    const filteredHeaders = [];
+    const filteredColumnIndices = [];
+
+    headers.forEach((header, index) => {
+      if (hasDataInColumn(index)) {
+        filteredHeaders.push(header);
+        filteredColumnIndices.push(index);
+      }
+    });
+
+    const filteredBody = pdfData.map((row) =>
+      filteredColumnIndices.map((index) => row[index])
     );
 
-    // Step 3: Create head & body dynamically
-    const head = [nonEmptyKeys];
-    const body = pdfData.map((row) => nonEmptyKeys.map((key) => row[key]));
+    // Custom column widths - reduced to fit all 18 columns properly
+    const getColumnStyles = () => {
+      const styles = {};
+      const baseWidths = {
+        0: 28,
+        1: 48,
+        2: 60,
+        3: 42,
+        4: 42,
+        5: 52,
+        6: 48,
+        7: 38,
+        8: 62,
+        9: 52,
+        10: 42,
+        11: 48,
+        12: 48,
+        13: 62,
+        14: 42,
+        15: 32,
+        16: 42,
+        17: 42,
+      };
 
-    // Step 4: Generate table
+      let totalTableWidth = 0;
+
+      filteredColumnIndices.forEach((originalIndex, newIndex) => {
+        const width = baseWidths[originalIndex];
+        styles[newIndex] = { cellWidth: width };
+        totalTableWidth += width;
+      });
+
+      return { styles, totalTableWidth };
+    };
+
+    const { styles: columnStyles, totalTableWidth } = getColumnStyles();
+
+    // Small, equal gap on both sides
+    const horizontalMargin = Math.max((pageWidth - totalTableWidth) / 2, 8);
+
     autoTable(doc, {
-      head,
-      body,
-      startY: 20,
+      head: [filteredHeaders],
+      body: filteredBody,
+      startY: 40,
+      theme: "grid",
       styles: {
         fontSize: 6,
         cellPadding: 1.5,
+        halign: "center",
+        valign: "middle",
+        lineColor: [0, 0, 0],
+        lineWidth: 0.5,
+        textColor: [0, 0, 0],
         overflow: "linebreak",
       },
       headStyles: {
-        fillColor: [41, 128, 185],
-        textColor: 255,
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0], // Black text
         fontSize: 6,
+        fontStyle: "bold",
+        halign: "center",
+        valign: "middle",
+        lineColor: [0, 0, 0],
+        lineWidth: 0.5,
+        minCellHeight: 22,
       },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      margin: { left: 15, right: 15 },
+      bodyStyles: {
+        fillColor: [255, 255, 255],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.5,
+      },
+      columnStyles: columnStyles,
+
+      margin: {
+        top: 40,
+        bottom: 25,
+        left: horizontalMargin,
+        right: horizontalMargin,
+      },
+
+      tableWidth: totalTableWidth,
+
+      showHead: "everyPage",
+      didDrawPage: function (data) {
+        const pageCount = doc.internal.getNumberOfPages();
+        doc.setFontSize(8);
+        doc.setFont(undefined, "normal");
+        doc.text(
+          `Page ${
+            doc.internal.getCurrentPageInfo().pageNumber
+          } of ${pageCount}`,
+          pageWidth / 2,
+          pageHeight - 12,
+          { align: "center" }
+        );
+      },
     });
 
-    // Step 5: Save
     doc.save(`${sheetName}.pdf`);
   };
 

@@ -495,12 +495,13 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
     XLSX.writeFile(workbook, `${sheetName}.xlsx`);
   };
 
-  // ✅ Export PDF (LANDSCAPE)
+  // ✅ Export PDF (LANDSCAPE) - Table Format with Black Borders
   const exportPDF = () => {
     // ✅ Landscape A4
     const doc = new jsPDF("l", "pt", "a4");
 
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
     let title = "Information of new G.P. transformers";
     if (selectedCompany !== "all") {
@@ -511,68 +512,154 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
     }
 
     // ✅ Centered title
-    doc.setFontSize(11);
-    doc.text(title, pageWidth / 2, 20, { align: "center" });
+    doc.setFontSize(14);
+    doc.setFont(undefined, "bold");
+    doc.text(title, pageWidth / 2, 25, { align: "center" });
 
-    // Step 1: Prepare data
-    const pdfData = filteredData.map((item, index) => ({
-      "S.No": index + 1,
-      "Company Name": item.companyName || "",
-      Discom: item.discom || "",
-      Rating: item.deliverySchedule?.rating || "",
-      Phase: item.deliverySchedule?.phase || "",
-      Wound: item.deliverySchedule?.wound || "",
-      "Total Qty Supplied (New) Till Date": item.totalSuppliedNewTillDate ?? 0,
-      "Total Qty Received Under G.P. Till Date":
-        item.totalReceivedUnderGPTillDate ?? 0,
-      "Total Qty Inspected Till Date": item.totalInspectedTillDate ?? 0,
-      "Total Qty Dispatched Till Date": item.totalDispatchedTillDate ?? 0,
-      "Total Qty Pending Including Inspected":
-        item.totalPendingIncludingInspected ?? 0,
-      "Inspected But Not Dispatched": item.inspectedButNotDispatched ?? 0,
-    }));
+    // Step 1: Prepare data with proper structure
+    const pdfData = filteredData.map((item, index) => [
+      index + 1, // S.No
+      item.companyName || "",
+      item.deliverySchedule?.tnNumber || "",
+      item.discom || "",
+      item.deliverySchedule?.rating || "",
+      item.deliverySchedule?.phase || "",
+      item.deliverySchedule?.wound || "",
+      item.totalSuppliedNewTillDate ?? 0,
+      item.totalReceivedUnderGPTillDate ?? 0,
+      item.totalInspectedTillDate ?? 0,
+      item.totalDispatchedTillDate ?? 0,
+      item.totalPendingIncludingInspected ?? 0,
+      item.inspectedButNotDispatched ?? 0,
+    ]);
 
-    // Step 2: Find non-empty columns (0 should be allowed)
-    const allKeys = Object.keys(pdfData[0] || {});
-    const nonEmptyKeys = allKeys.filter((key) =>
-      pdfData.some(
-        (row) =>
-          row[key] !== null &&
-          row[key] !== undefined &&
-          row[key].toString().trim() !== ""
-      )
+    // Column headers with line breaks for better fit
+    const headers = [
+      "S.No",
+      "Company\nName",
+      "Tn No",
+      "Discom",
+      "Rating",
+      "Phase",
+      "Wound",
+      "Total Qty\nSupplied\n(New) Till\nDate",
+      "Total Qty\nReceived\nUnder G.P.\nTill Date",
+      "Total Qty\nInspected\nTill Date",
+      "Total Qty\nDispatched\nTill Date",
+      "Total Qty\nPending\nIncluding\nInspected",
+      "Inspected\nBut Not\nDispatched",
+    ];
+
+    // Filter out columns that have no data (all empty/null/undefined)
+    const hasDataInColumn = (colIndex) => {
+      return pdfData.some((row) => {
+        const value = row[colIndex];
+        return (
+          value !== null &&
+          value !== undefined &&
+          value.toString().trim() !== ""
+        );
+      });
+    };
+
+    // Create filtered headers and data
+    const filteredHeaders = [];
+    const filteredColumnIndices = [];
+
+    headers.forEach((header, index) => {
+      if (hasDataInColumn(index)) {
+        filteredHeaders.push(header);
+        filteredColumnIndices.push(index);
+      }
+    });
+
+    const filteredBody = pdfData.map((row) =>
+      filteredColumnIndices.map((index) => row[index])
     );
 
-    // Step 3: Create head & body dynamically
-    const head = [nonEmptyKeys];
-    const body = pdfData.map((row) => nonEmptyKeys.map((key) => row[key]));
+    // Custom column widths - adjusted for 13 columns in landscape
+    const getColumnStyles = () => {
+      const styles = {};
+      const baseWidths = {
+        0: 35, // S.No
+        1: 80, // Company Name
+        2: 50, // Tn No
+        3: 55, // Discom
+        4: 45, // Rating
+        5: 50, // Phase
+        6: 50, // Wound
+        7: 55, // Total Qty Supplied
+        8: 60, // Total Qty Received
+        9: 55, // Total Qty Inspected
+        10: 55, // Total Qty Dispatched
+        11: 60, // Total Qty Pending
+        12: 55, // Inspected But Not Dispatched
+      };
+
+      let totalTableWidth = 0;
+
+      filteredColumnIndices.forEach((originalIndex, newIndex) => {
+        const width = baseWidths[originalIndex];
+        styles[newIndex] = { cellWidth: width };
+        totalTableWidth += width;
+      });
+
+      return { styles, totalTableWidth };
+    };
+
+    const { styles: columnStyles, totalTableWidth } = getColumnStyles();
+
+    const horizontalMargin = Math.max((pageWidth - totalTableWidth) / 2, 10);
 
     autoTable(doc, {
-      head,
-      body,
-      startY: 35,
+      head: [filteredHeaders],
+      body: filteredBody,
+      startY: 40,
+      theme: "grid",
 
       styles: {
         fontSize: 7,
         cellPadding: 2,
         halign: "center",
         valign: "middle",
+        overflow: "linebreak",
+        lineColor: [0, 0, 0],
+        lineWidth: 0.5,
       },
 
       headStyles: {
-        fillColor: [41, 128, 185],
-        textColor: 255,
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
         fontSize: 7,
-        halign: "center",
+        fontStyle: "bold",
+        minCellHeight: 25,
       },
 
-      alternateRowStyles: {
-        fillColor: [245, 245, 245],
+      columnStyles,
+
+      margin: {
+        top: 40,
+        bottom: 25,
+        left: horizontalMargin,
+        right: horizontalMargin,
       },
 
-      margin: { left: 20, right: 20 },
-
+      tableWidth: totalTableWidth,
       showHead: "everyPage",
+      didDrawPage: function (data) {
+        // Add page numbers at the bottom
+        const pageCount = doc.internal.getNumberOfPages();
+        doc.setFontSize(8);
+        doc.setFont(undefined, "normal");
+        doc.text(
+          `Page ${
+            doc.internal.getCurrentPageInfo().pageNumber
+          } of ${pageCount}`,
+          pageWidth / 2,
+          pageHeight - 12,
+          { align: "center" }
+        );
+      },
     });
 
     // Step 5: Save

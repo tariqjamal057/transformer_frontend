@@ -380,6 +380,30 @@ const AddDeliveryChalan = () => {
                 />
               </Grid>
 
+              <Grid item size={2} mt={1}>
+                <Typography variant="h5" fontWeight={600} gutterBottom>
+                  Sub Serial No
+                </Typography>
+              </Grid>
+
+              <Grid item size={1}>
+                <TextField
+                  label="From"
+                  fullWidth
+                  value={subSerialFrom}
+                  onChange={(e) => setSubSerialFrom(e.target.value)}
+                />
+              </Grid>
+
+              <Grid item size={1}>
+                <TextField
+                  label="To"
+                  fullWidth
+                  value={subSerialTo}
+                  onChange={(e) => setSubSerialTo(e.target.value)}
+                />
+              </Grid>
+
               {/* DI No */}
               <Grid item size={1}>
                 <TextField
@@ -448,29 +472,7 @@ const AddDeliveryChalan = () => {
                 />
               </Grid>
 
-              <Grid item size={2} mt={3}>
-                <Typography variant="h5" fontWeight={600} gutterBottom>
-                  Sub Serial No
-                </Typography>
-              </Grid>
-
-              <Grid item size={1}>
-                <TextField
-                  label="From"
-                  fullWidth
-                  value={subSerialFrom}
-                  onChange={(e) => setSubSerialFrom(e.target.value)}
-                />
-              </Grid>
-
-              <Grid item size={1}>
-                <TextField
-                  label="To"
-                  fullWidth
-                  value={subSerialTo}
-                  onChange={(e) => setSubSerialTo(e.target.value)}
-                />
-              </Grid>
+              
 
               <Grid item size={2} mt={3}>
                 <Typography variant="h5" fontWeight={600} gutterBottom>

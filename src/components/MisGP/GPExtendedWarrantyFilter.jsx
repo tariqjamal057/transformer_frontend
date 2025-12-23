@@ -137,57 +137,168 @@ const GPExtendedWarrantyFilter = ({ onFilteredData, data }) => {
 
   // ✅ Export PDF
   const exportPDF = () => {
-    const doc = new jsPDF();
-    
-    doc.text("G.P. Extended warranty information", 14, 10);
+    const doc = new jsPDF("l", "pt", "a4"); // Landscape A4
 
-    // Step 1: Prepare data with inspection officers
-    const pdfData = filteredData.map((item, index) => ({
-      "S.No": index + 1,
-      "Tfr Sr No": item.tfrSrNo,
-      "Tn No": item.deliverySchedule.tnNumber,
-      Rating: item.deliverySchedule.rating,
-      Phase: item.deliverySchedule.phase,
-      Wound: item.deliverySchedule.wound,
-      "GP Expiry Date As Per Original Supply":
-        item.gpExpiryDateAsPerOriginalSupply,
-      "Remaining Original Gurantee Period":
-        item.remainingOriginalGuranteePeriod + " Months",
-      "Transformers Not In Services": item.tranformersNotInService + " Months",
-      "Sum Total":
-        item.remainingOriginalGuranteePeriod +
-        item.tranformersNotInService +
-        " Months",
-      "Extended Warranty": item.extendedWarranty + " Months",
-      "Final GP Expiry Date":
-        Math.max(
-          item.remainingOriginalGuranteePeriod + item.tranformersNotInService,
-          item.extendedWarranty
-        ) + " Months",
-    }));
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Step 2: Find non-empty columns
-    const allKeys = Object.keys(pdfData[0] || {});
-    const nonEmptyKeys = allKeys.filter((key) =>
-      pdfData.some((row) => row[key] && row[key].toString().trim() !== "")
-    );
-
-    // Step 3: Create head & body dynamically
-    const head = [nonEmptyKeys];
-    const body = pdfData.map((row) => nonEmptyKeys.map((key) => row[key]));
-
-    // Step 4: Generate table
-    autoTable(doc, {
-      head,
-      body,
-      startY: 20,
-      styles: { fontSize: 5.5, cellPadding: 1.4 },
-      headStyles: { fillColor: [41, 128, 185] }, // blue header
-      alternateRowStyles: { fillColor: [245, 245, 245] },
+    // ✅ Centered title
+    doc.setFontSize(14);
+    doc.setFont(undefined, "bold");
+    doc.text("G.P. Extended Warranty Information", pageWidth / 2, 25, {
+      align: "center",
     });
 
-    // Step 5: Save
-    doc.save("GP_Extended_Warranty.pdf");
+    // Step 1: Prepare data as array
+    const pdfData = filteredData.map((item, index) => [
+      index + 1, // S.No
+      item.tfrSrNo || "",
+      item.deliverySchedule?.tnNumber || "",
+      item.deliverySchedule?.rating || "",
+      item.deliverySchedule?.phase || "",
+      item.deliverySchedule?.wound || "",
+      item.gpExpiryDateAsPerOriginalSupply || "",
+      (item.remainingOriginalGuranteePeriod ?? 0) + " Months",
+      (item.tranformersNotInService ?? 0) + " Months",
+      (item.remainingOriginalGuranteePeriod ?? 0) +
+        (item.tranformersNotInService ?? 0) +
+        " Months",
+      (item.extendedWarranty ?? 0) + " Months",
+      Math.max(
+        (item.remainingOriginalGuranteePeriod ?? 0) +
+          (item.tranformersNotInService ?? 0),
+        item.extendedWarranty ?? 0
+      ) + " Months",
+    ]);
+
+    // Column headers
+    const headers = [
+      "S.No",
+      "Tfr Sr No",
+      "Tn No",
+      "Rating",
+      "Phase",
+      "Wound",
+      "GP Expiry\nDate As Per\nOriginal\nSupply",
+      "Remaining\nOriginal\nGurantee\nPeriod",
+      "Transformers\nNot In\nServices",
+      "Sum\nTotal",
+      "Extended\nWarranty",
+      "Final GP\nExpiry\nDate",
+    ];
+
+    // Filter out columns with no data
+    const hasDataInColumn = (colIndex) => {
+      return pdfData.some((row) => {
+        const value = row[colIndex];
+        return (
+          value !== null &&
+          value !== undefined &&
+          value.toString().trim() !== "" &&
+          value.toString().trim() !== "0 Months"
+        );
+      });
+    };
+
+    const filteredHeaders = [];
+    const filteredColumnIndices = [];
+
+    headers.forEach((header, index) => {
+      if (hasDataInColumn(index)) {
+        filteredHeaders.push(header);
+        filteredColumnIndices.push(index);
+      }
+    });
+
+    const filteredBody = pdfData.map((row) =>
+      filteredColumnIndices.map((index) => row[index])
+    );
+
+    // Custom column widths for 12 columns
+    const getColumnStyles = () => {
+      const styles = {};
+      const baseWidths = {
+        0: 35, // S.No
+        1: 65, // Tfr Sr No
+        2: 55, // Tn No
+        3: 50, // Rating
+        4: 60, // Phase
+        5: 55, // Wound
+        6: 65, // GP Expiry Date
+        7: 60, // Remaining Original
+        8: 65, // Transformers Not In Service
+        9: 50, // Sum Total
+        10: 60, // Extended Warranty
+        11: 60, // Final GP Expiry
+      };
+
+      let totalTableWidth = 0;
+
+      filteredColumnIndices.forEach((originalIndex, newIndex) => {
+        const width = baseWidths[originalIndex];
+        styles[newIndex] = { cellWidth: width };
+        totalTableWidth += width;
+      });
+
+      return { styles, totalTableWidth };
+    };
+
+    const { styles: columnStyles, totalTableWidth } = getColumnStyles();
+
+    const horizontalMargin = Math.max((pageWidth - totalTableWidth) / 2, 10);
+
+
+    autoTable(doc, {
+      head: [filteredHeaders],
+      body: filteredBody,
+      startY: 40,
+      theme: "grid",
+
+      styles: {
+        fontSize: 7,
+        cellPadding: 2,
+        halign: "center",
+        valign: "middle",
+        overflow: "linebreak",
+        lineColor: [0, 0, 0],
+        lineWidth: 0.5,
+      },
+
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontSize: 7,
+        fontStyle: "bold",
+        minCellHeight: 25,
+      },
+
+      columnStyles,
+
+      margin: {
+        top: 40,
+        bottom: 25,
+        left: horizontalMargin,
+        right: horizontalMargin,
+      },
+
+      tableWidth: totalTableWidth,
+      showHead: "everyPage",
+      didDrawPage: function (data) {
+        const pageCount = doc.internal.getNumberOfPages();
+        doc.setFontSize(8);
+        doc.setFont(undefined, "normal");
+        doc.text(
+          `Page ${
+            doc.internal.getCurrentPageInfo().pageNumber
+          } of ${pageCount}`,
+          pageWidth / 2,
+          pageHeight - 12,
+          { align: "center" }
+        );
+      },
+    });
+
+    doc.save("GP_Extended_Warranty_Information.pdf");
   };
 
   return (

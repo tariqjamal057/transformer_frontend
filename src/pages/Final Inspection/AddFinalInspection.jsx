@@ -429,110 +429,6 @@ const AddFinalInspection = () => {
                 />
               </Grid>
 
-              <Grid item size={1}>
-                <TextField
-                  label="Nomination Letter no"
-                  fullWidth
-                  value={nominationLetterNo}
-                  onChange={(e) => setNominationLetterNo(e.target.value)}
-                />
-              </Grid>
-
-              <Grid item size={1}>
-                <DatePicker
-                  label="Nomination Date"
-                  minDate={today}
-                  value={nominationDate}
-                  onChange={setNominationDate}
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-              </Grid>
-
-              <Grid item size={1}>
-                <Box display="flex" gap={1}>
-                  <TextField
-                    fullWidth
-                    label="Inspection Officers name"
-                    variant="outlined"
-                    value={inspectionOfficer}
-                    onChange={(e) => setInspectionOfficer(e.target.value)}
-                  />
-                  <Button
-                    variant="contained"
-                    onClick={handleAddInspectionOfficer}
-                  >
-                    Add
-                  </Button>
-                </Box>
-                <Box mt={1} display="flex" flexWrap="wrap" gap={1}>
-                  {selectedInspectionOfficer.map((i, index) => (
-                    <Chip
-                      key={index}
-                      label={i}
-                      onDelete={() => handleRemove(i)}
-                      color="primary"
-                      variant="outlined"
-                    />
-                  ))}
-                </Box>
-              </Grid>
-
-              <Grid item size={1}>
-                <DatePicker
-                  label="Inspection Date"
-                  minDate={today}
-                  value={inspectionDate}
-                  onChange={setInspectionDate}
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-              </Grid>
-
-              <Grid item size={1}>
-                <TextField
-                  label="Inspected Quantity"
-                  fullWidth
-                  value={inspectedQuantity}
-                  onChange={(e) => setInspectedQuantity(e.target.value)}
-                />
-              </Grid>
-
-              <Grid item size={1}>
-                <TextField
-                  label="Grand Total"
-                  fullWidth
-                  value={total}
-                  onChange={(e) => setTotal(e.target.value)}
-                />
-              </Grid>
-
-              <Grid item size={1}>
-                <TextField
-                  label="DI No"
-                  fullWidth
-                  value={diNo}
-                  onChange={(e) => setDiNo(e.target.value)}
-                />
-              </Grid>
-
-              <Grid item size={1}>
-                <DatePicker
-                  label="DI Date"
-                  minDate={today}
-                  value={diDate}
-                  onChange={setDiDate}
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-              </Grid>
-
-              <Grid item size={1}>
-                <TextField
-                  label="Warranty Period"
-                  fullWidth
-                  value={warranty}
-                  InputProps={{ readOnly: true }}
-                />
-              </Grid>
-
               {/* 👉 Consignee Section */}
               <Grid item size={2}>
                 <Typography variant="h6" sx={{ mt: 2 }}>
@@ -658,6 +554,114 @@ const AddFinalInspection = () => {
                   </TableBody>
                 </Table>
               </Grid>
+
+              <Grid item size={1}>
+                <TextField
+                  label="Nomination Letter no"
+                  fullWidth
+                  value={nominationLetterNo}
+                  onChange={(e) => setNominationLetterNo(e.target.value)}
+                />
+              </Grid>
+
+              <Grid item size={1}>
+                <DatePicker
+                  label="Nomination Date"
+                  minDate={today}
+                  value={nominationDate}
+                  onChange={setNominationDate}
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+              </Grid>
+
+              <Grid item size={1}>
+                <Box display="flex" gap={1}>
+                  <TextField
+                    fullWidth
+                    label="Inspection Officers name"
+                    variant="outlined"
+                    value={inspectionOfficer}
+                    onChange={(e) => setInspectionOfficer(e.target.value)}
+                  />
+                  <Button
+                    variant="contained"
+                    onClick={handleAddInspectionOfficer}
+                  >
+                    Add
+                  </Button>
+                </Box>
+                <Box mt={1} display="flex" flexWrap="wrap" gap={1}>
+                  {selectedInspectionOfficer.map((i, index) => (
+                    <Chip
+                      key={index}
+                      label={i}
+                      onDelete={() => handleRemove(i)}
+                      color="primary"
+                      variant="outlined"
+                    />
+                  ))}
+                </Box>
+              </Grid>
+
+              <Grid item size={1}>
+                <DatePicker
+                  label="Inspection Date"
+                  minDate={today}
+                  value={inspectionDate}
+                  onChange={setInspectionDate}
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+              </Grid>
+
+              <Grid item size={1}>
+                <TextField
+                  label="Inspected Quantity"
+                  fullWidth
+                  value={inspectedQuantity}
+                  onChange={(e) => setInspectedQuantity(e.target.value)}
+                />
+              </Grid>
+
+              <Grid item size={1}>
+                <TextField
+                  label="Grand Total"
+                  fullWidth
+                  value={total}
+                  onChange={(e) => setTotal(e.target.value)}
+                />
+              </Grid>
+
+              <Grid item size={1}>
+                <TextField
+                  label="DI No"
+                  fullWidth
+                  value={diNo}
+                  onChange={(e) => setDiNo(e.target.value)}
+                />
+              </Grid>
+
+              <Grid item size={1}>
+                <DatePicker
+                  label="DI Date"
+                  minDate={today}
+                  value={diDate}
+                  onChange={setDiDate}
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+              </Grid>
+
+              <Grid item size={1}>
+                <TextField
+                  label="Warranty Period"
+                  fullWidth
+                  value={warranty}
+                  InputProps={{ readOnly: true }}
+                />
+              </Grid>
+
+              
+
+              
 
               <Grid item size={2}>
                 <div>

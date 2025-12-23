@@ -1,22 +1,19 @@
-import { useContext, useEffect, useRef, useState } from "react";
-import { Button, Tooltip } from "@mui/material";
+import { useContext, useEffect, useState } from "react";
+import { Button } from "@mui/material";
 import { Link } from "react-router-dom";
-import { FaFileDownload, FaPencilAlt } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
 import { MyContext } from "../../App";
 import Swal from "sweetalert2";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
-import PdfTemplate from "../../components/PdfTemplate";
-import { createRoot } from "react-dom/client"; // Add this at the top
-import DeliveryChalanModal from "../../components/DeliveryChalanModal";
 
 const DeliveryDetailsList = () => {
-  const { setProgress, setAlertBox, setIsHideSidebarAndHeader } =
-    useContext(MyContext);
+  const { setProgress, setIsHideSidebarAndHeader } = useContext(MyContext);
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedDeliveryChalan, setSelectedDeliveryChalan] = useState(null);
+
+  const [selectedTN, setSelectedTN] = useState("all");
+  const [selectedRating, setSelectedRating] = useState("all");
+  const [selectedConsignee, setSelectedConsignee] = useState("all");
 
   // Dummy Data
   const dummyData = [
@@ -26,7 +23,7 @@ const DeliveryDetailsList = () => {
         id: "101",
         trData: {
           id: "2",
-          tnId: { id: "1", name: "TN-001" },
+          tnId: { id: "1", name: "TN-001", rating: "100" },
           serialNumber: "1001 TO 2000",
           diNo: "DI-001",
           diDate: "2025-07-15",
@@ -66,7 +63,7 @@ const DeliveryDetailsList = () => {
         id: "102",
         trData: {
           id: "3",
-          tnId: { id: "1", name: "TN-001" },
+          tnId: { id: "1", name: "TN-001", rating: "200" },
           serialNumber: "2001 TO 3000",
           diNo: "DI-002",
           diDate: "2025-07-16",
@@ -102,23 +99,43 @@ const DeliveryDetailsList = () => {
     },
   ];
 
+  const tnOptions = [
+    ...new Set(
+      dummyData.map((item) => item.deliveryChalanData.trData.tnId.name)
+    ),
+  ];
+
+  const ratingOptions = [
+    ...new Set(
+      dummyData.map((item) => item.deliveryChalanData.trData.tnId.rating)
+    ),
+  ];
+
+  const consigneeOptions = [
+    ...new Set(dummyData.map((item) => item.deliveryChalanData.consigneeName)),
+  ];
+
+  const filteredList = dummyData.filter((item) => {
+    const dc = item.deliveryChalanData;
+
+    const tnMatch = selectedTN === "all" || dc.trData.tnId.name === selectedTN;
+
+    const ratingMatch =
+      selectedRating === "all" || dc.trData.tnId.rating === selectedRating;
+
+    const consigneeMatch =
+      selectedConsignee === "all" || dc.consigneeName === selectedConsignee;
+
+    return tnMatch && ratingMatch && consigneeMatch;
+  });
+
   useEffect(() => {
     setIsHideSidebarAndHeader(false);
     window.scrollTo(0, 0);
     setProgress(100);
   }, []);
 
-  const handleEditClick = (item) => {
-    setSelectedDeliveryChalan(item);
-    setOpenModal(true);
-  };
-
-  const handleModalClose = () => {
-    setOpenModal(false);
-    setSelectedDeliveryChalan(null);
-  };
-
-  const handleDeleteClick = async (id) => {
+  const handleDeleteClick = async () => {
     const result = await Swal.fire({
       title: "Are you sure?",
       text: "Do you really want to delete this delivery details?",
@@ -153,6 +170,73 @@ const DeliveryDetailsList = () => {
           </div>
         </div>
 
+        <div className="row mb-3">
+          {/* TN Number */}
+          <div className="col-md-3">
+            <label className="form-label fw-semibold">TN Number</label>
+            <select
+              className="form-select"
+              value={selectedTN}
+              onChange={(e) => setSelectedTN(e.target.value)}
+            >
+              <option value="all">All</option>
+              {tnOptions.map((tn, idx) => (
+                <option key={idx} value={tn}>
+                  {tn}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Rating */}
+          <div className="col-md-3">
+            <label className="form-label fw-semibold">Rating</label>
+            <select
+              className="form-select"
+              value={selectedRating}
+              onChange={(e) => setSelectedRating(e.target.value)}
+            >
+              <option value="all">All</option>
+              {ratingOptions.map((rating, idx) => (
+                <option key={idx} value={rating}>
+                  {rating}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Consignee */}
+          <div className="col-md-3">
+            <label className="form-label fw-semibold">Consignee</label>
+            <select
+              className="form-select"
+              value={selectedConsignee}
+              onChange={(e) => setSelectedConsignee(e.target.value)}
+            >
+              <option value="all">All</option>
+              {consigneeOptions.map((name, idx) => (
+                <option key={idx} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Clear Filters */}
+          <div className="col-md-3 d-flex align-items-end">
+            <button
+              className="btn btn-secondary w-100"
+              onClick={() => {
+                setSelectedTN("all");
+                setSelectedRating("all");
+                setSelectedConsignee("all");
+              }}
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
+
         {/* Table */}
         <div className="card shadow border-0 p-3 mt-4">
           <div className="table-responsive">
@@ -180,8 +264,8 @@ const DeliveryDetailsList = () => {
               </thead>
 
               <tbody className="text-center align-middle">
-                {dummyData.length > 0 ? (
-                  dummyData.map((item, index) => {
+                {filteredList.length > 0 ? (
+                  filteredList.map((item, index) => {
                     const dc = item.deliveryChalanData;
                     return (
                       <tr key={item.id}>
@@ -310,7 +394,6 @@ const DeliveryDetailsList = () => {
                             >
                               <MdDelete />
                             </button>
-                            
                           </div>
                         </td>
                       </tr>

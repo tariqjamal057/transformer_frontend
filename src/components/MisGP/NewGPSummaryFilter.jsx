@@ -147,56 +147,169 @@ const NewGPSummaryFilter = ({ onFilteredData, data }) => {
     XLSX.writeFile(workbook, `NewGPSummary.xlsx`);
   };
 
-  // ✅ Export PDF (Compact A4 Layout)
+
+
+  // ✅ Export PDF 
   const exportPDF = () => {
-    const doc = new jsPDF("l", "pt", "a4"); // ⬅️ Landscape A4
+    const doc = new jsPDF("l", "pt", "a4"); // Landscape A4
 
-    doc.setFontSize(11);
-    doc.text("New GP Summary Report", 40, 30);
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-    const pdfData = filteredData.map((item, index) => ({
-      "S.No": index + 1,
-      Firm: item.companyName || "",
-      Discom: item.discom || "",
-      Rating: item.deliverySchedule?.rating || "",
-      Phase: item.deliverySchedule?.phase || "",
-      Wound: item.deliverySchedule?.wound || "",
-      "Total Qty Supplied (New) Till Date": item.totalSuppliedNewTillDate || "",
-      "Total Qty Received Under G.P. Till Date":
-        item.totalReceivedUnderGPTillDate || "",
-      "Total Qty Inspected Till Date": item.totalInspectedTillDate || "",
-      "Total Qty Dispatched Till Date": item.totalDispatchedTillDate || "",
-      "GP Tfr. Balance Now": item.gpTierBalanceNow || "",
-      "Inspected Pending To Be Delivered":
-        item.inspectedPendingToBeDelivered || "",
-      "GP Receipt In Month": item.gpReceiptInMonth || "",
-      "GP Dispatch In Month": item.gpDispatchInMonth || "",
-      "GP Inspected In Month": item.gpInspectedInMonth || "",
-    }));
+    // ✅ Centered title
+    doc.setFontSize(14);
+    doc.setFont(undefined, "bold");
+    doc.text("New GP Summary Report", pageWidth / 2, 25, { align: "center" });
 
-    const head = [Object.keys(pdfData[0] || {})];
-    const body = pdfData.map((row) => Object.values(row));
+    // Step 1: Prepare data as array
+    const pdfData = filteredData.map((item, index) => [
+      index + 1, // S.No
+      item.companyName || "",
+      item.discom || "",
+      item.deliverySchedule?.rating || "",
+      item.deliverySchedule?.phase || "",
+      item.deliverySchedule?.wound || "",
+      item.totalSuppliedNewTillDate ?? 0,
+      item.totalReceivedUnderGPTillDate ?? 0,
+      item.totalInspectedTillDate ?? 0,
+      item.totalDispatchedTillDate ?? 0,
+      item.gpTierBalanceNow ?? 0,
+      item.inspectedPendingToBeDelivered ?? 0,
+      item.gpReceiptInMonth ?? 0,
+      item.gpDispatchInMonth ?? 0,
+      item.gpInspectedInMonth ?? 0,
+    ]);
+
+    // Column headers with line breaks
+    const headers = [
+      "S.No",
+      "Firm",
+      "Discom",
+      "Rating",
+      "Phase",
+      "Wound",
+      "Total Qty\nSupplied\n(New) Till\nDate",
+      "Total Qty\nReceived\nUnder G.P.\nTill Date",
+      "Total Qty\nInspected\nTill Date",
+      "Total Qty\nDispatched\nTill Date",
+      "GP Tfr.\nBalance\nNow",
+      "Inspected\nPending To\nBe Delivered",
+      "GP Receipt\nIn Month",
+      "GP Dispatch\nIn Month",
+      "GP Inspected\nIn Month",
+    ];
+
+    // Filter out columns that have no data
+    const hasDataInColumn = (colIndex) => {
+      return pdfData.some((row) => {
+        const value = row[colIndex];
+        return (
+          value !== null &&
+          value !== undefined &&
+          value.toString().trim() !== ""
+        );
+      });
+    };
+
+    const filteredHeaders = [];
+    const filteredColumnIndices = [];
+
+    headers.forEach((header, index) => {
+      if (hasDataInColumn(index)) {
+        filteredHeaders.push(header);
+        filteredColumnIndices.push(index);
+      }
+    });
+
+    const filteredBody = pdfData.map((row) =>
+      filteredColumnIndices.map((index) => row[index])
+    );
+
+    // Custom column widths for 15 columns in landscape
+    const getColumnStyles = () => {
+      const styles = {};
+      const baseWidths = {
+        0: 30, // S.No
+        1: 65, // Firm
+        2: 50, // Discom
+        3: 40, // Rating
+        4: 45, // Phase
+        5: 45, // Wound
+        6: 50, // Total Qty Supplied
+        7: 55, // Total Qty Received
+        8: 50, // Total Qty Inspected
+        9: 50, // Total Qty Dispatched
+        10: 45, // GP Tfr Balance
+        11: 55, // Inspected Pending
+        12: 45, // GP Receipt
+        13: 45, // GP Dispatch
+        14: 50, // GP Inspected
+      };
+
+      let totalTableWidth = 0;
+
+      filteredColumnIndices.forEach((originalIndex, newIndex) => {
+        const width = baseWidths[originalIndex];
+        styles[newIndex] = { cellWidth: width };
+        totalTableWidth += width;
+      });
+
+      return { styles, totalTableWidth };
+    };
+
+    const { styles: columnStyles, totalTableWidth } = getColumnStyles();
+
+    const horizontalMargin = Math.max((pageWidth - totalTableWidth) / 2, 10);
 
     autoTable(doc, {
-      head,
-      body,
-      startY: 45,
+      head: [filteredHeaders],
+      body: filteredBody,
+      startY: 40,
+      theme: "grid",
+
       styles: {
-        fontSize: 5.5, // ⬅️ smaller text to fit all columns
-        cellPadding: 1,
-        overflow: "linebreak",
+        fontSize: 7,
+        cellPadding: 2,
         halign: "center",
         valign: "middle",
+        overflow: "linebreak",
+        lineColor: [0, 0, 0],
+        lineWidth: 0.5,
       },
+
       headStyles: {
-        fillColor: [41, 128, 185],
-        textColor: 255,
-        fontSize: 6,
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontSize: 7,
         fontStyle: "bold",
+        minCellHeight: 25,
       },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      margin: { top: 40, left: 15, right: 15 },
-      tableWidth: "auto",
+
+      columnStyles,
+
+      margin: {
+        top: 40,
+        bottom: 25,
+        left: horizontalMargin,
+        right: horizontalMargin,
+      },
+
+      tableWidth: totalTableWidth,
+      showHead: "everyPage",
+      didDrawPage: function (data) {
+        // Add page numbers at the bottom
+        const pageCount = doc.internal.getNumberOfPages();
+        doc.setFontSize(8);
+        doc.setFont(undefined, "normal");
+        doc.text(
+          `Page ${
+            doc.internal.getCurrentPageInfo().pageNumber
+          } of ${pageCount}`,
+          pageWidth / 2,
+          pageHeight - 12,
+          { align: "center" }
+        );
+      },
     });
 
     doc.save("NewGPSummary_A4.pdf");

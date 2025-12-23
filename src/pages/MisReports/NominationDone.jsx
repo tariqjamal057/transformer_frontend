@@ -220,8 +220,8 @@ const NominationDone = () => {
         text="Awaiting Inspection"
         onExportPDF={false}
         onExportExcel={false}
-        sheetName="Nomination Done But Dispatch Pending "
-        pdfTitle= "Nomination Done But Dispatch Pending"
+        sheetName="Nomination Done But Inspection Pending "
+        pdfTitle= "Nomination Done But Inspection Pending"
       />
 
       <Paper sx={{ p: 2, mt: 3 }}>
