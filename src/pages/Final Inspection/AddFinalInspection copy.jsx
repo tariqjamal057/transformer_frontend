@@ -134,6 +134,7 @@ const AddFinalInspection = () => {
   const [tnDetail, setTnDetail] = useState(null); // store full TN object
   const [serialNumberFrom, setSerialNumberFrom] = useState("");
   const [serialNumberTo, setSerialNumberTo] = useState("");
+  const [sr, setSr] = useState("");
   const [inspectionDate, setInspectionDate] = useState(null);
   const [inspectedQuantity, setInspectedQuantity] = useState("");
   const [nominationLetterNo, setNominationLetterNo] = useState("");
@@ -164,21 +165,6 @@ const AddFinalInspection = () => {
   const [selectedTransformers, setSelectedTransformers] = useState([]);
 
   const [isLoading, setIsLoading] = useState(false);
-
-  const getBaseQuantity = () => {
-    const from = parseInt(serialNumberFrom);
-    const to = parseInt(serialNumberTo);
-    if (!from || !to || from > to) return 0;
-    return to - from + 1;
-  };
-
-  const getEffectiveTotalQuantity = () => {
-    return getBaseQuantity() + selectedTransformers.length;
-  };
-
-  const getExtraQuantityFromSubSerials = () => {
-    return selectedTransformers.length;
-  };
 
   const handleAddInspectionOfficer = () => {
     if (
@@ -247,35 +233,58 @@ const AddFinalInspection = () => {
       return;
     }
 
-    const totalAvailable = getEffectiveTotalQuantity();
-
-    const totalDistributed = consigneeList.reduce(
-      (sum, c) => sum + c.quantity,
-      0
-    );
-
-    const newTotal = totalDistributed + parseInt(consigneeQuantity);
-
-    if (newTotal > totalAvailable) {
+    const from = parseInt(serialNumberFrom);
+    const to = parseInt(serialNumberTo);
+    if (!from || !to || from >= to) {
       setAlertBox({
-        msg: `Quantity exceeds available transformers!
-            Available: ${totalAvailable}`,
+        msg: "Invalid serial number range",
         open: true,
         error: true,
       });
       return;
     }
 
-    const startSn = parseInt(serialNumberFrom) + totalDistributed;
+    const totalAvailable = to - from + 1;
+    const totalDistributed = consigneeList.reduce(
+      (sum, c) => sum + c.quantity,
+      0
+    );
+    const newTotal = totalDistributed + parseInt(consigneeQuantity);
+
+    if (newTotal > totalAvailable) {
+      setAlertBox({
+        msg: "Quantity exceeds available transformers!",
+        open: true,
+        error: true,
+      });
+      return;
+    }
+
+    // Calculate sub serial range
+    const startSn = from + totalDistributed;
     const endSn = startSn + parseInt(consigneeQuantity) - 1;
+    const subSnNumber = `${startSn} TO ${endSn}`;
+
+    // ✅ Attach selected repaired transformers
+    const selectedTransformerObjects = availableTransformers.filter((t) =>
+      selectedTransformers.includes(t.id)
+    );
 
     const newConsignee = {
-      consignee: consignees.find((c) => c.id === selectedConsignee),
+      consignee: consignees.find((c) => c.id === selectedConsignee), // for store id I have to pass only selectedConsignee
       quantity: parseInt(consigneeQuantity),
-      subSnNumber: `${startSn} TO ${endSn}`,
+      subSnNumber,
+      repairedTransformers: selectedTransformerObjects, // ✅ Added here
     };
 
+    // ✅ Remove assigned transformers from available list
+    const updatedAvailable = availableTransformers.filter(
+      (t) => !selectedTransformers.includes(t.id)
+    );
+
+    setAvailableTransformers(updatedAvailable);
     setConsigneeList([...consigneeList, newConsignee]);
+    setSelectedTransformers([]);
     setSelectedConsignee("");
     setConsigneeQuantity("");
   };
@@ -298,10 +307,6 @@ const AddFinalInspection = () => {
   // 👉 Final Submit
   const handleSubmit = (e) => {
     e.preventDefault();
-    const repairedSubSerialNumbers = damagedRepairedTransformers
-      .filter((t) => selectedTransformers.includes(t.id))
-      .map((t) => t.serialNo);
-
     const data = {
       tnDetail: tnDetail?.id,
       serialNumberFrom,
@@ -315,12 +320,7 @@ const AddFinalInspection = () => {
       diNo,
       diDate: dayjs(diDate).format("YYYY-MM-DD"),
       warranty,
-
-      consignees: consigneeList,
-
-      // ✅ GLOBAL ARRAY ONLY
-      repairedSubSerialNumbers,
-
+      consignees: consigneeList, // ✅ New Array
       shealingDetails,
     };
 
@@ -429,13 +429,51 @@ const AddFinalInspection = () => {
                 />
               </Grid>
 
-              {/* ✅ Sub Serail No */}
-              <Grid item size={1}>
+              {/* 👉 Consignee Section */}
+              <Grid item size={2}>
+                <Typography variant="h6" sx={{ mt: 2 }}>
+                  Consignee Details
+                </Typography>
+              </Grid>
+
+              {/* Consignee Dropdown */}
+              <Grid item size={2}>
                 <FormControl fullWidth>
-                  <InputLabel>Sub Serail No</InputLabel>
+                  <InputLabel>Select Consignee</InputLabel>
+                  <Select
+                    value={selectedConsignee}
+                    onChange={(e) => setSelectedConsignee(e.target.value)}
+                    label="Select Consignee"
+                  >
+                    {consignees.map((c) => (
+                      <MenuItem key={c.id} value={c.id}>
+                        {c.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {/* Quantity Input */}
+              <Grid item size={2}>
+                <TextField
+                  label="Quantity"
+                  type="number"
+                  fullWidth
+                  value={consigneeQuantity}
+                  onChange={(e) => setConsigneeQuantity(e.target.value)}
+                />
+              </Grid>
+
+              {/* ✅ New Dropdown for Repaired Transformers */}
+              <Grid item size={2}>
+                <FormControl fullWidth>
+                  <InputLabel>Select Repaired Transformers</InputLabel>
                   <Select
                     multiple
-                    input={<OutlinedInput label="Select Sub Serial No" />}
+                    input={
+                      <OutlinedInput label="Select Repaired Transformers" />
+                    }
                     value={selectedTransformers}
                     onChange={(e) => setSelectedTransformers(e.target.value)}
                     renderValue={(selected) =>
@@ -458,6 +496,63 @@ const AddFinalInspection = () => {
                     ))}
                   </Select>
                 </FormControl>
+              </Grid>
+
+              {/* Add Button */}
+              <Grid item size={1}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleAddConsignee}
+                >
+                  Add
+                </Button>
+              </Grid>
+
+              {/* ✅ Consignee Table */}
+              <Grid item size={12}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Consignee</TableCell>
+                      <TableCell>Quantity</TableCell>
+                      <TableCell>Sub Serial No.</TableCell>
+                      <TableCell>Repaired Transformers</TableCell>
+                      <TableCell>Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {consigneeList.map((c, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell>{c.consignee.name}</TableCell>
+                        <TableCell>{c.quantity}</TableCell>
+                        <TableCell>{c.subSnNumber}</TableCell>
+                        <TableCell>
+                          {c.repairedTransformers?.length > 0
+                            ? c.repairedTransformers
+                                .map((t) => t.serialNo)
+                                .join(", ")
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            color="error"
+                            onClick={() => handleDeleteConsignee(idx)}
+                          >
+                            <Cancel />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {consigneeList.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} align="center">
+                          No Consignees Added
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </Grid>
 
               <Grid item size={1}>
@@ -564,90 +659,9 @@ const AddFinalInspection = () => {
                 />
               </Grid>
 
-              {/* 👉 Consignee Section */}
-              <Grid item size={2}>
-                <Typography variant="h6" sx={{ mt: 2 }}>
-                  Consignee Details
-                </Typography>
-              </Grid>
+              
 
-              {/* Consignee Dropdown */}
-              <Grid item size={2}>
-                <FormControl fullWidth>
-                  <InputLabel>Select Consignee</InputLabel>
-                  <Select
-                    value={selectedConsignee}
-                    onChange={(e) => setSelectedConsignee(e.target.value)}
-                    label="Select Consignee"
-                  >
-                    {consignees.map((c) => (
-                      <MenuItem key={c.id} value={c.id}>
-                        {c.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              {/* Quantity Input */}
-              <Grid item size={2}>
-                <TextField
-                  label="Quantity"
-                  type="number"
-                  fullWidth
-                  value={consigneeQuantity}
-                  onChange={(e) => setConsigneeQuantity(e.target.value)}
-                />
-              </Grid>
-
-              {/* Add Button */}
-              <Grid item size={1}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleAddConsignee}
-                >
-                  Add
-                </Button>
-              </Grid>
-
-              {/* ✅ Consignee Table */}
-              <Grid item size={12}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Consignee</TableCell>
-                      <TableCell>Quantity</TableCell>
-                      <TableCell>Tfrs Serial No.</TableCell>
-                      <TableCell>Action</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {consigneeList.map((c, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell>{c.consignee.name}</TableCell>
-                        <TableCell>{c.quantity}</TableCell>
-                        <TableCell>{c.subSnNumber}</TableCell>
-                        <TableCell>
-                          <Button
-                            color="error"
-                            onClick={() => handleDeleteConsignee(idx)}
-                          >
-                            <Cancel />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {consigneeList.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={5} align="center">
-                          No Consignees Added
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </Grid>
+              
 
               <Grid item size={2}>
                 <div>

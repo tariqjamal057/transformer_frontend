@@ -61,8 +61,6 @@ const getDummyFinalInspectionDetails = () => {
             name: "ABC Power Solutions Pvt. Ltd.",
           },
           quantity: 50,
-          dispatch: 0,
-          pending: 50,
           subSnNumber: "4912 TO 4961",
         },
         {
@@ -71,8 +69,6 @@ const getDummyFinalInspectionDetails = () => {
             name: "XYZ Transformers Ltd.",
           },
           quantity: 50,
-          dispatch: 0,
-          pending: 50,
           subSnNumber: "4962 TO 5011",
         },
         {
@@ -81,8 +77,6 @@ const getDummyFinalInspectionDetails = () => {
             name: "GreenVolt Energy Systems",
           },
           quantity: 50,
-          dispatch: 0,
-          pending: 50,
           subSnNumber: "5012 TO 5061",
         },
       ],
@@ -222,6 +216,7 @@ const NominationDone = () => {
         onExportExcel={false}
         sheetName="Nomination Done But Inspection Pending "
         pdfTitle= "Nomination Done But Inspection Pending"
+        dueDateofDeliveryIncluded={false}
       />
 
       <Paper sx={{ p: 2, mt: 3 }}>

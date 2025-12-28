@@ -1,5 +1,13 @@
 import { useContext, useEffect, useState } from "react";
-import { CircularProgress } from "@mui/material";
+import {
+  Checkbox,
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  ListItemText,
+  OutlinedInput,
+  Select,
+} from "@mui/material";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import {
   Grid,
@@ -27,6 +35,10 @@ export const getDummyFinalInspectionDetails = () => {
         description:
           "Delivery challan for 1000 kVA transformers including transport charges, handling, and on-site installation as per the approved purchase order and delivery schedule.",
       },
+      subSerialNo: [
+        { id: "1", serialNo: "404" },
+        { id: "2", serialNo: "302" },
+      ],
       offeredDate: "2025-07-12",
       offeredQuantity: 200,
       serialNumberFrom: 120,
@@ -52,6 +64,10 @@ export const getDummyFinalInspectionDetails = () => {
         description:
           "Challan for the supply of high-tension insulators, complete with packing, forwarding, insurance, and all required test certificates for the designated substation.",
       },
+      subSerialNo: [
+        { id: "3", serialNo: "407" },
+        { id: "4", serialNo: "309" },
+      ],
       offeredDate: "2025-08-05",
       offeredQuantity: 150,
       serialNumberFrom: 241,
@@ -77,6 +93,10 @@ export const getDummyFinalInspectionDetails = () => {
         description:
           "Material dispatch challan for 11kV outdoor vacuum circuit breakers, inclusive of installation accessories and detailed engineering drawings for commissioning.",
       },
+      subSerialNo: [
+        { id: "7", serialNo: "411" },
+        { id: "8", serialNo: "321" },
+      ],
       offeredDate: "2025-09-15",
       offeredQuantity: 180,
       serialNumberFrom: 391,
@@ -102,6 +122,10 @@ export const getDummyFinalInspectionDetails = () => {
         description:
           "Challan covering delivery of galvanized steel poles and cross-arms, bundled with all necessary hardware and fasteners for the rural electrification project.",
       },
+      subSerialNo: [
+        { id: "12", serialNo: "434" },
+        { id: "17", serialNo: "339" },
+      ],
       offeredDate: "2025-10-20",
       offeredQuantity: 220,
       serialNumberFrom: 571,
@@ -235,15 +259,19 @@ const AddDeliveryChalan = () => {
   const [poDate, setPoDate] = useState(null);
   const [chalanDescription, setChalanDescription] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
+  const [selectedTransformers, setSelectedTransformers] = useState([]);
 
   const handleTNChange = (tnNumber) => {
     setSelectedTN(tnNumber);
+
     const record = dummyData.find(
       (item) => item.deliverySchedule.tnNumber === tnNumber
     );
 
     if (record) {
       setSelectedRecord(record);
+
+      // auto-filled fields
       setDiNo(record.diNo);
       setDiDate(dayjs(record.diDate));
       setInspectionDate(dayjs(record.inspectionDate));
@@ -252,11 +280,12 @@ const AddDeliveryChalan = () => {
       setPoDate(dayjs(record.deliverySchedule.poDate));
       setSerialNumber(record.snNumber);
       setChalanDescription(record.deliverySchedule.description);
+
+      // ✅ VERY IMPORTANT
+      setSelectedTransformers([]); // reset on TN change
     }
   };
 
-  const [subSerialFrom, setSubSerialFrom] = useState("")
-  const [subSerialTo, setSubSerialTo] = useState("")
   const [challanNo, setChallanNo] = useState("");
 
   const [consignorName, setConsignorName] = useState("");
@@ -302,7 +331,6 @@ const AddDeliveryChalan = () => {
   const [driverName, setDriverName] = useState("");
   const [lorryNo, setLorryNo] = useState("");
 
-
   const [materialDescription, setMaterialDescription] = useState("");
   const [selectedMaterialCode, setSelectedMaterialCode] = useState("");
 
@@ -323,7 +351,11 @@ const AddDeliveryChalan = () => {
     e.preventDefault();
     if (!selectedRecord) return;
 
-    // Store entire final inspection object
+    const selectedSubSerialNumbers =
+      selectedRecord?.subSerialNo
+        ?.filter((s) => selectedTransformers.includes(s.id))
+        .map((s) => s.serialNo) || [];
+
     const data = {
       ...selectedRecord,
       challanNo,
@@ -335,6 +367,9 @@ const AddDeliveryChalan = () => {
       ...selectedConsigneeRecord,
       materialDescription,
       challanCreatedAt: dayjs().format("YYYY-MM-DD"),
+
+      // ✅ FINAL, TN-WISE SUB SERIALS
+      subSerialNo: selectedSubSerialNumbers,
     };
 
     console.log("Transformer Delivery Chalan Details", data);
@@ -380,28 +415,36 @@ const AddDeliveryChalan = () => {
                 />
               </Grid>
 
-              <Grid item size={2} mt={1}>
-                <Typography variant="h5" fontWeight={600} gutterBottom>
-                  Sub Serial No
-                </Typography>
-              </Grid>
-
+              {/* ✅ Sub Serail No */}
               <Grid item size={1}>
-                <TextField
-                  label="From"
-                  fullWidth
-                  value={subSerialFrom}
-                  onChange={(e) => setSubSerialFrom(e.target.value)}
-                />
-              </Grid>
-
-              <Grid item size={1}>
-                <TextField
-                  label="To"
-                  fullWidth
-                  value={subSerialTo}
-                  onChange={(e) => setSubSerialTo(e.target.value)}
-                />
+                <FormControl fullWidth>
+                  <InputLabel>Sub Serial No</InputLabel>
+                  <Select
+                    multiple
+                    value={selectedTransformers}
+                    onChange={(e) => setSelectedTransformers(e.target.value)}
+                    input={<OutlinedInput label="Sub Serial No" />}
+                    renderValue={(selected) =>
+                      selected
+                        .map(
+                          (id) =>
+                            selectedRecord?.subSerialNo.find((s) => s.id === id)
+                              ?.serialNo || ""
+                        )
+                        .join(", ")
+                    }
+                    disabled={!selectedRecord?.subSerialNo?.length}
+                  >
+                    {selectedRecord?.subSerialNo?.map((s) => (
+                      <MenuItem key={s.id} value={s.id}>
+                        <Checkbox
+                          checked={selectedTransformers.includes(s.id)}
+                        />
+                        <ListItemText primary={s.serialNo} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </Grid>
 
               {/* DI No */}
@@ -447,11 +490,7 @@ const AddDeliveryChalan = () => {
 
               {/* PO No */}
               <Grid item size={1}>
-                <TextField
-                  fullWidth
-                  label="PO No"
-                  value={poNo}
-                />
+                <TextField fullWidth label="PO No" value={poNo} />
               </Grid>
 
               {/* PO Date */}
@@ -471,8 +510,6 @@ const AddDeliveryChalan = () => {
                   onChange={(e) => setChallanNo(e.target.value)}
                 />
               </Grid>
-
-              
 
               <Grid item size={2} mt={3}>
                 <Typography variant="h5" fontWeight={600} gutterBottom>
