@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useContext } from "react";
 import {
   Box,
   Paper,
@@ -7,114 +7,131 @@ import {
   TextField,
   Autocomplete,
   Button,
+  CircularProgress,
 } from "@mui/material";
 import dayjs from "dayjs";
 import { DatePicker } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api";
+import { useNavigate } from "react-router-dom";
+import { MyContext } from "../../App";
 
 export default function DamagedTransformerPage() {
+  const { setAlertBox } = useContext(MyContext);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   const { data: finalInspectionList = [] } = useQuery({
-    queryKey: ["final-inspections"],
-    queryFn: () => api.get("/final-inspections").then((res) => res.data),
+    queryKey: ["allFinalInspections"],
+    queryFn: () =>
+      api.get("/final-inspections?all=true").then((res) => res.data.items),
+    placeholderData: [],
   });
 
-  const { data: deliveryChallanList = [] } = useQuery({
-    queryKey: ["delivery-challans"],
-    queryFn: () => api.get("/delivery-challans").then((res) => res.data),
-  });
-
-  // 👉 States
-  const [selectedSN, setSelectedSN] = useState(null);
-  const [selectedTRFSI, setSelectedTRFSI] = useState([]);
+  // State for selected objects from dropdowns
   const [selectedInspection, setSelectedInspection] = useState(null);
-  const [selectedChallan, setSelectedChallan] = useState(null);
+  const [selectedTrfsiNo, setSelectedTrfsiNo] = useState(null);
 
+  // State for manual input fields
   const [reasonOfDamaged, setReasonOfDamaged] = useState("");
   const [ctlReportNo, setCtlReportNo] = useState("");
   const [ctlReportDate, setCtlReportDate] = useState(null);
   const [liftingLetterNo, setLiftingLetterNo] = useState("");
   const [liftingLetterDate, setLiftingLetterDate] = useState(null);
   const [liftingFromAcos, setLiftingFromAcos] = useState("");
+  const [dateOfInspectionAfterRepair, setDateOfInspectionAfterRepair] =
+    useState(null);
+  const [challanNo, setChallanNo] = useState("");
+  const [challanDate, setChallanDate] = useState(null);
+  const [deliveredToAcos, setDeliveredToAcos] = useState("");
 
-  // 👉 Find the matching challan for selected inspection
-  useEffect(() => {
-    if (selectedInspection && selectedTRFSI.length > 0) {
-      const challan = deliveryChallanList.find((c) =>
-        c.finalInspectionDetail.shealingDetails?.some((s) =>
-          selectedTRFSI.some((t) => t.trfsiNo === s.trfsiNo)
-        )
-      );
-
-      setSelectedChallan(challan || null);
-    } else {
-      setSelectedChallan(null);
-    }
-  }, [selectedInspection, selectedTRFSI, deliveryChallanList]);
-
-  // 👉 Handle SN Selection
-  const handleSNChange = (_, sn) => {
-    if (!sn) {
-      // when cleared
-      setSelectedSN(null);
-      setSelectedInspection(null);
-      setSelectedTRFSI(null);
-      setSelectedChallan(null);
-      return;
-    }
-
-    setSelectedSN(sn);
-    setSelectedInspection(
-      finalInspectionList.find((f) => f.snNumber === sn) || null
-    );
-    setSelectedTRFSI([]); // reset TRFSI
-  };
-
-  // 👉 Handle TRFSI Selection
-  const handleTRFSIChange = (_, trfsi) => {
-    setSelectedTRFSI(trfsi);
-  };
-
-  const { mutate: saveDamagedTransformer } = useMutation({
+  const { mutate: addDamagedTransformer, isPending } = useMutation({
     mutationFn: (payload) => api.post("/damaged-transformers", payload),
     onSuccess: () => {
-      alert("Saved! Check console for payload.");
+      setAlertBox({
+        open: true,
+        msg: "Damaged Transformer Saved Successfully!",
+        error: false,
+      });
+      queryClient.invalidateQueries(["damagedTransformers"]);
+      navigate("/damageTransformer-list");
     },
     onError: (error) => {
-      alert(error.message);
+      setAlertBox({
+        open: true,
+        msg: error.response?.data?.error || error.message,
+        error: true,
+      });
     },
   });
 
-  // 👉 On Submit
+  const snNumberOptions = useMemo(() => {
+    return finalInspectionList.map((f) => ({
+      label: `${f.serialNumberFrom} TO ${f.serialNumberTo}`,
+      ...f,
+    }));
+  }, [finalInspectionList]);
+
+  const handleSnNumberChange = (_, value) => {
+    setSelectedInspection(value);
+    setSelectedTrfsiNo(null);
+  };
+
   const handleSubmit = () => {
-    if (!selectedSN || !selectedTRFSI || !selectedInspection) {
-      alert("Please select SN Number and TRFSI Number");
+    if (!selectedInspection || !selectedTrfsiNo) {
+      setAlertBox({
+        open: true,
+        msg: "Please select an SN Number range and a TRFSI Number.",
+        error: true,
+      });
       return;
     }
 
     const payload = {
-      snNumber: selectedSN,
-      trfsiNo: selectedTRFSI.trfsiNo,
+      serialNo: selectedTrfsiNo,
+
+      snNumberRange: selectedInspection.label,
+
       finalInspectionId: selectedInspection.id,
-      inspectionDate: selectedInspection.inspectionDate,
+
       reasonOfDamaged,
+
       ctlReportNo,
-      ctlReportDate: dayjs(ctlReportDate).format("YYYY-MM-DD"),
+
+      ctlReportDate: ctlReportDate ? dayjs(ctlReportDate).toISOString() : null,
+
       liftingLetterNo,
-      liftingLetterDate: dayjs(liftingLetterDate).format("YYYY-MM-DD"),
+
+      liftingLetterDate: liftingLetterDate
+        ? dayjs(liftingLetterDate).toISOString()
+        : null,
+
       liftingFromAcos,
+
+      dateOfInspectionAfterRepair: dateOfInspectionAfterRepair
+        ? dayjs(dateOfInspectionAfterRepair).toISOString()
+        : null,
+
+      challanNo,
+
+      challanDate: challanDate ? dayjs(challanDate).toISOString() : null,
+
+      deliveredToAcos,
     };
 
-    saveDamagedTransformer(payload);
+    addDamagedTransformer(payload);
   };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <div className="right-content w-100">
         <Box sx={{ p: 4, backgroundColor: "#f9f9f9", minHeight: "100vh" }}>
-          <Paper elevation={4} sx={{ p: 3, borderRadius: 3 }}>
+          <Paper
+            elevation={4}
+            sx={{ p: 3, borderRadius: 3, maxWidth: "900px", margin: "auto" }}
+          >
             <Typography
               variant="h4"
               gutterBottom
@@ -124,14 +141,14 @@ export default function DamagedTransformerPage() {
             </Typography>
 
             <Grid container spacing={3} columns={{ xs: 1, sm: 2 }}>
-              {/* SN Number Dropdown */}
               <Grid item size={1}>
                 <Autocomplete
-                  options={finalInspectionList.map((f) => f.snNumber)}
-                  value={selectedSN}
-                  onChange={handleSNChange}
+                  options={snNumberOptions}
+                  getOptionLabel={(option) => option.label}
+                  value={selectedInspection}
+                  onChange={handleSnNumberChange}
                   renderInput={(params) => (
-                    <TextField {...params} label="Select SN Number" />
+                    <TextField {...params} label="Select SN Number Range" />
                   )}
                 />
               </Grid>
@@ -139,14 +156,16 @@ export default function DamagedTransformerPage() {
               {/* TRFSI Number Dropdown */}
               <Grid item size={1}>
                 <Autocomplete
-                  multiple
-                  disableCloseOnSelect
-                  options={selectedInspection?.shealingDetails || []}
-                  getOptionLabel={(opt) => opt.trfsiNo.toString()}
-                  value={selectedTRFSI}
-                  onChange={(_, value) => setSelectedTRFSI(value)}
+                  options={
+                    selectedInspection?.sealingDetails?.map((s) => s.trfSiNo) ||
+                    []
+                  }
+                  getOptionLabel={(option) => option.toString()}
+                  value={selectedTrfsiNo}
+                  onChange={(_, newValue) => setSelectedTrfsiNo(newValue)}
+                  disabled={!selectedInspection}
                   renderInput={(params) => (
-                    <TextField {...params} label="Select TRFSI Numbers" />
+                    <TextField {...params} label="Select TRFSI Number" />
                   )}
                 />
               </Grid>
@@ -256,19 +275,12 @@ export default function DamagedTransformerPage() {
                   onChange={(e) => setLiftingFromAcos(e.target.value)}
                 />
               </Grid>
-
               <Grid item size={1}>
-                <TextField
-                  fullWidth
-                  label="Date Of Inspection After Repair"
-                  value={
-                    selectedInspection?.inspectionDate
-                      ? dayjs(selectedInspection.inspectionDate).format(
-                          "YYYY-MM-DD"
-                        )
-                      : ""
-                  }
-                  InputProps={{ readOnly: true }}
+                <DatePicker
+                  label="Date of Inspection After Repair"
+                  value={dateOfInspectionAfterRepair}
+                  onChange={setDateOfInspectionAfterRepair}
+                  slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
 
@@ -277,21 +289,16 @@ export default function DamagedTransformerPage() {
                 <TextField
                   fullWidth
                   label="Challan No"
-                  value={selectedChallan?.challanNo || ""}
-                  InputProps={{ readOnly: true }}
+                  value={challanNo}
+                  onChange={(e) => setChallanNo(e.target.value)}
                 />
               </Grid>
-
               <Grid item size={1}>
-                <TextField
-                  fullWidth
+                <DatePicker
                   label="Challan Date"
-                  value={
-                    selectedChallan?.createdAt
-                      ? dayjs(selectedChallan.createdAt).format("YYYY-MM-DD")
-                      : ""
-                  }
-                  InputProps={{ readOnly: true }}
+                  value={challanDate}
+                  onChange={setChallanDate}
+                  slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
 
@@ -299,8 +306,8 @@ export default function DamagedTransformerPage() {
                 <TextField
                   fullWidth
                   label="Delivered To ACOS"
-                  value={selectedChallan?.consigneeDetails?.name || ""}
-                  InputProps={{ readOnly: true }}
+                  value={deliveredToAcos}
+                  onChange={(e) => setDeliveredToAcos(e.target.value)}
                 />
               </Grid>
             </Grid>
@@ -310,8 +317,13 @@ export default function DamagedTransformerPage() {
                 variant="contained"
                 color="primary"
                 onClick={handleSubmit}
+                disabled={isPending}
               >
-                Save Damaged Transformer
+                {isPending ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  "Save Damaged Transformer"
+                )}
               </Button>
             </Box>
           </Paper>

@@ -22,10 +22,16 @@ import { IoCloseSharp } from "react-icons/io5";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api";
 import { MyContext } from "../../App";
+import ResponsivePagination from "react-responsive-pagination";
+import "react-responsive-pagination/themes/classic.css";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import { useDropzone } from "react-dropzone";
 
 const SubAdminList = () => {
   const { setAlertBox } = useContext(MyContext);
   const queryClient = useQueryClient();
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedSubAdmin, setSelectedSubAdmin] = useState(null);
@@ -36,6 +42,9 @@ const SubAdminList = () => {
   const [editedRole, setEditedRole] = useState("");
   const [editedPassword, setEditedPassword] = useState("");
 
+  const [bulkUploadModalOpen, setBulkUploadModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+
   const allAccessPages = [
     "Dashboard",
     "Orders",
@@ -43,21 +52,97 @@ const SubAdminList = () => {
     "Users",
     "Reports",
     "Settings",
+    "Consignee",
+    "Delivery Challan",
+    "Description",
+    "Failure Analysis",
+    "Final Inspection",
+    "GP Failure",
+    "GP Receipt Record",
+    "MIS Reports",
+    "New GP Information",
+    "New Supply Tender",
+    "Offer Letter",
   ];
+  const subAdminRoles = ["MANAGER", "DATA_FEEDER", "SUPERVISOR"];
 
-  const { data: users, isLoading, isError } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => api.get("/users").then((res) => res.data),
+  const {
+    data: usersData,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["subadmins", currentPage],
+    queryFn: () =>
+      api.get(`/users?page=${currentPage}`).then((res) => res.data),
+    placeholderData: { items: [], totalPages: 1 },
   });
+
+  const totalPages = usersData.totalPages;
+
+  const downloadSample = () => {
+    const sampleData = [
+      {
+        name: "John Doe",
+        loginId: "john.doe",
+        number: "1234567890",
+        password: "password123",
+        role: "MANAGER",
+        pages: JSON.stringify(["Dashboard", "Orders"]),
+      },
+    ];
+    const worksheet = XLSX.utils.json_to_sheet(sampleData);
+    const workbook = { Sheets: { Sheet1: worksheet }, SheetNames: ["Sheet1"] };
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(data, "subadmin_sample.xlsx");
+  };
+
+  const { mutate: bulkUpload, isPending: isUploading } = useMutation({
+    mutationFn: (file) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return api.post("/users/bulk-upload", formData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["subadmins"]);
+      setBulkUploadModalOpen(false);
+      setSelectedFile(null);
+      setAlertBox({ open: true, msg: "Bulk upload successful!", error: false });
+    },
+    onError: (error) => {
+      setAlertBox({ open: true, msg: error.message, error: true });
+    },
+  });
+
+  const onDrop = (acceptedFiles) => {
+    setSelectedFile(acceptedFiles[0]);
+  };
+
+  const { getRootProps, getInputProps } = useDropzone({ onDrop });
+
+  const handleBulkUploadSubmit = () => {
+    if (selectedFile) {
+      bulkUpload(selectedFile);
+    } else {
+      setAlertBox({ open: true, msg: "Please select a file.", error: true });
+    }
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/users/${id}`),
     onSuccess: () => {
-      setAlertBox({open: true, msg: "User deleted successfully!", error: false});
-      queryClient.invalidateQueries(["users"]);
+      setAlertBox({
+        open: true,
+        msg: "User deleted successfully!",
+        error: false,
+      });
+      queryClient.invalidateQueries(["subadmins"]);
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.message, error: true});
+      setAlertBox({ open: true, msg: error.message, error: true });
     },
   });
 
@@ -65,12 +150,16 @@ const SubAdminList = () => {
     mutationFn: (updatedUser) =>
       api.put(`/users/${selectedSubAdmin.id}`, updatedUser),
     onSuccess: () => {
-      setAlertBox({open: true, msg: "User details updated successfully!", error: false});
-      queryClient.invalidateQueries(["users"]);
+      setAlertBox({
+        open: true,
+        msg: "User details updated successfully!",
+        error: false,
+      });
+      queryClient.invalidateQueries(["subadmins"]);
       handleModalClose();
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.message, error: true});
+      setAlertBox({ open: true, msg: error.message, error: true });
     },
   });
 
@@ -93,11 +182,11 @@ const SubAdminList = () => {
   const handleEditClick = (item) => {
     setSelectedSubAdmin(item);
     setEditedUserName(item.name);
-    setEditedPageAccess(item.accessPages || []);
+    setEditedPageAccess(item.pages || []);
     setEditedLoginId(item.loginId);
     setEditedNumber(item.number);
     setEditedRole(item.role);
-    setEditedPassword(item.password);
+    setEditedPassword(""); // Clear password field for security
     setEditModalOpen(true);
   };
 
@@ -129,14 +218,82 @@ const SubAdminList = () => {
   return (
     <>
       <div className="right-content w-100">
-        <div className="card shadow border-0 w-100 flex-row p-4">
+        <div className="card shadow border-0 w-100 flex-row p-4 align-items-center">
           <h5 className="mb-0">SubAdmin List</h5>
           <div className="ms-auto d-flex align-items-center">
+            <Button
+              className="btn-blue ms-3 ps-3 pe-3"
+              onClick={() => setBulkUploadModalOpen(true)}
+            >
+              Bulk Upload
+            </Button>
             <Link to={"/signup"}>
               <Button className="btn-blue ms-3 ps-3 pe-3">Add Users</Button>
             </Link>
           </div>
         </div>
+
+        {/* Bulk Upload Modal */}
+        <Dialog
+          open={bulkUploadModalOpen}
+          onClose={() => {
+            setBulkUploadModalOpen(false);
+            setSelectedFile(null);
+          }}
+          fullWidth
+        >
+          <DialogTitle className="d-flex justify-content-between align-items-center">
+            Bulk Upload Sub-Admins
+            <IconButton
+              onClick={() => {
+                setBulkUploadModalOpen(false);
+                setSelectedFile(null);
+              }}
+            >
+              <IoCloseSharp />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent>
+            <Button onClick={downloadSample} variant="outlined" sx={{ mb: 2 }}>
+              Download Sample
+            </Button>
+            <div
+              {...getRootProps()}
+              style={{
+                border: "2px dashed #ccc",
+                padding: "20px",
+                textAlign: "center",
+                cursor: "pointer",
+              }}
+            >
+              <input {...getInputProps()} />
+              {selectedFile ? (
+                <p>Selected file: {selectedFile.name}</p>
+              ) : (
+                <p>Drag 'n' drop a file here, or click to select a file</p>
+              )}
+            </div>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => {
+                setBulkUploadModalOpen(false);
+                setSelectedFile(null);
+              }}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleBulkUploadSubmit}
+              variant="contained"
+              color="primary"
+              disabled={!selectedFile || isUploading}
+            >
+              {isUploading ? "Uploading..." : "Submit"}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         <div className="card shadow border-0 p-3 mt-4">
           <div className="table-responsive">
@@ -159,10 +316,10 @@ const SubAdminList = () => {
                   <tr>
                     <td colSpan="5">Error fetching data</td>
                   </tr>
-                ) : users.length > 0 ? (
-                  users.map((item, index) => (
+                ) : usersData.items.length > 0 ? (
+                  usersData.items.map((item, index) => (
                     <tr key={index}>
-                      <td># {index + 1}</td>
+                      <td># {index + 1 + (currentPage - 1) * 10}</td>
                       <td>
                         <div className="fw-semibold">{item.name}</div>
                         <span className="text-muted">{item.number}</span>
@@ -177,13 +334,9 @@ const SubAdminList = () => {
                           >
                             <FaPencilAlt />
                           </button>
-
                           <button
                             className="btn btn-sm btn-danger"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick(item.id);
-                            }}
+                            onClick={() => handleDeleteClick(item.id)}
                           >
                             <FaTrash />
                           </button>
@@ -202,6 +355,13 @@ const SubAdminList = () => {
             </table>
           </div>
         </div>
+        {totalPages > 1 && (
+          <ResponsivePagination
+            current={currentPage}
+            total={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        )}
       </div>
 
       <Dialog open={editModalOpen} onClose={handleModalClose} fullWidth>
@@ -211,7 +371,6 @@ const SubAdminList = () => {
             <IoCloseSharp />
           </IconButton>
         </DialogTitle>
-
         <DialogContent dividers>
           <TextField
             fullWidth
@@ -220,14 +379,13 @@ const SubAdminList = () => {
             value={editedUserName}
             onChange={(e) => setEditedUserName(e.target.value)}
           />
-
-          <FormControl fullWidth className="mt-3">
+          <FormControl fullWidth margin="normal">
             <InputLabel>Access Pages</InputLabel>
             <Select
-              input={<OutlinedInput label="Page Access" />}
               multiple
               value={editedPageAccess}
               onChange={(e) => setEditedPageAccess(e.target.value)}
+              input={<OutlinedInput label="Access Pages" />}
               renderValue={(selected) => selected.join(", ")}
             >
               {allAccessPages.map((page) => (
@@ -238,7 +396,6 @@ const SubAdminList = () => {
               ))}
             </Select>
           </FormControl>
-
           <TextField
             fullWidth
             type="text"
@@ -247,7 +404,6 @@ const SubAdminList = () => {
             value={editedLoginId}
             onChange={(e) => setEditedLoginId(e.target.value)}
           />
-
           <TextField
             fullWidth
             type="text"
@@ -255,30 +411,34 @@ const SubAdminList = () => {
             margin="normal"
             value={editedNumber}
             onChange={(e) => {
-              const numericValue = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters
-              setEditedNumber(numericValue.slice(0, 10)); // Limit to 10 digits
+              const numericValue = e.target.value.replace(/\D/g, "");
+              setEditedNumber(numericValue.slice(0, 10));
             }}
           />
-
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Role</InputLabel>
+            <Select
+              value={editedRole}
+              onChange={(e) => setEditedRole(e.target.value)}
+              label="Role"
+            >
+              {subAdminRoles.map((role) => (
+                <MenuItem key={role} value={role}>
+                  {role}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <TextField
             fullWidth
-            type="text"
-            label="Qualification"
-            margin="normal"
-            value={editedRole}
-            onChange={(e) => setEditedRole(e.target.value)}
-          />
-
-          <TextField
-            fullWidth
-            label="Password"
+            label="New Password"
             type="password"
             margin="normal"
+            placeholder="Enter new password to update"
             value={editedPassword}
             onChange={(e) => setEditedPassword(e.target.value)}
           />
         </DialogContent>
-
         <DialogActions>
           <Button onClick={handleModalClose} variant="outlined">
             Cancel
@@ -287,9 +447,9 @@ const SubAdminList = () => {
             onClick={handleSaveChanges}
             variant="contained"
             color="primary"
-            disabled={updateMutation.isLoading}
+            disabled={updateMutation.isPending}
           >
-            {updateMutation.isLoading ? "Saving..." : "Save Changes"}
+            {updateMutation.isPending ? "Saving..." : "Save Changes"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -298,4 +458,3 @@ const SubAdminList = () => {
 };
 
 export default SubAdminList;
-

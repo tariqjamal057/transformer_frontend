@@ -9,18 +9,109 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api";
 import { MyContext } from "../../App";
 import Swal from "sweetalert2";
+import ResponsivePagination from "react-responsive-pagination";
+import "react-responsive-pagination/themes/classic.css";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import { useDropzone } from "react-dropzone";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+} from "@mui/material";
+import { IoCloseSharp } from "react-icons/io5";
 
 const FinalInspectionList = () => {
   const { setAlertBox } = useContext(MyContext);
   const queryClient = useQueryClient();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedFinalInspection, setSelectedFinalInspection] = useState(null);
 
+  const [bulkUploadModalOpen, setBulkUploadModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      setCurrentPage(1); // Reset to first page on new search
+    }, 500); // 500ms debounce delay
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
+
   const { data: finalInspections, isLoading, isError } = useQuery({
-    queryKey: ["finalInspections"],
-    queryFn: () => api.get("/final-inspections").then((res) => res.data),
+    queryKey: ["finalInspections", currentPage, debouncedSearchQuery],
+    queryFn: () => api.get(`/final-inspections?page=${currentPage}&search=${debouncedSearchQuery}`).then((res) => res.data),
+    placeholderData: { items: [], totalPages: 1 },
   });
+
+  const totalPages = finalInspections.totalPages;
+
+  const downloadSample = () => {
+    const sampleData = [
+      {
+        deliveryScheduleId: "enter_a_real_delivery_schedule_id_here",
+        serialNumberFrom: 101,
+        serialNumberTo: 110,
+        offerDate: new Date().toISOString(),
+        offeredQuantity: 10,
+        inspectionDate: new Date().toISOString(),
+        inspectedQuantity: 10,
+        inspectionOfficers: JSON.stringify(["Officer A", "Officer B"]),
+        diNo: "DI-12345",
+        diDate: new Date().toISOString(),
+        warranty: "60 Months",
+        nominationLetterNo: "NL-001",
+        nominationDate: new Date().toISOString(),
+        consignees: JSON.stringify([{ consigneeId: "enter_a_real_consignee_id_here", quantity: 10, subSerialNumber: "101-110" }]),
+        sealingDetails: JSON.stringify([{ trfSiNo: "101", polySealNo: "PS-A" }, { trfSiNo: "102", polySealNo: "PS-B" }]),
+      },
+    ];
+    const worksheet = XLSX.utils.json_to_sheet(sampleData);
+    const workbook = { Sheets: { Sheet1: worksheet }, SheetNames: ["Sheet1"] };
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(data, "final_inspection_sample.xlsx");
+  };
+
+  const { mutate: bulkUpload, isPending: isUploading } = useMutation({
+    mutationFn: (file) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return api.post("/final-inspections/bulk-upload", formData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["finalInspections"]);
+      setBulkUploadModalOpen(false);
+      setSelectedFile(null);
+      setAlertBox({ open: true, msg: "Bulk upload successful!", error: false });
+    },
+    onError: (error) => {
+      setAlertBox({ open: true, msg: error.message, error: true });
+    },
+  });
+
+  const onDrop = (acceptedFiles) => {
+    setSelectedFile(acceptedFiles[0]);
+  };
+
+  const { getRootProps, getInputProps } = useDropzone({ onDrop });
+
+  const handleBulkUploadSubmit = () => {
+    if (selectedFile) {
+      bulkUpload(selectedFile);
+    } else {
+      setAlertBox({ open: true, msg: "Please select a file.", error: true });
+    }
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/final-inspections/${id}`),
@@ -64,13 +155,67 @@ const FinalInspectionList = () => {
       <div className="right-content w-100">
         <div className="d-flex justify-content-between align-items-center gap-3 mb-3 card shadow border-0 w-100 flex-row p-4">
           <h5 className="mb-0">Final Inspection List</h5>
-
           <div className="d-flex align-items-center">
+          <TextField
+            variant="outlined"
+            placeholder="Search Tn Number, Rating and Officers...."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            size="small"
+            sx={{ width: { xs: '100%', sm: '300px' }, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: '#ccc' }, '&:hover fieldset': { borderColor: '#f0883d' }, '&.Mui-focused fieldset': { borderColor: '#f0883d' } } }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: '#f0883d' }} />
+                </InputAdornment>
+              ),
+            }}
+          />
+            <Button
+              className="btn-blue ms-3 ps-3 pe-3"
+              onClick={() => setBulkUploadModalOpen(true)}
+            >
+              Bulk Upload
+            </Button>
             <Link to={"/add-finalInspection"}>
               <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
             </Link>
           </div>
         </div>
+
+        {/* Bulk Upload Modal */}
+        <Dialog
+          open={bulkUploadModalOpen}
+          onClose={() => { setBulkUploadModalOpen(false); setSelectedFile(null); }}
+          fullWidth
+        >
+          <DialogTitle className="d-flex justify-content-between align-items-center">
+            Bulk Upload Final Inspections
+            <IconButton onClick={() => { setBulkUploadModalOpen(false); setSelectedFile(null); }}>
+              <IoCloseSharp />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent>
+            <Button onClick={downloadSample} variant="outlined" sx={{ mb: 2 }}>
+              Download Sample
+            </Button>
+            <div
+              {...getRootProps()}
+              style={{ border: "2px dashed #ccc", padding: "20px", textAlign: "center", cursor: "pointer" }}
+            >
+              <input {...getInputProps()} />
+              {selectedFile ? <p>Selected file: {selectedFile.name}</p> : <p>Drag 'n' drop a file here, or click to select a file</p>}
+            </div>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => { setBulkUploadModalOpen(false); setSelectedFile(null); }} variant="outlined">
+              Cancel
+            </Button>
+            <Button onClick={handleBulkUploadSubmit} variant="contained" color="primary" disabled={!selectedFile || isUploading}>
+              {isUploading ? "Uploading..." : "Submit"}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         <div className="card shadow border-0 p-3 mt-4">
           <div className="table-responsive">
@@ -99,18 +244,14 @@ const FinalInspectionList = () => {
               </thead>
               <tbody className="text-center align-middle">
                 {isLoading ? (
-                  <tr>
-                    <td colSpan="18">Loading...</td>
-                  </tr>
+                  <tr><td colSpan="18">Loading...</td></tr>
                 ) : isError ? (
-                  <tr>
-                    <td colSpan="18">Error fetching data</td>
-                  </tr>
-                ) : finalInspections.length > 0 ? (
-                  finalInspections.map((item, index) => (
+                  <tr><td colSpan="18">Error fetching data</td></tr>
+                ) : finalInspections.items.length > 0 ? (
+                  finalInspections.items.map((item, index) => (
                     <tr key={item.id}>
-                      <td># {index + 1}</td>
-                      <td>{format(new Date(item.offeredDate), "dd MMM yyyy")}</td>
+                      <td># {index + 1 + (currentPage - 1) * 10}</td>
+                      <td>{format(new Date(item.offerDate), "dd MMM yyyy")}</td>
                       <td>{item.offeredQuantity}</td>
 
                       <td>{item.deliverySchedule?.tnNumber}</td>
@@ -129,31 +270,28 @@ const FinalInspectionList = () => {
                       </td>
                       <td>
                         <div className="d-flex flex-wrap justify-content-center gap-1">
-                          {item.inspectionOfficers.map((officer, idx) => (
+                          {Array.isArray(item.inspectionOfficers) && item.inspectionOfficers.map((officer, idx) => (
                             <span
                               key={idx}
                               className="badge bg-info text-white px-2 py-1"
-                              style={{
-                                fontSize: "0.75rem",
-                                borderRadius: "10px",
-                              }}
+                              style={{ fontSize: "0.75rem", borderRadius: "10px" }}
                             >
                               {officer}
                             </span>
                           ))}
                         </div>
                       </td>
-                      <td>{item.nominationLetterNo}</td>
-                      <td>{format(new Date(item.nominationDate), "dd MMM yyyy")}</td>
+                      <td>{item.nominationLetterNo || '-'}</td>
+                      <td>{item.nominationDate ? format(new Date(item.nominationDate), "dd MMM yyyy") : '-'}</td>
                       <td>{format(new Date(item.inspectionDate), "dd MMM yyyy")}</td>
                       <td>{item.inspectedQuantity}</td>
-                      <td>{item.total}</td>
+                      <td>{item.total || '-'}</td>
                       <td>
                         <div className="fw-semibold">{item.diNo}</div>
                         <div className="text-muted small">{format(new Date(item.diDate), "dd MMM yyyy")}</div>
                       </td>
                       <td>
-                        {item.deliverySchedule.guaranteePeriodMonths} Months
+                        {item.deliverySchedule?.guaranteePeriodMonths} Months
                       </td>
 
                       <td>
@@ -175,16 +313,19 @@ const FinalInspectionList = () => {
                     </tr>
                   ))
                 ) : (
-                  <tr>
-                    <td colSpan="18" className="text-center">
-                      No data found
-                    </td>
-                  </tr>
+                  <tr><td colSpan="18" className="text-center">No data found</td></tr>
                 )}
               </tbody>
             </table>
           </div>
         </div>
+        {totalPages > 1 && (
+          <ResponsivePagination
+            current={currentPage}
+            total={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        )}
       </div>
 
       <FinalInspectionModal
@@ -197,4 +338,3 @@ const FinalInspectionList = () => {
 };
 
 export default FinalInspectionList;
-

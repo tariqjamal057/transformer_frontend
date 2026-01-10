@@ -52,13 +52,15 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     useContext(MyContext);
 
   const { data: deliverySchedules } = useQuery({
-    queryKey: ["deliverySchedules"],
-    queryFn: () => api.get("/delivery-schedules").then((res) => res.data.data),
+    queryKey: ["allDeliverySchedules"],
+    queryFn: () => api.get("/delivery-schedules?all=true").then((res) => res.data),
+    placeholderData: [],
   });
 
   const { data: consignees } = useQuery({
-    queryKey: ["consignees"],
-    queryFn: () => api.get("/consignees").then((res) => res.data),
+    queryKey: ["allConsignees"],
+    queryFn: () => api.get("/consignees?all=true").then((res) => res.data),
+    placeholderData: [],
   });
 
   const [tnDetail, setTnDetail] = useState("");
@@ -106,7 +108,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
           : null
       );
       setOfferDate(
-        inspectionData.offeredDate ? dayjs(inspectionData.offeredDate) : null
+        inspectionData.offerDate ? dayjs(inspectionData.offerDate) : null
       );
       setOfferedQuantity(inspectionData.offeredQuantity);
       setSelectedInspectionOfficer(inspectionData.inspectionOfficers || []);
@@ -192,7 +194,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     const subSnNumber = `${startSn} TO ${endSn}`;
 
     const newConsignee = {
-      consignee: consignees.find((c) => c.id === selectedConsignee), // for store id I have to pass only selectedConsignee
+      consignee: consignees.find((c) => c.id === selectedConsignee),
       quantity: parseInt(consigneeQuantity),
       subSnNumber,
     };
@@ -232,19 +234,20 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
 
   const handleSubmit = () => {
     const updatedData = {
-      tnDetail: tnDetail?.id,
-      serialNumberFrom,
-      serialNumberTo,
-      srNumber: `${serialNumberFrom} TO ${serialNumberTo}`,
+      deliveryScheduleId: tnDetail?.id,
+      serialNumberFrom: parseInt(serialNumberFrom, 10),
+      serialNumberTo: parseInt(serialNumberTo, 10),
       offerDate: dayjs(offerDate).format("YYYY-MM-DD"),
-      offeredQuantity,
+      offeredQuantity: parseInt(offeredQuantity, 10),
       inspectionDate: dayjs(inspectionDate).format("YYYY-MM-DD"),
-      inspectedQuantity,
-      selectedInspectionOfficer,
+      inspectedQuantity: parseInt(inspectedQuantity, 10),
+      inspectionOfficers: selectedInspectionOfficer,
+      nominationLetterNo: nominationLetterNo,
+      nominationDate: nominationDate ? dayjs(nominationDate).format("YYYY-MM-DD") : null,
       diNo,
       diDate: dayjs(diDate).format("YYYY-MM-DD"),
       warranty,
-      consignees: consigneeList, // ✅ New Array
+      consignees: consigneeList.map(c => ({...c, consigneeId: c.consignee.id})), // Ensure consigneeId is sent
     };
     updateFinalInspection(updatedData);
   };
@@ -306,12 +309,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
             label="Serial Number From"
             fullWidth
             value={serialNumberFrom}
-            onChange={(e) => {
-              const value = parseInt(e.target.value);
-              if (value >= 1 || e.target.value === "") {
-                setSerialNumberFrom(e.target.value);
-              }
-            }}
+            onChange={(e) => setSerialNumberFrom(e.target.value)}
             sx={{ mt: 2 }}
           />
 
@@ -320,12 +318,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
             label="Serial Number To"
             fullWidth
             value={serialNumberTo}
-            onChange={(e) => {
-              const value = parseInt(e.target.value);
-              if (value >= 1 || e.target.value === "") {
-                setSerialNumberTo(e.target.value);
-              }
-            }}
+            onChange={(e) => setSerialNumberTo(e.target.value)}
             sx={{ mt: 2 }}
           />
 
@@ -341,6 +334,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
             <TextField
               label="Offered Quantity"
               fullWidth
+              type="number"
               value={offeredQuantity}
               onChange={(e) => setOfferedQuantity(e.target.value)}
               sx={{ mt: 2 }}
@@ -395,6 +389,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
             <TextField
               label="Inspected Quantity"
               fullWidth
+              type="number"
               value={inspectedQuantity}
               onChange={(e) => setInspectedQuantity(e.target.value)}
               sx={{ mt: 2 }}
@@ -403,6 +398,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
             <TextField
               label="Grand Total"
               fullWidth
+              type="number"
               value={total}
               onChange={(e) => setTotal(e.target.value)}
               sx={{ mt: 2 }}
@@ -430,16 +426,17 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
             fullWidth
             value={warranty}
             sx={{ mt: 2 }}
+            InputProps={{ readOnly: true }}
           />
 
           <Grid container spacing={3} columns={{ xs: 1, sm: 2 }}>
-            <Grid item size={2}>
+            <Grid item xs={2}>
               <Typography variant="h6" sx={{ mt: 2 }}>
                 Consignee Details
               </Typography>
             </Grid>
 
-            <Grid item size={1}>
+            <Grid item xs={1}>
               <FormControl fullWidth>
                 <InputLabel>Consignee</InputLabel>
                 <Select
@@ -447,7 +444,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
                   onChange={(e) => setSelectedConsignee(e.target.value)}
                   label="Consignee"
                 >
-                  {consignees?.map((c) => (
+                  {(consignees || []).map((c) => (
                     <MenuItem key={c.id} value={c.id}>
                       {c.name}
                     </MenuItem>
@@ -456,7 +453,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
               </FormControl>
             </Grid>
 
-            <Grid item size={1}>
+            <Grid item xs={1}>
               <Box display="flex" gap={1}>
                 <TextField
                   label="Quantity"
@@ -476,7 +473,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
             </Grid>
 
             {/* Table */}
-            <Grid item size={2}>
+            <Grid item xs={2}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -513,14 +510,6 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
               </Table>
             </Grid>
           </Grid>
-
-          {/*<TextField
-            label="Shelling Details"
-            fullWidth
-            value={shellingDetails}
-            onChange={(e) => setShellingDetails(e.target.value)}
-            sx={{ mt: 2 }}
-          />*/}
 
           <Box mt={4} textAlign="center">
             <Button variant="contained" size="large" onClick={handleSubmit} disabled={isLoading}>
