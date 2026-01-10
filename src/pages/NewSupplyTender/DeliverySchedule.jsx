@@ -92,24 +92,38 @@ const DeliverySchedule = () => {
         tnNumber: "TN-001",
         rating: 5,
         loa: "LOA-001",
-        loaDate: "2024-01-01",
+        loaDate: new Date("2024-01-01").toISOString(),
         po: "PO-001",
-        poDate: "2024-01-01",
+        poDate: new Date("2024-01-01").toISOString(),
         commencementDays: 30,
-        commencementDate: "2024-01-31", // Note: This is usually calculated based on other dates.
-        deliveryScheduleDate: "2024-03-01",
+        commencementDate: new Date("2024-01-31").toISOString(), // Note: This is usually calculated based on other dates.
+        deliveryScheduleDate: new Date("2024-03-01").toISOString(),
         imposedLetters: JSON.stringify([
-          { imposedLetterNo: "ILN001", date: "2025-01-01" },
+          {
+            imposedLetterNo: "ILN001",
+            date: new Date("2025-01-01").toISOString(),
+          },
         ]),
         liftingLetters: JSON.stringify([
-          { liftingLetterNo: "LLN001", date: "2025-01-01" },
+          {
+            liftingLetterNo: "LLN001",
+            date: new Date("2025-01-01").toISOString(),
+          },
         ]),
         guaranteePeriodMonths: 12,
         totalQuantity: 100,
         deliverySchedule: JSON.stringify([
           // Note: This is usually calculated.
-          { start: "2024-01-31", end: "2024-02-29", quantity: 50 },
-          { start: "2024-03-01", end: "2024-03-01", quantity: 50 },
+          {
+            start: new Date("2024-01-31").toISOString(),
+            end: new Date("2024-02-29").toISOString(),
+            quantity: 50,
+          },
+          {
+            start: new Date("2024-03-01").toISOString(),
+            end: new Date("2024-03-01").toISOString(),
+            quantity: 50,
+          },
         ]),
         chalanDescription: "Sample description",
         wound: "COPPER",
