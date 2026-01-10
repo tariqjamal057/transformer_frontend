@@ -1,51 +1,25 @@
 import React, { useContext, useEffect, useState } from "react";
 import companyLogo from "../assets/kalpana.jpg";
-import kgLogo from "../assets/kg.jpg";
-import ygLogo from "../assets/yg.jpg";
 import transformer3 from "../assets/transformer3.jpg";
 import { MyContext } from "../App";
 import AssessmentIcon from "@mui/icons-material/Assessment"; // MIS report icon
-import { MdDelete } from "react-icons/md";
+import { MdDelete, MdEdit } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../services/api";
 
 const Companies = () => {
-  const { setIsHideSidebarAndHeader } = useContext(MyContext);
+  const { setAlertBox } = useContext(MyContext);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const [companies, setCompanies] = useState([
-    {
-      id: 1,
-      name: "KALPANA INDUSTRIES",
-      phone: "9876543210",
-      address: "Plot 12, Industrial Zone, Mumbai",
-      gst: "27AAACP1234F1Z5",
-      email: "kalpana@gmail.com",
-      logo: companyLogo,
-      bgColor: "rgba(72, 33, 33, 0.33)",
-    },
-    {
-      id: 2,
-      name: "YASH GRANITES",
-      phone: "9123456780",
-      address: "Survey No 45, Industrial Area, Jaipur",
-      gst: "08AABCY4567J1Z2",
-      email: "yashgranites@gmail.com",
-      logo: ygLogo,
-      bgColor: "rgba(72, 33, 33, 0.33)",
-    },
-    {
-      id: 3,
-      name: "KALPANA GRANITES",
-      phone: "9988776655",
-      address: "Plot 221, Granite Park, Hyderabad",
-      gst: "36AAACK7890L1Z3",
-      email: "kalpanagranites@gmail.com",
-      logo: kgLogo,
-      bgColor: "rgba(72, 33, 33, 0.33)",
-    },
-  ]);
+  const { data: companies, isLoading } = useQuery({
+    queryKey: ["companies"],
+    queryFn: () => api.get("/companies").then((res) => res.data.data),
+  });
 
-  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [selectedCompany, setSelectedCompany] = useState(null); // Now tracks selected company ID
+  const [editingCompany, setEditingCompany] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState("");
   const [newCompanyAddress, setNewCompanyAddress] = useState("");
@@ -55,66 +29,97 @@ const Companies = () => {
   const [newCompanyLogo, setNewCompanyLogo] = useState(null);
   const [previewLogo, setPreviewLogo] = useState(null);
 
-  useEffect(() => {
-    setIsHideSidebarAndHeader(true);
-    window.scrollTo(0, 0);
-  }, [setIsHideSidebarAndHeader]);
-
-  const handleNext = () => {
-    if (selectedCompany) {
-      const selectedCompanyData = companies.find(
-        (company) => company.id === selectedCompany
-      );
-      localStorage.setItem(
-        "selectedCompany",
-        JSON.stringify(selectedCompanyData)
-      );
-      window.location.href = "/supply-tenders";
+  const handleNext = async () => {
+    if (!selectedCompany) {
+      setAlertBox({open: true, msg: "Please select a company first!", error: true});
+      return;
+    }
+    localStorage.setItem("companyId", selectedCompany);
+    try {
+      const response = await api.post("/auth/select-company", { companyId: selectedCompany });
+      navigate("/supply-tender", { state: { supplyTenders: response.data.supplyTenders } });
+    } catch (error) {
+      setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
     }
   };
 
-  const handleAddCompany = (e) => {
+  const addCompanyMutation = useMutation({
+    mutationFn: (newCompany) => api.post("/companies", newCompany),
+    onSuccess: () => {
+      queryClient.invalidateQueries("companies");
+      setShowModal(false);
+      setAlertBox({open: true, msg: "Company added successfully!", error: false});
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
+    },
+  });
+
+  const updateCompanyMutation = useMutation({
+    mutationFn: ({ id, data }) => api.put(`/companies/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries("companies");
+      setShowModal(false);
+      setAlertBox({open: true, msg: "Company updated successfully!", error: false});
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
+    },
+  });
+
+  const handleCompanySubmit = (e) => {
     e.preventDefault();
-    if (newCompanyName && newCompanyLogo) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const newCompany = {
-          id: companies.length + 1,
-          name: newCompanyName,
-          phone: newCompanyphoneNo,
-          address: newCompanyAddress,
-          gst: newCompanyGST,
-          email: newCompanyEmail,
-          logo: reader.result,
-          bgColor: "rgba(72, 33, 33, 0.33)",
-        };
-        setCompanies((prev) => [...prev, newCompany]);
-        setNewCompanyName("");
-        setNewCompanyPhoneNo("");
-        setNewCompanyAddress("");
-        setNewCompanyGST("");
-        setNewCompanyEmail("");
-        setNewCompanyLogo(null);
-        setPreviewLogo(null);
-        setShowModal(false);
-      };
-      reader.readAsDataURL(newCompanyLogo);
+    const formData = new FormData();
+    formData.append("name", newCompanyName);
+    formData.append("address", newCompanyAddress);
+    formData.append("phone", newCompanyphoneNo);
+    formData.append("gstNo", newCompanyGST);
+    formData.append("email", newCompanyEmail);
+    if (newCompanyLogo) {
+      formData.append("logo", newCompanyLogo);
+    }
+
+    if (editingCompany) {
+      updateCompanyMutation.mutate({ id: editingCompany.id, data: formData });
+    } else {
+      addCompanyMutation.mutate(formData);
     }
   };
 
-  {
-    /*// Add this function inside your component
-  const handleDeleteCompany = (id) => {
-    if (window.confirm("Are you sure you want to delete this company?")) {
-      setCompanies((prev) => prev.filter((company) => company.id !== id));
+  const handleEdit = (company) => {
+    setEditingCompany(company);
+    setNewCompanyName(company.name);
+    setNewCompanyAddress(company.address);
+    setNewCompanyPhoneNo(company.phone);
+    setNewCompanyGST(company.gstNo);
+    setNewCompanyEmail(company.email);
+    setPreviewLogo(company.logo ? `http://localhost:5000/${company.logo.replace(/\\/g, '/')}` : null);
+    setShowModal(true);
+  };
 
-      // If the deleted company was selected, reset selection
-      if (selectedCompany === id) {
-        setSelectedCompany(null);
-      }
-    }
-  };*/
+  const { mutate: deleteCompany } = useMutation({
+    mutationFn: (id) => api.delete(`/companies/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries("companies");
+      setAlertBox({open: true, msg: "Company deleted successfully!", error: false});
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
+    },
+  });
+
+  const openAddModal = () => {
+    setEditingCompany(null);
+    setNewCompanyName("");
+    setNewCompanyAddress("");
+    setNewCompanyPhoneNo("");
+    setNewCompanyGST("");
+    setNewCompanyEmail("");
+    setNewCompanyLogo(null);
+    setPreviewLogo(null);
+    setShowModal(true);
   }
+
 
   return (
     <div className="container-fluid vh-100">
@@ -129,46 +134,70 @@ const Companies = () => {
             className="w-100 d-flex flex-column gap-3"
             style={{
               maxHeight: "360px",
-              overflowY: companies.length > 3 ? "auto" : "unset",
+              overflowY: companies?.length > 3 ? "auto" : "unset",
               scrollBehavior: "smooth",
               padding: "10px",
             }}
           >
-            {companies.map((company) => (
-              <div
-                key={company.id}
-                className="d-flex justify-content-between align-items-center px-4 py-3 rounded w-100"
-                style={{
-                  backgroundColor:
-                    selectedCompany === company.id
-                      ? "rgba(61, 176, 30, 0.51)"
-                      : company.bgColor,
-                  boxShadow:
-                    selectedCompany === company.id
-                      ? "0 4px 15px rgba(0, 0, 0, 0.3)"
-                      : "0 2px 8px rgba(0, 0, 0, 0.1)",
-                  outline:
-                    selectedCompany === company.id
-                      ? "3px solid #0d6efd"
-                      : "none",
-                  color: "black",
-                  cursor: "pointer",
-                }}
-              >
-                {/* Select company on click */}
+            {isLoading ? (
+              <p>Loading companies...</p>
+            ) : (
+              companies?.map((company) => (
                 <div
-                  className="d-flex align-items-center justify-content-between gap-3 flex-grow-1"
-                  onClick={() => setSelectedCompany(company.id)}
+                  key={company.id}
+                  className="d-flex justify-content-between align-items-center px-4 py-3 rounded w-100"
+                  style={{
+                    backgroundColor:
+                      selectedCompany === company.id
+                        ? "rgba(61, 176, 30, 0.51)"
+                        : "rgba(72, 33, 33, 0.33)",
+                    boxShadow:
+                      selectedCompany === company.id
+                        ? "0 4px 15px rgba(0, 0, 0, 0.3)"
+                        : "0 2px 8px rgba(0, 0, 0, 0.1)",
+                    outline:
+                      selectedCompany === company.id
+                        ? "3px solid #0d6efd"
+                        : "none",
+                    color: "black",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setSelectedCompany(company.id)} // Select but don't navigate
                 >
-                  <span className="fw-bold">{company.name}</span>
-                  <img
-                    src={company.logo}
-                    alt="logo"
-                    style={{ width: 130, height: 80 }}
-                  />
+                  {/* Select company on click */}
+                  <div
+                    className="d-flex align-items-center justify-content-between gap-3 flex-grow-1"
+                  >
+                    <span className="fw-bold">{company.name}</span>
+                    <img
+                      src={company.logo ? `http://localhost:5000/${company.logo.replace(/\\/g, '/')}` : companyLogo}
+                      alt="logo"
+                      style={{ width: 130, height: 80 }}
+                    />
+                  </div>
+                  {/* <div>
+                    <button
+                      className="btn btn-primary btn-sm me-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(company)
+                      }}
+                    >
+                      <MdEdit />
+                    </button>
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteCompany(company.id)
+                      }}
+                    >
+                      <MdDelete />
+                    </button>
+                  </div> */}
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           <div className="d-flex flex-column gap-3 mt-5 w-100 align-items-center">
@@ -176,14 +205,14 @@ const Companies = () => {
             <div className="d-flex gap-3">
               <button
                 className="btn btn-secondary px-5 py-2 rounded-pill"
-                onClick={() => setShowModal(true)}
+                onClick={openAddModal}
               >
                 ADD
               </button>
               <button
                 className="btn btn-primary px-5 py-2 rounded-pill"
-                disabled={!selectedCompany}
                 onClick={handleNext}
+                disabled={!selectedCompany} // Disable if no company is selected
               >
                 NEXT
               </button>
@@ -245,14 +274,14 @@ const Companies = () => {
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Add New Company</h5>
+                <h5 className="modal-title">{editingCompany ? "Edit Company" : "Add New Company"}</h5>
                 <button
                   type="button"
                   className="btn-close"
                   onClick={() => setShowModal(false)}
                 ></button>
               </div>
-              <form onSubmit={handleAddCompany}>
+              <form onSubmit={handleCompanySubmit}>
                 <div className="modal-body">
                   <div className="mb-3">
                     <label className="form-label">Company Name</label>
@@ -315,7 +344,6 @@ const Companies = () => {
                       type="file"
                       className="form-control"
                       accept="image/*"
-                      required
                       onChange={(e) => {
                         setNewCompanyLogo(e.target.files[0]);
                         setPreviewLogo(URL.createObjectURL(e.target.files[0]));
@@ -340,8 +368,8 @@ const Companies = () => {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-success">
-                    Add Company
+                  <button type="submit" className="btn btn-success" disabled={addCompanyMutation.isLoading || updateCompanyMutation.isLoading}>
+                    {addCompanyMutation.isLoading || updateCompanyMutation.isLoading ? 'Saving...' : 'Save Company'}
                   </button>
                 </div>
               </form>

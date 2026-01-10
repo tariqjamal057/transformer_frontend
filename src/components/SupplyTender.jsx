@@ -1,85 +1,83 @@
 import React, { useContext, useEffect, useState } from "react";
 import companyLogo from "../assets/kalpana.jpg";
-import kgLogo from "../assets/kg.jpg";
-import ygLogo from "../assets/yg.jpg";
 import transformer3 from "../assets/transformer3.jpg";
 import { MyContext } from "../App";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../services/api";
+import { MdDelete } from "react-icons/md";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const SupplyTenders = () => {
-  const { setIsHideSidebarAndHeader, setAlertBox } = useContext(MyContext);
-
-  const [supplytenders, setSupplyTenders] = useState([
-    {
-      id: 1,
-      name: "AJMER DISCOM",
-      bgColor: "rgba(72, 33, 33, 0.33)",
-    },
-    {
-      id: 2,
-      name: "JAIPUR DISCOM",
-      bgColor: "rgba(72, 33, 33, 0.33)",
-    },
-    {
-      id: 3,
-      name: "JADHPUR DISCOM",
-      bgColor: "rgba(72, 33, 33, 0.33)",
-    },
-  ]);
-
+  const { setAlertBox } = useContext(MyContext);
+  const queryClient = useQueryClient();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [supplytenders, setSupplyTenders] = useState([]);
   const [selectedSupplyTender, setSelectedSupplyTender] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [newTenderName, setNewTenderName] = useState("");
+  const [newTenderNo, setNewTenderNo] = useState("");
+  const companyId = localStorage.getItem("companyId");
+
+  const { data: fetchedSupplyTenders, isLoading } = useQuery({
+    queryKey: ["supplyTenders", companyId],
+    queryFn: () =>
+      api
+        .get(`/supply-tenders?companyId=${companyId}`)
+        .then((res) => res.data.data),
+    enabled: !!companyId,
+  });
 
   useEffect(() => {
-    setIsHideSidebarAndHeader(true);
-    window.scrollTo(0, 0);
-  }, [setIsHideSidebarAndHeader]);
-
-  const handleNext = () => {
-    if (selectedSupplyTender) {
-      const selectedSupplyTenderData = supplytenders.find(
-        (item) => item.id === selectedSupplyTender
-      );
-      localStorage.setItem(
-        "selectedSupplyTender",
-        JSON.stringify(selectedSupplyTenderData)
-      );
-      window.location.href = "/tnNumber-list";
+    if (fetchedSupplyTenders) {
+      setSupplyTenders(fetchedSupplyTenders);
     }
-  };
+  }, [fetchedSupplyTenders]);
+
+
+  const addTenderMutation = useMutation({
+    mutationFn: (newTender) => api.post("/supply-tenders", newTender),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["supplyTenders", companyId]);
+      setShowModal(false);
+      setNewTenderName("");
+      setNewTenderNo("");
+      setAlertBox({open: true, msg: "Supply Tender added successfully!", error: false});
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
+    },
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (newTenderName) {
-      const newTender = {
-        id: supplytenders.length + 1,
-        name: newTenderName,
-        bgColor: "rgba(72, 33, 33, 0.33)",
-      };
-      setSupplyTenders((prev) => [...prev, newTender]);
-      setNewTenderName("");
-      setShowModal(false);
-    }
+    addTenderMutation.mutate({ name: newTenderName, tenderNo: newTenderNo, companyId, tenderDate: new Date() });
   };
 
-  {/*const handleDeleteTender = (id) => {
-    if (window.confirm("Are you sure you want to delete this supply tender?")) {
-      setSupplyTenders((prev) => prev.filter((item) => item.id !== id));
+  const { mutate: deleteTender } = useMutation({
+    mutationFn: (id) => api.delete(`/supply-tenders/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["supplyTenders", companyId]);
+      setAlertBox({open: true, msg: "Supply Tender deleted successfully!", error: false});
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
+    },
+  });
 
-      // If the deleted tender was selected, deselect it
-      if (selectedSupplyTender === id) {
-        setSelectedSupplyTender(null);
-      }
-
-      // Optional: show alert
-      setAlertBox &&
-        setAlertBox({
-          open: true,
-          error: false,
-          msg: "Supply tender deleted successfully!",
-        });
+  const handleNext = async () => {
+    if (!selectedSupplyTender) {
+      setAlertBox({open: true, msg: "Please select a Supply Tender first!", error: true});
+      return;
     }
-  };*/}
+    try {
+      const response = await api.post("/auth/select-supply-tender", { supplyTenderId: selectedSupplyTender });
+      localStorage.setItem("token", response.data.token);
+      navigate("/");
+    } catch (error) {
+      setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
+    }
+  };
 
   return (
     <div className="container-fluid vh-100">
@@ -94,42 +92,55 @@ const SupplyTenders = () => {
             className="w-100 d-flex flex-column gap-3"
             style={{
               maxHeight: "360px",
-              overflowY: supplytenders.length > 3 ? "auto" : "unset",
+              overflowY: supplytenders?.length > 3 ? "auto" : "unset",
               scrollBehavior: "smooth",
               padding: "10px",
             }}
           >
-            {supplytenders.map((item) => (
-              <div
-                key={item.id}
-                className="d-flex justify-content-between align-items-center px-4 py-3 rounded w-100"
-                style={{
-                  backgroundColor:
-                    selectedSupplyTender === item.id
-                      ? "rgba(61, 176, 30, 0.51)"
-                      : item.bgColor,
-                  boxShadow:
-                    selectedSupplyTender === item.id
-                      ? "0 4px 15px rgba(0, 0, 0, 0.3)"
-                      : "0 2px 8px rgba(0, 0, 0, 0.1)",
-                  outline:
-                    selectedSupplyTender === item.id
-                      ? "3px solid #0d6efd"
-                      : "none",
-                  color: "black",
-                  cursor: "pointer",
-                  height: "120px",
-                }}
-              >
-                {/* Clickable area to select tender */}
+            {isLoading ? (
+              <p>Loading...</p>
+            ) : (
+              supplytenders?.map((item) => (
                 <div
-                  className="flex-grow-1 d-flex justify-content-center fw-bold"
+                  key={item.id}
+                  className="d-flex justify-content-between align-items-center px-4 py-3 rounded w-100"
+                  style={{
+                    backgroundColor:
+                      selectedSupplyTender === item.id
+                        ? "rgba(61, 176, 30, 0.51)"
+                        : "rgba(72, 33, 33, 0.33)",
+                    boxShadow:
+                      selectedSupplyTender === item.id
+                        ? "0 4px 15px rgba(0, 0, 0, 0.3)"
+                        : "0 2px 8px rgba(0, 0, 0, 0.1)",
+                    outline:
+                      selectedSupplyTender === item.id
+                        ? "3px solid #0d6efd"
+                        : "none",
+                    color: "black",
+                    cursor: "pointer",
+                    height: "120px",
+                  }}
                   onClick={() => setSelectedSupplyTender(item.id)}
                 >
-                  {item.name}
+                  {/* Clickable area to select tender */}
+                  <div
+                    className="flex-grow-1 d-flex justify-content-center fw-bold"
+                  >
+                    {item.name}
+                  </div>
+                  {/* <button
+                    className="btn btn-danger btn-sm"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        deleteTender(item.id);
+                    }}
+                  >
+                    <MdDelete />
+                  </button> */}
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           <div className="d-flex gap-3 mt-5">
@@ -140,12 +151,12 @@ const SupplyTenders = () => {
               ADD
             </button>
             <button
-              className="btn btn-primary px-5 py-2 rounded-pill"
-              disabled={!selectedSupplyTender}
-              onClick={handleNext}
-            >
-              NEXT
-            </button>
+                className="btn btn-primary px-5 py-2 rounded-pill"
+                onClick={handleNext}
+                disabled={!selectedSupplyTender} // Disable if no tender is selected
+              >
+                NEXT
+              </button>
           </div>
         </div>
 
@@ -197,6 +208,16 @@ const SupplyTenders = () => {
                       onChange={(e) => setNewTenderName(e.target.value)}
                     />
                   </div>
+                  <div className="mb-3">
+                    <label className="form-label">Supply Tender Number</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      required
+                      value={newTenderNo}
+                      onChange={(e) => setNewTenderNo(e.target.value)}
+                    />
+                  </div>
                 </div>
                 <div className="modal-footer">
                   <button
@@ -206,8 +227,8 @@ const SupplyTenders = () => {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-success">
-                    Add Company
+                  <button type="submit" className="btn btn-success" disabled={addTenderMutation.isLoading}>
+                    {addTenderMutation.isLoading ? 'Adding...' : 'Add Tender'}
                   </button>
                 </div>
               </form>

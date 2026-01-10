@@ -1,19 +1,19 @@
 import "./App.css";
 import "./responsive.css"
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
-import { createContext, useEffect, useState } from "react";
+import { Route, BrowserRouter as Router, Routes, useLocation } from "react-router-dom";
+import { useEffect, useState, createContext } from "react";
 import LoadingBar from "react-top-loading-bar";
 
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import PrivateRoute from "./components/PrivateRoute";
 import Login from "./components/Login";
+import SelectCompany from "./components/SelectCompany";
+import SelectSupplyTender from "./components/SelectSupplyTender";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Signup from "./components/Signup";
 import Companies from "./components/Comapnies";
-import SupplyTenders from "./components/SupplyTender";
+import SupplyTender from "./components/SupplyTender";
 import AddTnNumber from "./pages/NewSupplyTender/AddTnNumber";
 import TnNumberList from "./pages/NewSupplyTender/TnNumberList";
 import AddLoa from "./pages/NewSupplyTender/AddLoa";
@@ -58,35 +58,30 @@ import NewGPTranformers from "./pages/MisReports/NewGPTransformers";
 import NewGPSummary from "./pages/MisReports/NewGPSummary";
 import SupplyGPExpiredStatement from "./pages/MisReports/SupplyGPExpiredStatement";
 import GPExtendedWarrantyInformation from "./pages/MisReports/GPExtendedWarrantyInformation";
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 
+export const MyContext = createContext();
 
-const MyContext = createContext();
-
-function App() {
-
+const AppContent = () => {
   const [isToggleSidebar, setIsToggleSidebar] = useState(false)
-  const [isLogin, setIsLogin] = useState(false)
-  const [isHideSidebarAndHeader, setIsHideSidebarAndHeader] = useState(false)
   const [isOpenNav, setIsOpenNav] =useState(false)
   const [windowWidth, setWindowWidth] = useState(window.innerWidth)
-
   const [progress, setProgress] = useState(0);
-
   const [alertBox, setAlertBox] = useState({
-      open:false,
-      error:false,
-      msg:''
-    })
+    open: false,
+    msg: '',
+    error: false,
+  });
 
-  const handleClose = (event, reason) =>{
-    if(reason === 'clickaway'){
-      return;
-    }
+  const [isHideSidebarAndHeader, setIsHideSidebarAndHeader] = useState(false);
+  const location = useLocation();
 
-    setAlertBox({
-      open:false
-    })
-  }
+  useEffect(() => {
+    const noSidebarAndHeaderPages = ['/login', '/signup', '/select-company', '/select-supply-tender', '/companies', '/supply-tender'];
+    setIsHideSidebarAndHeader(noSidebarAndHeaderPages.includes(location.pathname));
+  }, [location.pathname]);
+
 
   useEffect(()=>{
     const handleResize = ()=>{
@@ -105,29 +100,15 @@ function App() {
     setIsOpenNav(true)
   }
 
-  
-
-  const values={
-    isToggleSidebar,
-    setIsToggleSidebar,
-    isLogin,
-    setIsLogin,
-    isHideSidebarAndHeader,
-    setIsHideSidebarAndHeader,
-    windowWidth, 
-    setWindowWidth,
-    isOpenNav,
-    openNav, 
-    setIsOpenNav,
-    setProgress,
-    alertBox,
-    setAlertBox
-  }
-
+  const handleClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setAlertBox((prev) => ({ ...prev, open: false }));
+  };
 
   return (
-    <Router>
-      <MyContext.Provider value={values}>
+    <MyContext.Provider value={{ isToggleSidebar, setIsToggleSidebar, isOpenNav, setIsOpenNav, windowWidth, openNav, setProgress, setAlertBox, setIsHideSidebarAndHeader }}>
       <LoadingBar
         color="#f11946"
         progress={progress}
@@ -135,24 +116,14 @@ function App() {
         className="topLoadingBar"
       />
 
-      <Snackbar open={alertBox.open} autoHideDuration={6000} onClose={handleClose}>
-        <Alert
-          onClose={handleClose}
-          severity={alertBox.error===false?'success' : 'error'}
-          variant="filled"
-          sx={{ width: '100%' }}
-        >
-          {alertBox.msg}
-        </Alert>
-      </Snackbar>
         {
-          isHideSidebarAndHeader !== true && <Header/>
+          !isHideSidebarAndHeader && <Header/>
         }
     
       <div className="main d-flex">
 
         {
-          isHideSidebarAndHeader !== true &&
+          !isHideSidebarAndHeader &&
           <>
           <div className={`sidebarOverlay d-none ${isOpenNav===true && 'show'}`} onClick={()=>setIsOpenNav(false)}></div>
           <div className={`sidebarWrapper ${isToggleSidebar === true ? 'toggle':''} ${isOpenNav === true ? 'open': ''}`}>
@@ -162,64 +133,78 @@ function App() {
         }
         
 
-        <div className={`content ${isHideSidebarAndHeader === true && 'full'} ${isToggleSidebar === true ? 'toggle':''}`}>
+        <div className={`content ${isHideSidebarAndHeader && 'full'} ${isToggleSidebar === true ? 'toggle':''}`}>
           <Routes>
             <Route exact path = "/login" element={<Login/>} />
-            <Route exact path="/signup" element={<PrivateRoute element={<Signup />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/companies" element={<PrivateRoute element={<Companies />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/supply-tenders" element={<PrivateRoute element={<SupplyTenders />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/" element={<PrivateRoute element={<DeliveryScheduleList />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/add-tnNumber" element={<PrivateRoute element={<AddTnNumber />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/tnNumber-list" element={<PrivateRoute element={<TnNumberList />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/add-loa" element={<PrivateRoute element={<AddLoa />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/loa-list" element={<PrivateRoute element={<LoaList />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/add-deliverySchedule" element={<PrivateRoute element={<AddDeliverySchedule />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/deliverySchedule-list" element={<PrivateRoute element={<DeliveryScheduleList />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/add-deffermentDetails" element={<PrivateRoute element={<AddDeffermentDetails />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/defferment-list" element={<PrivateRoute element={<DeffermentList />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/subadmin-list" element={<PrivateRoute element={<SubAdminList />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/add-finalInspection" element={<PrivateRoute element={<AddFinalInspection />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/finalInspection-list" element={<PrivateRoute element={<FinalInspectionList />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/add-deliveryChalan" element={<PrivateRoute element={<AddDeliveryChalan />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/deliveryChalan-list" element={<PrivateRoute element={<DeliveryChalanList />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/add-deliveryDetails" element={<PrivateRoute element={<AddDeliveryDetails />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/deliveryDetails-list" element={<PrivateRoute element={<DeliveryDetailsList />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/add-consignee" element={<PrivateRoute element={<AddConsignee />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/consignee-list" element={<PrivateRoute element={<ConsigneeList />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/add-materialDescription" element={<PrivateRoute element={<AddMaterialDescription />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/materialDescription-list" element={<PrivateRoute element={<MaterialDescriptionList />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/add-chalanDescription" element={<PrivateRoute element={<AddChalanDescription />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/chalanDescription-list" element={<PrivateRoute element={<ChalanDescriptionList />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/damageTransformer" element={<PrivateRoute element={<DamagedTransformerPage />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/add-GPFailureInformation" element={<PrivateRoute element={<AddGPFailureInformation />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/GPFailureInformation-list" element={<PrivateRoute element={<GPFailureInformationList />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/add-newGPReceiptRecord" element={<PrivateRoute element={<AddNewGPReceiptRecord />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/GPReceiptRecord-list" element={<PrivateRoute element={<NewGPReceiptRecordList/>} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/add-GPReceiptNote" element={<PrivateRoute element={<AddGPReceiptNote />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/GPReceiptNote-list" element={<PrivateRoute element={<GPReceiptNote />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/add-FailureAnalysis" element={<PrivateRoute element={<AddFailureAnalysis />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/failureAnalysis-list" element={<PrivateRoute element={<FailureAnalysisList />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/mis-reports" element={<PrivateRoute element={<MisReportsDashboard />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/damageTransformer-list" element={<PrivateRoute element={<DamagedTransformerList />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/materialOfferedButNominationPending-list" element={<PrivateRoute element={<MaterialOfferedButNominationPending />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/nomination-done" element={<PrivateRoute element={<NominationDone />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/inspection-done" element={<PrivateRoute element={<InspectionDone />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/di-received" element={<PrivateRoute element={<DIReceived />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/production-planning" element={<PrivateRoute element={<ProductionPlanning />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/add-OfferLetter&SealingStatement" element={<PrivateRoute element={<AddOfferLetterAndSealingStatement />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/add-newGPInformation" element={<PrivateRoute element={<AddNewGPInformation />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/newGPInformation-list" element={<PrivateRoute element={<NewGPInformationList />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/new-gp-transformers" element={<PrivateRoute element={<NewGPTranformers />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/new-gp-summary" element={<PrivateRoute element={<NewGPSummary />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="/new-gp-expired-statement" element={<PrivateRoute element={<SupplyGPExpiredStatement />} allowedRoles={["superadmin"]}/>}/>
-            <Route exact path="gp-extended-warranty" element={<PrivateRoute element={<GPExtendedWarrantyInformation />} allowedRoles={["superadmin"]}/>}/>
+            <Route exact path="/signup" element={<Signup />}/>
+            {/* <Route exact path="/select-company" element={<SelectCompany />}/>
+            <Route exact path="/select-supply-tender" element={<SelectSupplyTender />}/> */}
+            <Route exact path="/companies" element={<PrivateRoute element={<Companies />}/>}/>
+            <Route exact path="/supply-tender" element={<PrivateRoute element={<SupplyTender />}/>}/>
+            <Route exact path="/" element={<PrivateRoute element={<DeliveryScheduleList />}/>}/>
+            <Route exact path="/add-tnNumber" element={<PrivateRoute element={<AddTnNumber />}/>}/>
+            <Route exact path="/tnNumber-list" element={<PrivateRoute element={<TnNumberList />}/>}/>
+            <Route exact path="/add-loa" element={<PrivateRoute element={<AddLoa />}/>}/>
+            <Route exact path="/loa-list" element={<PrivateRoute element={<LoaList />}/>}/>
+            <Route exact path="/add-deliverySchedule" element={<PrivateRoute element={<AddDeliverySchedule />}/>}/>
+            <Route exact path="/deliverySchedule-list" element={<PrivateRoute element={<DeliveryScheduleList />}/>}/>
+            <Route exact path="/add-deffermentDetails" element={<PrivateRoute element={<AddDeffermentDetails />}/>}/>
+            <Route exact path="/defferment-list" element={<PrivateRoute element={<DeffermentList />}/>}/>
+            <Route exact path="/subadmin-list" element={<PrivateRoute element={<SubAdminList />}/>}/>
+            <Route exact path="/add-finalInspection" element={<PrivateRoute element={<AddFinalInspection />}/>}/>
+            <Route exact path="/finalInspection-list" element={<PrivateRoute element={<FinalInspectionList />}/>}/>
+            <Route exact path="/add-deliveryChalan" element={<PrivateRoute element={<AddDeliveryChalan />}/>}/>
+            <Route exact path="/deliveryChalan-list" element={<PrivateRoute element={<DeliveryChalanList />}/>}/>
+            <Route exact path="/add-deliveryDetails" element={<PrivateRoute element={<AddDeliveryDetails />}/>}/>
+            <Route exact path="/deliveryDetails-list" element={<PrivateRoute element={<DeliveryDetailsList />}/>}/>
+            <Route exact path="/add-consignee" element={<PrivateRoute element={<AddConsignee />}/>}/>
+            <Route exact path="/consignee-list" element={<PrivateRoute element={<ConsigneeList />}/>}/>
+            <Route exact path="/add-materialDescription" element={<PrivateRoute element={<AddMaterialDescription />}/>}/>
+            <Route exact path="/materialDescription-list" element={<PrivateRoute element={<MaterialDescriptionList />}/>}/>
+            <Route exact path="/add-chalanDescription" element={<PrivateRoute element={<AddChalanDescription />}/>}/>
+            <Route exact path="/chalanDescription-list" element={<PrivateRoute element={<ChalanDescriptionList />}/>}/>
+            <Route exact path="/damageTransformer" element={<PrivateRoute element={<DamagedTransformerPage />}/>}/>
+            <Route exact path="/add-GPFailureInformation" element={<PrivateRoute element={<AddGPFailureInformation />}/>}/>
+            <Route exact path="/GPFailureInformation-list" element={<PrivateRoute element={<GPFailureInformationList />}/>}/>
+            <Route exact path="/add-newGPReceiptRecord" element={<PrivateRoute element={<AddNewGPReceiptRecord />}/>}/>
+            <Route exact path="/GPReceiptRecord-list" element={<PrivateRoute element={<NewGPReceiptRecordList/>}/>}/>
+            <Route exact path="/add-GPReceiptNote" element={<PrivateRoute element={<AddGPReceiptNote />}/>}/>
+            <Route exact path="/GPReceiptNote-list" element={<PrivateRoute element={<GPReceiptNote />}/>}/>
+            <Route exact path="/add-FailureAnalysis" element={<PrivateRoute element={<AddFailureAnalysis />}/>}/>
+            <Route exact path="/failureAnalysis-list" element={<PrivateRoute element={<FailureAnalysisList />}/>}/>
+            <Route exact path="/mis-reports" element={<PrivateRoute element={<MisReportsDashboard />}/>}/>
+            <Route exact path="/damageTransformer-list" element={<PrivateRoute element={<DamagedTransformerList />}/>}/>
+            <Route exact path="/materialOfferedButNominationPending-list" element={<PrivateRoute element={<MaterialOfferedButNominationPending />}/>}/>
+            <Route exact path="/nomination-done" element={<PrivateRoute element={<NominationDone />}/>}/>
+            <Route exact path="/inspection-done" element={<PrivateRoute element={<InspectionDone />}/>}/>
+            <Route exact path="/di-received" element={<PrivateRoute element={<DIReceived />}/>}/>
+            <Route exact path="/production-planning" element={<PrivateRoute element={<ProductionPlanning />}/>}/>
+            <Route exact path="/add-OfferLetter&SealingStatement" element={<PrivateRoute element={<AddOfferLetterAndSealingStatement />}/>}/>
+            <Route exact path="/add-newGPInformation" element={<PrivateRoute element={<AddNewGPInformation />}/>}/>
+            <Route exact path="/newGPInformation-list" element={<PrivateRoute element={<NewGPInformationList />}/>}/>
+            <Route exact path="/new-gp-transformers" element={<PrivateRoute element={<NewGPTranformers />}/>}/>
+            <Route exact path="/new-gp-summary" element={<PrivateRoute element={<NewGPSummary />}/>}/>
+            <Route exact path="/new-gp-expired-statement" element={<PrivateRoute element={<SupplyGPExpiredStatement />}/>}/>
+            <Route exact path="gp-extended-warranty" element={<PrivateRoute element={<GPExtendedWarrantyInformation />}/>}/>
           </Routes>
         </div>
       </div>
-      </MyContext.Provider>
+      <Snackbar open={alertBox.open} autoHideDuration={6000} onClose={handleClose}>
+        <Alert onClose={handleClose} severity={alertBox.error ? 'error' : 'success'} sx={{ width: '100%' }}>
+          {alertBox.msg}
+        </Alert>
+      </Snackbar>
+    </MyContext.Provider>
+  );
+}
+
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   );
 }
 
 export default App;
-export {MyContext};
