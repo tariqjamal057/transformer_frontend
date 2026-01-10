@@ -23,14 +23,20 @@ import { FaCloudUploadAlt } from "react-icons/fa";
 import CancelIcon from "@mui/icons-material/Cancel";
 import dayjs from "dayjs";
 import { MyContext } from "../../App";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
+import { useNavigate } from "react-router-dom";
 
 const AddDeliverySchedule = () => {
   const context = useContext(MyContext);
   const { setIsHideSidebarAndHeader, setAlertBox } = context;
 
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   const today = dayjs();
 
-  const [tnDetail, setTnDetail] = useState("");
+  const [tnDetail, setTnDetail] = useState(""); // Changed back to tnDetail (string)
   const [rating, setRating] = useState("");
   const [loa, setLoa] = useState("");
   const [loaDate, setLoaDate] = useState(null);
@@ -54,7 +60,21 @@ const AddDeliverySchedule = () => {
   const [totalQuantity, setTotalQuantity] = useState("");
   const [deliverySchedule, setDeliverySchedule] = useState([]);
   const [chalanDescription, setChalanDescription] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [dateError, setDateError] = useState("");
+
+
+  const addDeliveryScheduleMutation = useMutation({
+    mutationFn: (newSchedule) => api.post("/delivery-schedules", newSchedule),
+    onSuccess: () => {
+      setAlertBox({ open: true, msg: "Delivery schedule added successfully!", error: false });
+      queryClient.invalidateQueries(["deliverySchedules"]);
+      navigate("/deliverySchedule-list"); // assuming this is the list page
+    },
+    onError: (error) => {
+      setAlertBox({ open: true, msg: error.message, error: true });
+    },
+  });
+
 
   // Auto calculate CP Date based on commencement days
   useEffect(() => {
@@ -106,12 +126,14 @@ const AddDeliverySchedule = () => {
 
   // ✅ Generate monthly delivery schedule (dates only, no auto quantity)
   useEffect(() => {
+    setDateError("");
     if (!commencementDate || !deliveryScheduleDate) return;
 
     const start = dayjs(commencementDate);
     const end = dayjs(deliveryScheduleDate);
 
     if (!start.isBefore(end)) {
+      setDateError("Commencement Date (CP Date) must be before Delivery Schedule Date.");
       setDeliverySchedule([]);
       return;
     }
@@ -162,36 +184,27 @@ const AddDeliverySchedule = () => {
     }
 
     const data = {
-      tnDetail,
-      rating,
+      tnNumber : tnDetail, // Use selectedTnId
+      rating: parseInt(rating),
       loa,
-      loaDate: loaDate ? dayjs(loaDate).format("YYYY-MM-DD") : "",
+      loaDate: loaDate ? dayjs(loaDate).toISOString() : null,
       po,
-      poDate: poDate ? dayjs(poDate).format("YYYY-MM-DD") : "",
-      commencementDays,
-      commencementDate: commencementDate
-        ? dayjs(commencementDate).format("YYYY-MM-DD")
-        : "",
-      deliveryScheduleDate: deliveryScheduleDate
-        ? dayjs(deliveryScheduleDate).format("YYYY-MM-DD")
-        : "",
-      imposedLetterList,
-      liftingLetterList,
-      guranteeInMonth,
-      totalQuantity,
+      poDate: poDate ? dayjs(poDate).toISOString() : null,
+      commencementDays: parseInt(commencementDays),
+      commencementDate: commencementDate ? dayjs(commencementDate).toISOString() : null,
+      deliveryScheduleDate: deliveryScheduleDate ? dayjs(deliveryScheduleDate).toISOString() : null,
+      imposedLetters: imposedLetterList,
+      liftingLetters: liftingLetterList,
+      guaranteePeriodMonths: parseInt(guranteeInMonth),
+      totalQuantity: parseInt(totalQuantity),
       deliverySchedule,
-      chalanDescription,
+      chalanDescription: chalanDescription,
       wound,
       phase,
+      createdAt: dayjs().toISOString(), // Add createdDate here
     };
 
-    console.log("Transformer Delivery Schedule Details", data);
-
-    setAlertBox({
-      open: true,
-      error: false,
-      msg: "Delivery schedule calculated successfully!",
-    });
+    addDeliveryScheduleMutation.mutate(data);
   };
 
   return (
@@ -226,6 +239,7 @@ const AddDeliverySchedule = () => {
                     setRating(e.target.value);
                   }
                 }}
+                // Removed InputProps={{ readOnly: true }}
               />
             </Grid>
 
@@ -235,6 +249,7 @@ const AddDeliverySchedule = () => {
                 fullWidth
                 value={wound}
                 onChange={(e) => setWound(e.target.value)}
+                // Removed InputProps={{ readOnly: true }}
               />
             </Grid>
 
@@ -244,6 +259,7 @@ const AddDeliverySchedule = () => {
                 fullWidth
                 value={phase}
                 onChange={(e) => setPhase(e.target.value)}
+                // Removed InputProps={{ readOnly: true }}
               />
             </Grid>
 
@@ -489,9 +505,10 @@ const AddDeliverySchedule = () => {
                 onClick={handleSubmit}
                 className="btn-blue btn-lg w-40 gap-2 mt-2 d-flex"
                 style={{ margin: "auto" }}
+                disabled={addDeliveryScheduleMutation.isLoading}
               >
                 <FaCloudUploadAlt />
-                {isLoading ? (
+                {addDeliveryScheduleMutation.isLoading ? (
                   <CircularProgress color="inherit" size={20} />
                 ) : (
                   "PUBLISH AND VIEW"
@@ -499,6 +516,13 @@ const AddDeliverySchedule = () => {
               </Button>
             </Grid>
           </Grid>
+
+          {/* Date Error Message */}
+          {dateError && (
+            <Typography color="error" sx={{ mt: 2, fontWeight: "bold" }}>
+              ⚠️ {dateError}
+            </Typography>
+          )}
 
           {/* Delivery Schedule Table */}
           {deliverySchedule.length > 0 && (

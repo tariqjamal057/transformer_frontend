@@ -26,17 +26,36 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import { format, differenceInDays, addMonths, isAfter } from "date-fns";
 import SearchIcon from "@mui/icons-material/Search";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
+import ResponsivePagination from "react-responsive-pagination";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import { useDropzone } from "react-dropzone";
 
-const DeliveryScheduleList = () => {
+const DeliverySchedule = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 10; // or calculate based on data length
-
-  const today = new Date();
-
   const { setProgress, setAlertBox, setIsHideSidebarAndHeader } =
     useContext(MyContext);
+  const queryClient = useQueryClient();
 
-  const tnNumbers = ["TN-001", "TN-002", "TN-003", "TN-004"];
+  const { data: deliverySchedules, isLoading: deliverySchedulesLoading } =
+    useQuery({
+      queryKey: ["deliverySchedules", currentPage],
+      queryFn: () =>
+        api
+          .get(`/delivery-schedules?page=${currentPage}`)
+          .then((res) => res.data),
+      placeholderData: { items: [], totalPages: 1 },
+    });
+
+  const totalPages = deliverySchedules.totalPages;
+  const today = new Date();
+
+  const { data: tnNumbers } = useQuery({
+    queryKey: ["tnNumbers"],
+    queryFn: () => api.get("/tns").then((res) => res.data),
+  });
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedDelivery, setSelectedDelivery] = useState(null);
@@ -49,24 +68,100 @@ const DeliveryScheduleList = () => {
   const [commencementDays, setCommencementDays] = useState("");
   const [commencementDate, setCommencementDate] = useState(null);
   const [createdDate, setCreatedDate] = useState(null); // fixed backend date
-
   const [deliveryScheduleDate, setDeliveryScheduleDate] = useState(null);
-
   const [imposedLetterList, setImposedLetterList] = useState([]);
   const [imposedLetter, setImposedLetter] = useState("");
   const [imposedDate, setImposedDate] = useState(null);
-
   const [liftingLetterList, setLiftingLetterList] = useState([]);
   const [liftingLetter, setLiftingLetter] = useState("");
   const [liftingDate, setLiftingDate] = useState(null);
-
   const [guranteeInMonth, setGuranteeInMonth] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
   const [chalanDescription, setChalanDescription] = useState("");
+  const [wound, setWound] = useState("");
+  const [phase, setPhase] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredSchedules, setFilteredSchedules] = useState([]);
+  const [bulkUploadModalOpen, setBulkUploadModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
 
-  /*const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));*/
+  const downloadSample = () => {
+    const sampleData = [
+      {
+        tnNumber: "TN-001",
+        rating: 5,
+        loa: "LOA-001",
+        loaDate: "2024-01-01",
+        po: "PO-001",
+        poDate: "2024-01-01",
+        commencementDays: 30,
+        commencementDate: "2024-01-31", // Note: This is usually calculated based on other dates.
+        deliveryScheduleDate: "2024-03-01",
+        imposedLetters: JSON.stringify([
+          { imposedLetterNo: "ILN001", date: "2025-01-01" },
+        ]),
+        liftingLetters: JSON.stringify([
+          { liftingLetterNo: "LLN001", date: "2025-01-01" },
+        ]),
+        guaranteePeriodMonths: 12,
+        totalQuantity: 100,
+        deliverySchedule: JSON.stringify([
+          // Note: This is usually calculated.
+          { start: "2024-01-31", end: "2024-02-29", quantity: 50 },
+          { start: "2024-03-01", end: "2024-03-01", quantity: 50 },
+        ]),
+        chalanDescription: "Sample description",
+        wound: "COPPER",
+        phase: "THREE",
+      },
+    ];
+    const worksheet = XLSX.utils.json_to_sheet(sampleData);
+    const workbook = { Sheets: { Sheet1: worksheet }, SheetNames: ["Sheet1"] };
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(data, "DeliveryScheduleSampleData.xlsx");
+  };
+
+  const { mutate: bulkUpload, isPending: isUploading } = useMutation({
+    mutationFn: (file) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return api.post("/delivery-schedules/bulk-upload", formData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["deliverySchedules"]);
+      setBulkUploadModalOpen(false);
+      setSelectedFile(null); // Clear selected file on success
+      setAlertBox({
+        open: true,
+        msg: "Bulk upload successful!",
+        error: false,
+      });
+    },
+    onError: (error) => {
+      setAlertBox({
+        open: true,
+        msg: error.message,
+        error: true,
+      });
+    },
+  });
+
+  const onDrop = (acceptedFiles) => {
+    setSelectedFile(acceptedFiles[0]);
+    //setBulkUploadModalOpen(true); // Open modal if not already open
+  };
+
+  const { getRootProps, getInputProps } = useDropzone({ onDrop });
+
+  const handleFileUpload = (e) => {
+    setSelectedFile(e.target.files[0]);
+    //setBulkUploadModalOpen(true); // Open modal if not already open
+  };
 
   useEffect(() => {
     setIsHideSidebarAndHeader(false);
@@ -78,124 +173,18 @@ const DeliveryScheduleList = () => {
     setProgress(100);
   }, []);
 
-  const handlePageChange = (event, value) => {
-    setPage(value);
+  const handlePageChange = (value) => {
+    setCurrentPage(value);
   };
-
-  const getDummyDeliverySchedules = () => {
-    return [
-      {
-        tnNumber: "TN-001",
-        rating: 100, // in KVA
-        poDetails: "PO-12345",
-        poDate: "2025-05-10",
-        loaDetails: "LOA-5678",
-        loaDate: "2025-05-01",
-        cpDays: 90,
-        createdDate: "2025-05-15",
-        cpDate: "2025-08-13", // 90 days from createdDate
-        deliveryScheduleDate: "2025-11-17",
-        imposedLetterList: [
-          { imposedLetterNo: "IMP230", imposedDate: "2025-08-18" },
-          { imposedLetterNo: "IMP231", imposedDate: "2025-08-20" },
-        ],
-        liftingLetterList: [
-          { liftingLetterNo: "LIFT230", liftingDate: "2025-10-15" },
-          { liftingLetterNo: "LIFT231", liftingDate: "2025-10-20" },
-        ],
-        status: "active",
-        totalQuantity: 1000,
-        guaranteePeriodMonths: 24,
-        description:
-          "Delivery challan for 1000 kVA transformers including transport charges, handling, and on-site installation as per the approved purchase order and delivery schedule.",
-      },
-      {
-        tnNumber: "TN-002",
-        rating: 250,
-        poDetails: "PO-22345",
-        poDate: "2025-06-01",
-        loaDetails: "LOA-6678",
-        loaDate: "2025-05-20",
-        cpDays: 60,
-        createdDate: "2025-06-05",
-        cpDate: "2025-08-04", // 60 days from createdDate
-        deliveryScheduleDate: "2025-12-25",
-        imposedLetterList: [
-          { imposedLetterNo: "IMP240", imposedDate: "2025-08-09" },
-          { imposedLetterNo: "IMP241", imposedDate: "2025-08-11" },
-        ],
-        liftingLetterList: [
-          { liftingLetterNo: "LIFT240", liftingDate: "2025-10-01" },
-        ],
-        status: "deffered",
-        totalQuantity: 500,
-        guaranteePeriodMonths: 18,
-        description:
-          "Challan for the supply of high-tension insulators, complete with packing, forwarding, insurance, and all required test certificates for the designated substation.",
-      },
-      {
-        tnNumber: "TN-003",
-        rating: 160,
-        poDetails: "PO-32345",
-        poDate: "2025-07-15",
-        loaDetails: "LOA-7678",
-        loaDate: "2025-07-05",
-        cpDays: 45,
-        createdDate: "2025-07-20",
-        cpDate: "2025-09-03", // 45 days from createdDate
-        deliveryScheduleDate: "2025-12-30",
-        imposedLetterList: [
-          { imposedLetterNo: "IMP250", imposedDate: "2025-09-08" },
-          { imposedLetterNo: "IMP251", imposedDate: "2025-09-10" },
-        ],
-        liftingLetterList: [
-          { liftingLetterNo: "LIFT250", liftingDate: "2025-11-01" },
-          { liftingLetterNo: "LIFT251", liftingDate: "2025-11-03" },
-        ],
-        status: "active",
-        totalQuantity: 750,
-        guaranteePeriodMonths: 12,
-        description:
-          "Material dispatch challan for 11kV outdoor vacuum circuit breakers, inclusive of installation accessories and detailed engineering drawings for commissioning.",
-      },
-      {
-        tnNumber: "TN-004",
-        rating: 200,
-        poDetails: "PO-42345",
-        poDate: "2025-08-10",
-        loaDetails: "LOA-8678",
-        loaDate: "2025-08-01",
-        cpDays: 30,
-        createdDate: "2025-08-15",
-        cpDate: "2025-09-14", // 30 days from createdDate
-        deliveryScheduleDate: "2026-03-19",
-        imposedLetterList: [
-          { imposedLetterNo: "IMP260", imposedDate: "2025-09-19" },
-          { imposedLetterNo: "IMP261", imposedDate: "2025-09-21" },
-        ],
-        liftingLetterList: [
-          { liftingLetterNo: "LIFT260", liftingDate: "2025-11-10" },
-        ],
-        status: "deffered",
-        totalQuantity: 1200,
-        guaranteePeriodMonths: 36,
-        description:
-          "Challan covering delivery of galvanized steel poles and cross-arms, bundled with all necessary hardware and fasteners for the rural electrification project.",
-      },
-    ];
-  };
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filteredSchedules, setFilteredSchedules] = useState(
-    getDummyDeliverySchedules()
-  );
 
   useEffect(() => {
-    const results = getDummyDeliverySchedules().filter((user) =>
-      user.tnNumber.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredSchedules(results);
-  }, [searchQuery]);
+    if (deliverySchedules && deliverySchedules.items) {
+      const results = deliverySchedules.items.filter((user) =>
+        user.tnNumber.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredSchedules(results);
+    }
+  }, [searchQuery, deliverySchedules]);
 
   // Add imposed letter to array
   const handleAddImposedLetter = () => {
@@ -302,35 +291,39 @@ const DeliveryScheduleList = () => {
     setSelectedDelivery(item);
     setTnDetail(item.tnNumber);
     setRating(item.rating);
-    setPo(item.poDetails);
+    setPo(item.po);
     setPoDate(item.poDate ? dayjs(item.poDate) : null);
-    setLoa(item.loaDetails);
+    setLoa(item.loa);
     setLoaDate(item.loaDate ? dayjs(item.loaDate) : null);
-    setCreatedDate(item.createdDate ? dayjs(item.createdDate) : null);
-    setCommencementDays(item.cpDays);
-    setCommencementDate(item.cpDate ? dayjs(item.cpDate) : null);
+    setCreatedDate(item.createdAt ? dayjs(item.createdAt) : null);
+    setCommencementDays(item.commencementDays);
+    setCommencementDate(
+      item.commencementDate ? dayjs(item.commencementDate) : null
+    );
     setDeliveryScheduleDate(
       item.deliveryScheduleDate ? dayjs(item.deliveryScheduleDate) : null
     );
 
     // Convert imposedLetterList dates to dayjs
-    const imposedList = (item.imposedLetterList || []).map((letter) => ({
+    const imposedList = (item.imposedLetters || []).map((letter) => ({
       imposedLetterNo: letter.imposedLetterNo,
-      date: letter.imposedDate ? dayjs(letter.imposedDate) : null,
+      date: letter.date ? dayjs(letter.date) : null,
     }));
 
     // Convert liftingLetterList dates to dayjs
-    const liftingList = (item.liftingLetterList || []).map((letter) => ({
+    const liftingList = (item.liftingLetters || []).map((letter) => ({
       liftingLetterNo: letter.liftingLetterNo,
-      date: letter.liftingDate ? dayjs(letter.liftingDate) : null,
+      date: letter.date ? dayjs(letter.date) : null,
     }));
 
     setImposedLetterList(imposedList);
     setLiftingLetterList(liftingList);
 
     setGuranteeInMonth(item.guaranteePeriodMonths);
-    setChalanDescription(item.description);
+    setChalanDescription(item.chalanDescription);
     setTotalQuantity(item.totalQuantity);
+    setWound(item.wound);
+    setPhase(item.phase);
 
     setEditModalOpen(true);
   };
@@ -354,24 +347,81 @@ const DeliveryScheduleList = () => {
     setGuranteeInMonth("");
     setChalanDescription("");
     setTotalQuantity("");
+    setWound("");
+    setPhase("");
+    // Clear selected file when bulk upload modal is closed
+    if (bulkUploadModalOpen) {
+      setSelectedFile(null);
+    }
+    setBulkUploadModalOpen(false); // Close bulk upload modal if open
   };
+
+  const handleBulkUploadSubmit = () => {
+    if (selectedFile) {
+      bulkUpload(selectedFile);
+    } else {
+      setAlertBox({
+        open: true,
+        msg: "Please select a file to upload.",
+        error: true,
+      });
+    }
+  };
+
+  const { mutate: updateDeliverySchedule } = useMutation({
+    mutationFn: (updatedData) =>
+      api.put(`/delivery-schedules/${selectedDelivery.id}`, updatedData),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["deliverySchedules"]);
+      handleModalClose();
+      setAlertBox({
+        open: true,
+        msg: "Transformer Delivery details updated successfully!",
+        error: false,
+      });
+    },
+    onError: (error) => {
+      setAlertBox({
+        open: true,
+        msg: error.message,
+        error: true,
+      });
+    },
+  });
 
   const handleSaveChanges = () => {
-    // You can send API call here
-    setAlertBox({
-      open: true,
-      msg: "Transformer Delivery details updated successfully!",
-      error: false,
-    });
-    setEditModalOpen(false);
+    const dataToUpdate = {
+      tnNumber: tnDetail,
+      rating: parseInt(rating),
+      po: po,
+      poDate: poDate ? dayjs(poDate).toISOString() : null,
+      loa: loa,
+      loaDate: loaDate ? dayjs(loaDate).toISOString() : null,
+      commencementDays: parseInt(commencementDays),
+      deliveryScheduleDate: deliveryScheduleDate
+        ? dayjs(deliveryScheduleDate).toISOString()
+        : null,
+      imposedLetters: imposedLetterList.map((l) => ({
+        ...l,
+        date: dayjs(l.date).format("YYYY-MM-DD"),
+      })),
+      liftingLetters: liftingLetterList.map((l) => ({
+        ...l,
+        date: dayjs(l.date).format("YYYY-MM-DD"),
+      })),
+      guaranteePeriodMonths: parseInt(guranteeInMonth),
+      totalQuantity: parseInt(totalQuantity),
+      chalanDescription: chalanDescription,
+      wound: wound,
+      phase: phase,
+    };
+    updateDeliverySchedule(dataToUpdate);
   };
-
   return (
     <>
       <div className="right-content w-100">
         <div className="d-flex justify-content-between align-items-center gap-3 mb-3 card shadow border-0 w-100 flex-row p-4">
           <h5 className="mb-0">Master Records</h5>
-
           <TextField
             variant="outlined"
             placeholder="Search through TN Number..."
@@ -403,13 +453,77 @@ const DeliveryScheduleList = () => {
               ),
             }}
           />
-
           <div className="d-flex align-items-center">
+            <Button
+              className="btn-blue ms-3 ps-3 pe-3"
+              onClick={() => setBulkUploadModalOpen(true)}
+            >
+              Bulk Upload
+            </Button>
             <Link to={"/add-deliverySchedule"}>
               <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
             </Link>
           </div>
         </div>
+
+        <Dialog
+          open={bulkUploadModalOpen}
+          onClose={() => {
+            setBulkUploadModalOpen(false);
+            setSelectedFile(null); // Clear selected file when modal is closed
+          }}
+          fullWidth
+        >
+          <DialogTitle className="d-flex justify-content-between align-items-center">
+            Bulk Upload
+            <IconButton
+              onClick={() => {
+                setBulkUploadModalOpen(false);
+                setSelectedFile(null); // Clear selected file when modal is closed
+              }}
+            >
+              <IoCloseSharp />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent>
+            <Button onClick={downloadSample}>Download Sample</Button>
+            <div
+              {...getRootProps()}
+              style={{
+                border: "2px dashed #ccc",
+                padding: "20px",
+                textAlign: "center",
+                marginTop: "10px",
+              }}
+            >
+              <input {...getInputProps()} />
+              {selectedFile ? (
+                <p>Selected file: {selectedFile.name}</p>
+              ) : (
+                <p>Drag 'n' drop some files here, or click to select files</p>
+              )}
+            </div>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => {
+                setBulkUploadModalOpen(false);
+                setSelectedFile(null); // Clear selected file when modal is closed
+              }}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleBulkUploadSubmit}
+              variant="contained"
+              color="primary"
+              disabled={!selectedFile || isUploading}
+            >
+              {isUploading ? "Uploading..." : "Submit"}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         <div className="card shadow border-0 p-3 mt-4">
           <div className="table-responsive">
@@ -434,10 +548,14 @@ const DeliveryScheduleList = () => {
                 </tr>
               </thead>
               <tbody className="text-center">
-                {filteredSchedules.length > 0 ? (
-                  filteredSchedules.map((item, index) => {
+                {deliverySchedulesLoading ? (
+                  <tr>
+                    <td colSpan={14}>Loading...</td>
+                  </tr>
+                ) : (
+                  filteredSchedules?.map((item, index) => {
                     const segments = calculateSegments(
-                      item.cpDate,
+                      item.commencementDate,
                       item.deliveryScheduleDate,
                       item.totalQuantity
                     );
@@ -448,36 +566,49 @@ const DeliveryScheduleList = () => {
                         <td>{item.tnNumber}</td>
                         <td>{item.rating}</td>
                         <td>
-                          <div>{item.poDetails}</div>
+                          <div>{item.po}</div>
                           <strong>
-                            {format(new Date(item.poDate), "dd MMM yyyy")}
+                            {item.poDate
+                              ? format(new Date(item.poDate), "dd MMM yyyy")
+                              : ""}
                           </strong>
                         </td>
                         <td>
-                          <div>{item.loaDetails}</div>
+                          <div>{item.loa}</div>
                           <strong>
-                            {format(new Date(item.loaDate), "dd MMM yyyy")}
+                            {item.loaDate
+                              ? format(new Date(item.loaDate), "dd MMM yyyy")
+                              : ""}
                           </strong>
                         </td>
                         <td>
-                          <div>{item.cpDays} Days</div>
+                          <div>{item.commencementDays} Days</div>
                           <strong>
-                            {format(new Date(item.cpDate), "dd MMM yyyy")}
+                            {item.commencementDate
+                              ? format(
+                                  new Date(item.commencementDate),
+                                  "dd MMM yyyy"
+                                )
+                              : ""}
                           </strong>
                         </td>
                         <td>
-                          {format(
-                            new Date(item.deliveryScheduleDate),
-                            "dd MMM yyyy"
-                          )}
+                          {item.deliveryScheduleDate
+                            ? format(
+                                new Date(item.deliveryScheduleDate),
+                                "dd MMM yyyy"
+                              )
+                            : ""}
                         </td>
                         <td>
-                          {format(new Date(item.createdDate), "dd MMM yyyy")}
+                          {item.createdAt
+                            ? format(new Date(item.createdAt), "dd MMM yyyy")
+                            : ""}
                         </td>
                         {/* Imposed Letter List */}
                         <td>
-                          {item.imposedLetterList &&
-                          item.imposedLetterList.length > 0 ? (
+                          {item.imposedLetters &&
+                          item.imposedLetters.length > 0 ? (
                             <ul
                               style={{
                                 listStyle: "disc",
@@ -485,13 +616,15 @@ const DeliveryScheduleList = () => {
                                 margin: 0,
                               }}
                             >
-                              {item.imposedLetterList.map((letter, i) => (
+                              {item.imposedLetters.map((letter, i) => (
                                 <li key={i}>
                                   {letter.imposedLetterNo} -{" "}
-                                  {format(
-                                    new Date(letter.imposedDate),
-                                    "dd MMM yyyy"
-                                  )}
+                                  {letter.date
+                                    ? format(
+                                        new Date(letter.date),
+                                        "dd MMM yyyy"
+                                      )
+                                    : ""}
                                 </li>
                               ))}
                             </ul>
@@ -502,8 +635,8 @@ const DeliveryScheduleList = () => {
 
                         {/* Lifting Letter List */}
                         <td>
-                          {item.liftingLetterList &&
-                          item.liftingLetterList.length > 0 ? (
+                          {item.liftingLetters &&
+                          item.liftingLetters.length > 0 ? (
                             <ul
                               style={{
                                 listStyle: "disc",
@@ -511,13 +644,15 @@ const DeliveryScheduleList = () => {
                                 margin: 0,
                               }}
                             >
-                              {item.liftingLetterList.map((letter, i) => (
+                              {item.liftingLetters.map((letter, i) => (
                                 <li key={i}>
                                   {letter.liftingLetterNo} -{" "}
-                                  {format(
-                                    new Date(letter.liftingDate),
-                                    "dd MMM yyyy"
-                                  )}
+                                  {letter.date
+                                    ? format(
+                                        new Date(letter.date),
+                                        "dd MMM yyyy"
+                                      )
+                                    : ""}
                                 </li>
                               ))}
                             </ul>
@@ -564,12 +699,13 @@ const DeliveryScheduleList = () => {
                               fontWeight: "bold",
                               color: "white",
                               backgroundColor:
-                                item.status.toLowerCase() === "active"
+                                (item.status || "active").toLowerCase() ===
+                                "active"
                                   ? "#28a745"
                                   : "#dc3545",
                             }}
                           >
-                            {item.status.toUpperCase()}
+                            {(item.status || "ACTIVE").toUpperCase()}
                           </span>
                         </td>
 
@@ -586,23 +722,18 @@ const DeliveryScheduleList = () => {
                       </tr>
                     );
                   })
-                ) : (
-                  <tr>
-                    <td colSpan="12" className="text-center">
-                      No data found
-                    </td>
-                  </tr>
                 )}
               </tbody>
             </table>
           </div>
         </div>
-
-        {/*<ResponsivePagination
-          page={currentPage}
-          count={totalPages}
-          onChange={(event, value) => setCurrentPage(value)}
-        />*/}
+        {totalPages > 1 && (
+          <ResponsivePagination
+            current={currentPage}
+            total={totalPages}
+            onPageChange={handlePageChange}
+          />
+        )}
       </div>
 
       {/* Edit Modal */}
@@ -618,7 +749,6 @@ const DeliveryScheduleList = () => {
             <IoCloseSharp />
           </IconButton>
         </DialogTitle>
-
         <DialogContent dividers>
           <TextField
             label="Tender No"
@@ -839,6 +969,24 @@ const DeliveryScheduleList = () => {
             margin="normal"
             sx={{ mt: 2 }}
           />
+
+          <TextField
+            fullWidth
+            label="Wound"
+            value={wound}
+            onChange={(e) => setWound(e.target.value)}
+            margin="normal"
+            sx={{ mt: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            label="Phase"
+            value={phase}
+            onChange={(e) => setPhase(e.target.value)}
+            margin="normal"
+            sx={{ mt: 2 }}
+          />
         </DialogContent>
 
         <DialogActions>
@@ -857,5 +1005,4 @@ const DeliveryScheduleList = () => {
     </>
   );
 };
-
-export default DeliveryScheduleList;
+export default DeliverySchedule;
