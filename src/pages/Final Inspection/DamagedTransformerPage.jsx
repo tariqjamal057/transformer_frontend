@@ -28,7 +28,7 @@ export default function DamagedTransformerPage() {
 
   // 👉 States
   const [selectedSN, setSelectedSN] = useState(null);
-  const [selectedTRFSI, setSelectedTRFSI] = useState(null);
+  const [selectedTRFSI, setSelectedTRFSI] = useState([]);
   const [selectedInspection, setSelectedInspection] = useState(null);
   const [selectedChallan, setSelectedChallan] = useState(null);
 
@@ -41,12 +41,13 @@ export default function DamagedTransformerPage() {
 
   // 👉 Find the matching challan for selected inspection
   useEffect(() => {
-    if (selectedInspection && selectedTRFSI) {
+    if (selectedInspection && selectedTRFSI.length > 0) {
       const challan = deliveryChallanList.find((c) =>
-        c.finalInspectionDetail.shealingDetails?.some(
-          (s) => s.trfsiNo === selectedTRFSI.trfsiNo
+        c.finalInspectionDetail.shealingDetails?.some((s) =>
+          selectedTRFSI.some((t) => t.trfsiNo === s.trfsiNo)
         )
       );
+
       setSelectedChallan(challan || null);
     } else {
       setSelectedChallan(null);
@@ -68,7 +69,7 @@ export default function DamagedTransformerPage() {
     setSelectedInspection(
       finalInspectionList.find((f) => f.snNumber === sn) || null
     );
-    setSelectedTRFSI(null); // reset TRFSI
+    setSelectedTRFSI([]); // reset TRFSI
   };
 
   // 👉 Handle TRFSI Selection
@@ -138,12 +139,14 @@ export default function DamagedTransformerPage() {
               {/* TRFSI Number Dropdown */}
               <Grid item size={1}>
                 <Autocomplete
+                  multiple
+                  disableCloseOnSelect
                   options={selectedInspection?.shealingDetails || []}
                   getOptionLabel={(opt) => opt.trfsiNo.toString()}
                   value={selectedTRFSI}
-                  onChange={handleTRFSIChange}
+                  onChange={(_, value) => setSelectedTRFSI(value)}
                   renderInput={(params) => (
-                    <TextField {...params} label="Select TRFSI Number" />
+                    <TextField {...params} label="Select TRFSI Numbers" />
                   )}
                 />
               </Grid>

@@ -26,6 +26,7 @@ const FiltersComponent = ({
   onExportExcel = true,
   sheetName = "FinalInspection",
   pdfTitle,
+  dueDateofDeliveryIncluded = true,
 }) => {
   const [selectedCompany, setSelectedCompany] = useState("all");
   const [selectedDiscom, setSelectedDiscom] = useState("all");
@@ -113,7 +114,10 @@ const FiltersComponent = ({
 
   // ✅ Export Excel (row-wise expansion like uploaded sample)
   const exportExcelForDI = () => {
-    let excelData = [];
+    const normalize = (val) =>
+      val === null || val === undefined ? "" : String(val).trim();
+
+    let excelRows = [];
 
     filteredData.forEach((item, index) => {
       const baseDate =
@@ -121,89 +125,122 @@ const FiltersComponent = ({
           ? item.inspectionDate
           : item.diDate || item.inspectionDate;
 
-      let dueJhunjhunu = null;
-      let dueOthers = null;
+      const consignees = Array.isArray(item.consignees) ? item.consignees : [];
 
-      if (
-        item.consignees?.some(
-          (c) => c.consignee?.name?.toLowerCase() === "jhunjhunu"
-        )
-      ) {
-        dueJhunjhunu = baseDate
-          ? dayjs(baseDate).add(7, "day").format("DD MMM YYYY")
-          : "";
-      }
-      if (
-        item.consignees?.some(
-          (c) => c.consignee?.name?.toLowerCase() !== "jhunjhunu"
-        )
-      ) {
-        dueOthers = baseDate
-          ? dayjs(baseDate).add(12, "day").format("DD MMM YYYY")
-          : "";
-      }
+      const inspectors = Array.isArray(item.inspectionOfficers)
+        ? item.inspectionOfficers
+        : [];
 
-      const dueDateMerged =
-        dueJhunjhunu && dueOthers
-          ? `${dueJhunjhunu}, ${dueOthers}`
-          : dueJhunjhunu
-          ? `${dueJhunjhunu}`
-          : dueOthers
-          ? `${dueOthers}`
-          : "";
+      const rowCount = Math.max(consignees.length, inspectors.length, 1);
 
-      const consignees =
-        item.consignees && item.consignees.length > 0 ? item.consignees : [{}];
+      for (let cIdx = 0; cIdx < rowCount; cIdx++) {
+        const c = consignees[cIdx] || {};
 
-      // 👉 Build one row per consignee
-      consignees.forEach((c, cIdx) => {
-        excelData.push({
-          "S.No": cIdx === 0 ? index + 1 : "", // show Sr no only for first row
-          "Firm Name": cIdx === 0 ? item.companyName : "",
-          Discom: cIdx === 0 ? item.discom : "",
-          "TN No.": cIdx === 0 ? item.deliverySchedule?.tnNumber : "",
-          Material:
+        const getDueDateForConsignee = (consignee) => {
+          if (!baseDate || !consignee?.consignee?.name) return "";
+
+          const name = consignee.consignee.name.toLowerCase();
+
+          const days = name === "jhunjhunu" ? 7 : 12;
+
+          return dayjs(baseDate).add(days, "day").format("DD MMM YYYY");
+        };
+
+        excelRows.push([
+          normalize(cIdx === 0 ? index + 1 : ""),
+          normalize(
+            cIdx === 0 && item.offeredDate
+              ? dayjs(item.offeredDate).format("DD MMM YYYY")
+              : ""
+          ),
+          normalize(cIdx === 0 ? item.companyName : ""),
+          normalize(cIdx === 0 ? item.discom : ""),
+          normalize(cIdx === 0 ? item.deliverySchedule?.tnNumber : ""),
+          normalize(
             cIdx === 0
               ? `${item.deliverySchedule?.rating || ""} KVA ${
                   item.deliverySchedule?.phase || ""
                 }`
-              : "",
-          "Offered Date":
-            cIdx === 0 && item.offeredDate
-              ? dayjs(item.offeredDate).format("DD MMM YYYY")
-              : "",
-          "Inspection Date":
+              : ""
+          ),
+          normalize(cIdx === 0 ? item.snNumber : ""),
+          normalize(cIdx === 0 ? item.offeredQuantity : ""),
+
+          // ✅ FIXED INSPECTOR LOGIC
+          normalize(cIdx < inspectors.length ? inspectors[cIdx] : ""),
+
+          normalize(
             cIdx === 0 && item.inspectionDate
               ? dayjs(item.inspectionDate).format("DD MMM YYYY")
-              : "",
-          "Inspected Qty": cIdx === 0 ? item.inspectedQuantity : "",
-          "DI No.": cIdx === 0 ? item.diNo : "",
-          "DI Date":
+              : ""
+          ),
+          normalize(cIdx === 0 ? item.inspectedQuantity : ""),
+          normalize(cIdx === 0 ? item.diNo : ""),
+          normalize(
             cIdx === 0 && item.diDate
               ? dayjs(item.diDate).format("DD MMM YYYY")
-              : "",
-          // "Due Date of Delivery": cIdx === 0 ? dueDateMerged : "",
-          Inspector:
-            item.inspectionOfficers && item.inspectionOfficers[cIdx]
-              ? item.inspectionOfficers[cIdx]
-              : "",
-
-          Consignee: c.consignee?.name || "",
-          "SR No.": c.subSnNumber || "",
-          Qty: c.quantity || "",
-          Dispatch:
-            c?.dispatch === null || c?.dispatch === undefined ? "" : c.dispatch,
-          Pending: c.pending || "",
-        });
-      });
+              : ""
+          ),
+          // ✅ CONDITIONAL COLUMN
+          ...(dueDateofDeliveryIncluded
+            ? [normalize(getDueDateForConsignee(c))]
+            : []),
+          normalize(c?.consignee?.name),
+          normalize(c?.subSnNumber),
+          normalize(c?.quantity),
+          normalize(c?.dispatch),
+          normalize(c?.pending),
+        ]);
+      }
     });
 
-    // ✅ Export to Excel
-    const ws = XLSX.utils.json_to_sheet(excelData, { skipHeader: false });
-    const wb = XLSX.utils.book_new();
-    const _sheetName = sheetName.slice(0, 30);
+    const excelHeaders = [
+      "S.No",
+      "Offered Date",
+      "Firm Name",
+      "Discom",
+      "TN No.",
+      "Material",
+      "TFR Serial No",
+      "Offered Qty",
+      "Inspectors",
+      "Inspection Date",
+      "Inspected Qty",
+      "DI No.",
+      "DI Date",
+      ...(dueDateofDeliveryIncluded ? ["Due Date of Delivery"] : []),
+      "Consignee",
+      "SR No.",
+      "Qty",
+      "Dispatch",
+      "Pending",
+    ];
 
-    XLSX.utils.book_append_sheet(wb, ws, _sheetName);
+    const hasDataInColumn = (colIndex) => {
+      return excelRows.some((row) => row[colIndex] !== "");
+    };
+
+    const visibleHeaders = [];
+    const visibleIndexes = [];
+
+    excelHeaders.forEach((header, index) => {
+      if (hasDataInColumn(index)) {
+        visibleHeaders.push(header);
+        visibleIndexes.push(index);
+      }
+    });
+
+    const filteredRows = excelRows.map((row) =>
+      visibleIndexes.map((i) => row[i])
+    );
+
+    // ✅ Export to Excel
+    const worksheetData = [visibleHeaders, ...filteredRows];
+
+    const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+    const wb = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 30));
     XLSX.writeFile(wb, `${sheetName}.xlsx`);
   };
 
@@ -350,7 +387,7 @@ const FiltersComponent = ({
       item.inspectionDate
         ? dayjs(item.inspectionDate).format("DD MMM YYYY")
         : "",
-      item.inspectedQuantity || 0,
+      item.inspectedQuantity,
     ]);
 
     // Column headers
@@ -493,78 +530,81 @@ const FiltersComponent = ({
 
     let pdfData = [];
 
+    const normalize = (val) =>
+      val === null || val === undefined ? "" : String(val).trim();
+
     filteredData.forEach((item, index) => {
       const baseDate =
         item.specialCase === "yes"
           ? item.inspectionDate
           : item.diDate || item.inspectionDate;
 
-      let dueJhunjhunu = null;
-      let dueOthers = null;
+      const consignees = Array.isArray(item.consignees) ? item.consignees : [];
 
-      if (
-        item.consignees?.some(
-          (c) => c.consignee?.name?.toLowerCase() === "jhunjhunu"
-        )
-      ) {
-        dueJhunjhunu = baseDate
-          ? dayjs(baseDate).add(7, "day").format("DD MMM YYYY")
-          : "";
-      }
-      if (
-        item.consignees?.some(
-          (c) => c.consignee?.name?.toLowerCase() !== "jhunjhunu"
-        )
-      ) {
-        dueOthers = baseDate
-          ? dayjs(baseDate).add(12, "day").format("DD MMM YYYY")
-          : "";
-      }
+      const inspectors = Array.isArray(item.inspectionOfficers)
+        ? item.inspectionOfficers
+        : [];
 
-      const dueDateMerged =
-        dueJhunjhunu && dueOthers
-          ? `${dueJhunjhunu}, ${dueOthers}`
-          : dueJhunjhunu
-          ? `${dueJhunjhunu}`
-          : dueOthers
-          ? `${dueOthers}`
-          : "";
+      const rowCount = Math.max(consignees.length, inspectors.length, 1);
 
-      // 👉 Build one row per consignee
-      (item.consignees || [{}]).forEach((c, cIdx) => {
+      for (let cIdx = 0; cIdx < rowCount; cIdx++) {
+        const c = consignees[cIdx] || {};
+
+        const getDueDateForConsignee = (consignee) => {
+          if (!baseDate || !consignee?.consignee?.name) return "";
+
+          const name = consignee.consignee.name.toLowerCase();
+
+          const days = name === "jhunjhunu" ? 7 : 12;
+
+          return dayjs(baseDate).add(days, "day").format("DD MMM YYYY");
+        };
+
         pdfData.push([
-          cIdx === 0 ? index + 1 : "", // S.No
-          cIdx === 0 && item.offeredDate
-            ? dayjs(item.offeredDate).format("DD MMM YYYY")
-            : "",
-          cIdx === 0 ? item.companyName : "",
-          cIdx === 0 ? item.discom : "",
-          cIdx === 0 ? item.deliverySchedule?.tnNumber : "",
-          cIdx === 0
-            ? `${item.deliverySchedule?.rating || ""} KVA ${
-                item.deliverySchedule?.phase || ""
-              }`
-            : "",
-          cIdx === 0 ? item.snNumber : "",
-          cIdx === 0 ? item.offeredQuantity : "",
-          item.inspectionOfficers && item.inspectionOfficers[cIdx]
-            ? item.inspectionOfficers[cIdx]
-            : "",
-          cIdx === 0 && item.inspectionDate
-            ? dayjs(item.inspectionDate).format("DD MMM YYYY")
-            : "",
-          cIdx === 0 ? item.inspectedQuantity : "",
-          cIdx === 0 ? item.diNo : "",
-          cIdx === 0 && item.diDate
-            ? dayjs(item.diDate).format("DD MMM YYYY")
-            : "",
-          c?.consignee?.name || "",
-          c?.subSnNumber || "",
-          c?.quantity || "",
-          c?.dispatch === null || c?.dispatch === undefined ? "" : c.dispatch,
-          c?.pending || "",
+          normalize(cIdx === 0 ? index + 1 : ""),
+          normalize(
+            cIdx === 0 && item.offeredDate
+              ? dayjs(item.offeredDate).format("DD MMM YYYY")
+              : ""
+          ),
+          normalize(cIdx === 0 ? item.companyName : ""),
+          normalize(cIdx === 0 ? item.discom : ""),
+          normalize(cIdx === 0 ? item.deliverySchedule?.tnNumber : ""),
+          normalize(
+            cIdx === 0
+              ? `${item.deliverySchedule?.rating || ""} KVA ${
+                  item.deliverySchedule?.phase || ""
+                }`
+              : ""
+          ),
+          normalize(cIdx === 0 ? item.snNumber : ""),
+          normalize(cIdx === 0 ? item.offeredQuantity : ""),
+
+          // ✅ FIXED INSPECTOR LOGIC
+          normalize(cIdx < inspectors.length ? inspectors[cIdx] : ""),
+
+          normalize(
+            cIdx === 0 && item.inspectionDate
+              ? dayjs(item.inspectionDate).format("DD MMM YYYY")
+              : ""
+          ),
+          normalize(cIdx === 0 ? item.inspectedQuantity : ""),
+          normalize(cIdx === 0 ? item.diNo : ""),
+          normalize(
+            cIdx === 0 && item.diDate
+              ? dayjs(item.diDate).format("DD MMM YYYY")
+              : ""
+          ),
+          ...(dueDateofDeliveryIncluded
+            ? [normalize(getDueDateForConsignee(c))]
+            : []),
+          normalize(c?.consignee?.name),
+          normalize(c?.subSnNumber),
+          normalize(c?.quantity),
+          normalize(c?.dispatch),
+          normalize(c?.pending),
         ]);
-      });
+      }
     });
 
     // Column headers
@@ -582,6 +622,7 @@ const FiltersComponent = ({
       "Inspected\nQty",
       "DI No.",
       "DI Date",
+      ...(dueDateofDeliveryIncluded ? ["Due Date of Delivery"] : []),
       "Consignee",
       "SR No.",
       "Qty",
@@ -589,20 +630,8 @@ const FiltersComponent = ({
       "Pending",
     ];
 
-    // Force include "Dispatch" and "Pending" columns even if empty
-    const forceColumns = [16, 17]; // Index of "Dispatch" and "Pending"
-
     const hasDataInColumn = (colIndex) => {
-      if (forceColumns.includes(colIndex)) return true;
-
-      return pdfData.some((row) => {
-        const value = row[colIndex];
-        return (
-          value !== null &&
-          value !== undefined &&
-          value.toString().trim() !== ""
-        );
-      });
+      return pdfData.some((row) => row[colIndex] !== "");
     };
 
     const filteredHeaders = [];
@@ -623,24 +652,25 @@ const FiltersComponent = ({
     const getColumnStyles = () => {
       const styles = {};
       const baseWidths = {
-        0: 28,
-        1: 48,
-        2: 60,
-        3: 42,
-        4: 42,
-        5: 52,
-        6: 48,
-        7: 38,
-        8: 62,
-        9: 52,
-        10: 42,
-        11: 48,
-        12: 48,
-        13: 62,
-        14: 42,
-        15: 32,
-        16: 42,
-        17: 42,
+        0: 26,
+        1: 44,
+        2: 56,
+        3: 40,
+        4: 40,
+        5: 50,
+        6: 46,
+        7: 36,
+        8: 58,
+        9: 48,
+        10: 40,
+        11: 44,
+        12: 44,
+        13: 56, // Due Date
+        14: 58, // Consignee
+        15: 38,
+        16: 30,
+        17: 38,
+        18: 38, // Pending
       };
 
       let totalTableWidth = 0;

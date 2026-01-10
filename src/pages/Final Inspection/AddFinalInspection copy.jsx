@@ -30,22 +30,111 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
 import * as XLSX from "xlsx";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import api from "../../services/api";
-import { useNavigate } from "react-router-dom";
 import { MyContext } from "../../App";
+import { getDummyConsigneeDetails } from "../Consignee/ConsigneeList";
 import { Cancel } from "@mui/icons-material";
 
 const AddFinalInspection = () => {
-  const { setAlertBox } = useContext(MyContext);
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const context = useContext(MyContext);
+  const { setIsHideSidebarAndHeader, setAlertBox, districts } = context;
 
   const today = new Date();
+
+  const deliverySchedules = [
+    {
+      id: "1",
+      tnNumber: "TN-001",
+      rating: "100", // in KVA
+      wound: "Aluminium",
+      phase: "100 KVA",
+      poDetails: "PO-12345",
+      poDate: "2025-05-10",
+      loaDetails: "LOA-5678",
+      loaDate: "2025-05-01",
+      cpDays: 90,
+      createdDate: "2025-05-15",
+      cpDate: "2025-08-13", // 90 days from createdDate
+      imposedLetterNo: "IMP-101",
+      liftingLetterNo: "LIFT-201",
+      imposedDate: "2025-08-18",
+      liftingDate: "2025-10-15",
+      totalQuantity: 1000,
+      guaranteePeriodMonths: 24,
+    },
+    {
+      id: "2",
+      tnNumber: "TN-002",
+      rating: "50",
+      wound: "Aluminium",
+      phase: "50 KVA",
+      poDetails: "PO-22345",
+      poDate: "2025-06-01",
+      loaDetails: "LOA-6678",
+      loaDate: "2025-05-20",
+      cpDays: 60,
+      createdDate: "2025-06-05",
+      cpDate: "2025-08-04", // 60 days from createdDate
+      imposedLetterNo: "IMP-102",
+      liftingLetterNo: "LIFT-202",
+      imposedDate: "2025-08-09",
+      liftingDate: "2025-10-01",
+      totalQuantity: 500,
+      guaranteePeriodMonths: 18,
+    },
+    {
+      id: "3",
+      tnNumber: "TN-003",
+      rating: "150",
+      wound: "Copper",
+      phase: "150 KVA",
+      poDetails: "PO-32345",
+      poDate: "2025-07-15",
+      loaDetails: "LOA-7678",
+      loaDate: "2025-07-05",
+      cpDays: 45,
+      createdDate: "2025-07-20",
+      cpDate: "2025-09-03", // 45 days from createdDate
+      imposedLetterNo: "IMP-103",
+      liftingLetterNo: "LIFT-203",
+      imposedDate: "2025-09-08",
+      liftingDate: "2025-11-01",
+      totalQuantity: 750,
+      guaranteePeriodMonths: 12,
+    },
+    {
+      id: "4",
+      tnNumber: "TN-004",
+      rating: "200",
+      wound: "Copper",
+      phase: "200 KVA",
+      poDetails: "PO-42345",
+      poDate: "2025-08-10",
+      loaDetails: "LOA-8678",
+      loaDate: "2025-08-01",
+      cpDays: 30,
+      createdDate: "2025-08-15",
+      cpDate: "2025-09-14", // 30 days from createdDate
+      imposedLetterNo: "IMP-104",
+      liftingLetterNo: "LIFT-204",
+      imposedDate: "2025-09-19",
+      liftingDate: "2025-11-10",
+      totalQuantity: 1200,
+      guaranteePeriodMonths: 36,
+    },
+  ];
+
+  // 👉 Damaged/Repaired Transformers
+  const damagedRepairedTransformers = [
+    { id: "1", serialNo: "404" },
+    { id: "2", serialNo: "302" },
+    { id: "3", serialNo: "204" },
+    { id: "4", serialNo: "127" },
+  ];
 
   const [tnDetail, setTnDetail] = useState(null); // store full TN object
   const [serialNumberFrom, setSerialNumberFrom] = useState("");
   const [serialNumberTo, setSerialNumberTo] = useState("");
+  const [sr, setSr] = useState("");
   const [inspectionDate, setInspectionDate] = useState(null);
   const [inspectedQuantity, setInspectedQuantity] = useState("");
   const [nominationLetterNo, setNominationLetterNo] = useState("");
@@ -69,40 +158,13 @@ const AddFinalInspection = () => {
   const [shealingDetails, setShealingDetails] = useState([]);
   const [fileName, setFileName] = useState("");
 
+  // States
+  const [availableTransformers, setAvailableTransformers] = useState(
+    damagedRepairedTransformers
+  );
   const [selectedTransformers, setSelectedTransformers] = useState([]);
 
-  const { data: deliverySchedules } = useQuery({
-    queryKey: ["deliverySchedules"],
-    queryFn: () => api.get("/delivery-schedules").then((res) => res.data),
-  });
-
-  const { data: consignees } = useQuery({
-    queryKey: ["consignees"],
-    queryFn: () => api.get("/consignees").then((res) => res.data),
-  });
-  
-  const { data: damagedTransformers } = useQuery({
-    queryKey: ["damagedTransformers"],
-    queryFn: () => api.get("/damaged-transformers").then((res) => res.data),
-  });
-  
-  const [availableTransformers, setAvailableTransformers] = useState(
-    damagedTransformers
-  );
-
-  const addFinalInspectionMutation = useMutation({
-    mutationFn: (newInspection) =>
-      api.post("/final-inspections", newInspection),
-    onSuccess: () => {
-      setAlertBox({open: true, msg: "Final Inspection added successfully!", error: false});
-      queryClient.invalidateQueries(["finalInspections"]);
-      navigate("/finalInspection-list");
-    },
-    onError: (error) => {
-      setAlertBox({open: true, msg: error.message, error: true});
-    },
-  });
-
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleAddInspectionOfficer = () => {
     if (
@@ -158,17 +220,27 @@ const AddFinalInspection = () => {
     reader.readAsArrayBuffer(file);
   };
 
+  const consignees = getDummyConsigneeDetails();
+
   // 👉 Handle Add Consignee
   const handleAddConsignee = () => {
     if (!selectedConsignee || !consigneeQuantity) {
-      setAlertBox({open: true, msg: "Please select consignee & quantity", error: true});
+      setAlertBox({
+        msg: "Please select consignee & quantity",
+        open: true,
+        error: true,
+      });
       return;
     }
 
     const from = parseInt(serialNumberFrom);
     const to = parseInt(serialNumberTo);
     if (!from || !to || from >= to) {
-      setAlertBox({open: true, msg: "Invalid serial number range", error: true});
+      setAlertBox({
+        msg: "Invalid serial number range",
+        open: true,
+        error: true,
+      });
       return;
     }
 
@@ -177,22 +249,32 @@ const AddFinalInspection = () => {
       (sum, c) => sum + c.quantity,
       0
     );
-
     const newTotal = totalDistributed + parseInt(consigneeQuantity);
 
     if (newTotal > totalAvailable) {
-      setAlertBox({open: true, msg: "Quantity exceeds available transformers!", error: true});
+      setAlertBox({
+        msg: "Quantity exceeds available transformers!",
+        open: true,
+        error: true,
+      });
       return;
     }
 
-    const startSn = parseInt(serialNumberFrom) + totalDistributed;
+    // Calculate sub serial range
+    const startSn = from + totalDistributed;
     const endSn = startSn + parseInt(consigneeQuantity) - 1;
+    const subSnNumber = `${startSn} TO ${endSn}`;
+
+    // ✅ Attach selected repaired transformers
+    const selectedTransformerObjects = availableTransformers.filter((t) =>
+      selectedTransformers.includes(t.id)
+    );
 
     const newConsignee = {
-      consigneeId: selectedConsignee,
+      consignee: consignees.find((c) => c.id === selectedConsignee), // for store id I have to pass only selectedConsignee
       quantity: parseInt(consigneeQuantity),
       subSnNumber,
-      repairedTransformerIds: selectedTransformers,
+      repairedTransformers: selectedTransformerObjects, // ✅ Added here
     };
 
     // ✅ Remove assigned transformers from available list
@@ -202,6 +284,7 @@ const AddFinalInspection = () => {
 
     setAvailableTransformers(updatedAvailable);
     setConsigneeList([...consigneeList, newConsignee]);
+    setSelectedTransformers([]);
     setSelectedConsignee("");
     setConsigneeQuantity("");
   };
@@ -210,10 +293,10 @@ const AddFinalInspection = () => {
   const handleDeleteConsignee = (idx) => {
     const removed = consigneeList[idx];
     // Restore those transformers back into available list
-    if (removed.repairedTransformerIds?.length > 0) {
+    if (removed.repairedTransformers?.length > 0) {
       setAvailableTransformers((prev) => [
         ...prev,
-        ...damagedTransformers.filter((t) => removed.repairedTransformerIds.includes(t.id)),
+        ...removed.repairedTransformers,
       ]);
     }
     const updated = [...consigneeList];
@@ -224,29 +307,29 @@ const AddFinalInspection = () => {
   // 👉 Final Submit
   const handleSubmit = (e) => {
     e.preventDefault();
-    const repairedSubSerialNumbers = damagedRepairedTransformers
-      .filter((t) => selectedTransformers.includes(t.id))
-      .map((t) => t.serialNo);
-
     const data = {
-      deliveryScheduleId: tnDetail?.id,
-      serialNumberFrom: parseInt(serialNumberFrom),
-      serialNumberTo: parseInt(serialNumberTo),
-      offeredDate: dayjs(offerDate).format("YYYY-MM-DD"),
-      offeredQuantity: parseInt(offeredQuantity),
+      tnDetail: tnDetail?.id,
+      serialNumberFrom,
+      serialNumberTo,
+      srNumber: `${serialNumberFrom} TO ${serialNumberTo}`,
+      offerDate: dayjs(offerDate).format("YYYY-MM-DD"),
+      offeredQuantity,
       inspectionDate: dayjs(inspectionDate).format("YYYY-MM-DD"),
-      inspectedQuantity: parseInt(inspectedQuantity),
-      inspectionOfficers: selectedInspectionOfficer,
-      nominationLetterNo,
-      nominationDate: dayjs(nominationDate).format("YYYY-MM-DD"),
+      inspectedQuantity,
+      selectedInspectionOfficer,
       diNo,
       diDate: dayjs(diDate).format("YYYY-MM-DD"),
-      total: parseInt(total),
-      consignees: consigneeList,
+      warranty,
+      consignees: consigneeList, // ✅ New Array
       shealingDetails,
     };
 
-    addFinalInspectionMutation.mutate(data);
+    console.log("Tranformer Final Inspection Report", data);
+    setAlertBox({
+      open: true,
+      msg: "Inspection saved successfully!",
+      error: false,
+    });
   };
 
   return (
@@ -261,7 +344,7 @@ const AddFinalInspection = () => {
             <Grid container spacing={3} columns={{ xs: 1, sm: 2 }}>
               <Grid item size={2}>
                 <Autocomplete
-                  options={deliverySchedules || []}
+                  options={deliverySchedules}
                   getOptionLabel={(option) => option.tnNumber}
                   value={tnDetail}
                   onChange={handleTnChange}
@@ -346,8 +429,15 @@ const AddFinalInspection = () => {
                 />
               </Grid>
 
-              {/* ✅ Sub Serail No */}
-              <Grid item size={1}>
+              {/* 👉 Consignee Section */}
+              <Grid item size={2}>
+                <Typography variant="h6" sx={{ mt: 2 }}>
+                  Consignee Details
+                </Typography>
+              </Grid>
+
+              {/* Consignee Dropdown */}
+              <Grid item size={2}>
                 <FormControl fullWidth>
                   <InputLabel>Select Consignee</InputLabel>
                   <Select
@@ -355,7 +445,7 @@ const AddFinalInspection = () => {
                     onChange={(e) => setSelectedConsignee(e.target.value)}
                     label="Select Consignee"
                   >
-                    {consignees?.map((c) => (
+                    {consignees.map((c) => (
                       <MenuItem key={c.id} value={c.id}>
                         {c.name}
                       </MenuItem>
@@ -381,20 +471,22 @@ const AddFinalInspection = () => {
                   <InputLabel>Select Repaired Transformers</InputLabel>
                   <Select
                     multiple
-                    input={<OutlinedInput label="Select Sub Serial No" />}
+                    input={
+                      <OutlinedInput label="Select Repaired Transformers" />
+                    }
                     value={selectedTransformers}
                     onChange={(e) => setSelectedTransformers(e.target.value)}
                     renderValue={(selected) =>
                       selected
                         .map(
                           (id) =>
-                            availableTransformers?.find((t) => t.id === id)
+                            availableTransformers.find((t) => t.id === id)
                               ?.serialNo || ""
                         )
                         .join(", ")
                     }
                   >
-                    {availableTransformers?.map((t) => (
+                    {availableTransformers.map((t) => (
                       <MenuItem key={t.id} value={t.id}>
                         <Checkbox
                           checked={selectedTransformers.includes(t.id)}
@@ -418,7 +510,7 @@ const AddFinalInspection = () => {
               </Grid>
 
               {/* ✅ Consignee Table */}
-              <Grid item xs={12}>
+              <Grid item size={12}>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
@@ -432,13 +524,13 @@ const AddFinalInspection = () => {
                   <TableBody>
                     {consigneeList.map((c, idx) => (
                       <TableRow key={idx}>
-                        <TableCell>{consignees.find(con => con.id === c.consigneeId)?.name}</TableCell>
+                        <TableCell>{c.consignee.name}</TableCell>
                         <TableCell>{c.quantity}</TableCell>
                         <TableCell>{c.subSnNumber}</TableCell>
                         <TableCell>
-                          {c.repairedTransformerIds?.length > 0
-                            ? c.repairedTransformerIds
-                                .map((t_id) => damagedTransformers.find(dt => dt.id === t_id)?.serialNo)
+                          {c.repairedTransformers?.length > 0
+                            ? c.repairedTransformers
+                                .map((t) => t.serialNo)
                                 .join(", ")
                             : "—"}
                         </TableCell>
@@ -567,90 +659,9 @@ const AddFinalInspection = () => {
                 />
               </Grid>
 
-              {/* 👉 Consignee Section */}
-              <Grid item size={2}>
-                <Typography variant="h6" sx={{ mt: 2 }}>
-                  Consignee Details
-                </Typography>
-              </Grid>
+              
 
-              {/* Consignee Dropdown */}
-              <Grid item size={2}>
-                <FormControl fullWidth>
-                  <InputLabel>Select Consignee</InputLabel>
-                  <Select
-                    value={selectedConsignee}
-                    onChange={(e) => setSelectedConsignee(e.target.value)}
-                    label="Select Consignee"
-                  >
-                    {consignees.map((c) => (
-                      <MenuItem key={c.id} value={c.id}>
-                        {c.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              {/* Quantity Input */}
-              <Grid item size={2}>
-                <TextField
-                  label="Quantity"
-                  type="number"
-                  fullWidth
-                  value={consigneeQuantity}
-                  onChange={(e) => setConsigneeQuantity(e.target.value)}
-                />
-              </Grid>
-
-              {/* Add Button */}
-              <Grid item size={1}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleAddConsignee}
-                >
-                  Add
-                </Button>
-              </Grid>
-
-              {/* ✅ Consignee Table */}
-              <Grid item size={12}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Consignee</TableCell>
-                      <TableCell>Quantity</TableCell>
-                      <TableCell>Tfrs Serial No.</TableCell>
-                      <TableCell>Action</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {consigneeList.map((c, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell>{c.consignee.name}</TableCell>
-                        <TableCell>{c.quantity}</TableCell>
-                        <TableCell>{c.subSnNumber}</TableCell>
-                        <TableCell>
-                          <Button
-                            color="error"
-                            onClick={() => handleDeleteConsignee(idx)}
-                          >
-                            <Cancel />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {consigneeList.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={5} align="center">
-                          No Consignees Added
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </Grid>
+              
 
               <Grid item size={2}>
                 <div>
@@ -698,10 +709,9 @@ const AddFinalInspection = () => {
                   style={{
                     margin: "auto",
                   }}
-                  disabled={addFinalInspectionMutation.isLoading}
                 >
                   <FaCloudUploadAlt />
-                  {addFinalInspectionMutation.isLoading ? (
+                  {isLoading ? (
                     <CircularProgress color="inherit" size={20} />
                   ) : (
                     "PUBLISH AND VIEW"

@@ -78,6 +78,7 @@ const NominationDone = () => {
         onExportExcel={false}
         sheetName="Nomination Done But Inspection Pending "
         pdfTitle="Nomination Done But Inspection Pending"
+        dueDateofDeliveryIncluded={false}
       />
 
       <Paper sx={{ p: 2, mt: 3 }}>

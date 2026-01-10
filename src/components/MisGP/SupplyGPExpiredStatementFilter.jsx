@@ -93,6 +93,7 @@ const SupplyGPExpiredStatementFilter = ({ onFilteredData, data }) => {
     const excelData = filteredData.map((item, index) => ({
       "S.No": index + 1,
       FirmName: item.companyName,
+      Discom: item.discom,
       "Tn No": item.deliverySchedule.tnNumber,
       Rating: item.deliverySchedule.rating,
       Phase: item.deliverySchedule.phase,
@@ -147,6 +148,7 @@ const SupplyGPExpiredStatementFilter = ({ onFilteredData, data }) => {
     const pdfData = filteredData.map((item, index) => [
       index + 1, // S.No
       item.companyName || "",
+      item.discom || "",
       item.deliverySchedule?.tnNumber || "",
       item.deliverySchedule?.rating || "",
       item.deliverySchedule?.phase || "",
@@ -160,11 +162,12 @@ const SupplyGPExpiredStatementFilter = ({ onFilteredData, data }) => {
     const headers = [
       "S.No",
       "Firm Name",
+      "Discom",
       "Tn No",
       "Rating",
       "Phase",
       "Wound",
-      "G.P. Tiers\nreceived up\nto date",
+      "G.P. Tfrs\nreceived up\nto date",
       "Qty\nBalance",
       "Last GP Supply\nExpiry Date",
     ];
@@ -201,13 +204,14 @@ const SupplyGPExpiredStatementFilter = ({ onFilteredData, data }) => {
       const baseWidths = {
         0: 40, // S.No
         1: 120, // Firm Name
-        2: 70, // Tn No
-        3: 60, // Rating
-        4: 80, // Phase
-        5: 70, // Wound
-        6: 80, // GP Tiers received
-        7: 70, // Qty Balance
-        8: 100, // Last GP Supply Expiry Date
+        2: 120, // Discom
+        3: 70, // Tn No
+        4: 60, // Rating
+        5: 80, // Phase
+        6: 70, // Wound
+        7: 80, // GP Tiers received
+        8: 70, // Qty Balance
+        9: 100, // Last GP Supply Expiry Date
       };
 
       let totalTableWidth = 0;

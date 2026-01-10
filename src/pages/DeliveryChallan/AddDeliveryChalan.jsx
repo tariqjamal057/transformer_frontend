@@ -1,5 +1,13 @@
 import { useContext, useEffect, useState } from "react";
-import { CircularProgress } from "@mui/material";
+import {
+  Checkbox,
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  ListItemText,
+  OutlinedInput,
+  Select,
+} from "@mui/material";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import {
   Grid,
@@ -60,6 +68,8 @@ const AddDeliveryChalan = () => {
 
     if (record) {
       setSelectedRecord(record);
+
+      // auto-filled fields
       setDiNo(record.diNo);
       setDiDate(dayjs(record.diDate));
       setInspectionDate(dayjs(record.inspectionDate));
@@ -68,11 +78,12 @@ const AddDeliveryChalan = () => {
       setPoDate(dayjs(record.deliverySchedule.poDate));
       setSerialNumber(record.snNumber);
       setChalanDescription(record.deliverySchedule.description);
+
+      // ✅ VERY IMPORTANT
+      setSelectedTransformers([]); // reset on TN change
     }
   };
 
-  const [subSerialFrom, setSubSerialFrom] = useState("")
-  const [subSerialTo, setSubSerialTo] = useState("")
   const [challanNo, setChallanNo] = useState("");
 
   const [consignorName, setConsignorName] = useState("");
@@ -118,7 +129,6 @@ const AddDeliveryChalan = () => {
   const [driverName, setDriverName] = useState("");
   const [lorryNo, setLorryNo] = useState("");
 
-
   const [materialDescription, setMaterialDescription] = useState("");
   const [materialDescriptionId, setMaterialDescriptionId] = useState("");
 
@@ -150,7 +160,11 @@ const AddDeliveryChalan = () => {
     e.preventDefault();
     if (!selectedRecord) return;
 
-    // Store entire final inspection object
+    const selectedSubSerialNumbers =
+      selectedRecord?.subSerialNo
+        ?.filter((s) => selectedTransformers.includes(s.id))
+        .map((s) => s.serialNo) || [];
+
     const data = {
       finalInspectionDetailId: selectedRecord.id,
       challanNo,
@@ -210,28 +224,36 @@ const AddDeliveryChalan = () => {
                 />
               </Grid>
 
-              <Grid item size={2} mt={1}>
-                <Typography variant="h5" fontWeight={600} gutterBottom>
-                  Sub Serial No
-                </Typography>
-              </Grid>
-
+              {/* ✅ Sub Serail No */}
               <Grid item size={1}>
-                <TextField
-                  label="From"
-                  fullWidth
-                  value={subSerialFrom}
-                  onChange={(e) => setSubSerialFrom(e.target.value)}
-                />
-              </Grid>
-
-              <Grid item size={1}>
-                <TextField
-                  label="To"
-                  fullWidth
-                  value={subSerialTo}
-                  onChange={(e) => setSubSerialTo(e.target.value)}
-                />
+                <FormControl fullWidth>
+                  <InputLabel>Sub Serial No</InputLabel>
+                  <Select
+                    multiple
+                    value={selectedTransformers}
+                    onChange={(e) => setSelectedTransformers(e.target.value)}
+                    input={<OutlinedInput label="Sub Serial No" />}
+                    renderValue={(selected) =>
+                      selected
+                        .map(
+                          (id) =>
+                            selectedRecord?.subSerialNo.find((s) => s.id === id)
+                              ?.serialNo || ""
+                        )
+                        .join(", ")
+                    }
+                    disabled={!selectedRecord?.subSerialNo?.length}
+                  >
+                    {selectedRecord?.subSerialNo?.map((s) => (
+                      <MenuItem key={s.id} value={s.id}>
+                        <Checkbox
+                          checked={selectedTransformers.includes(s.id)}
+                        />
+                        <ListItemText primary={s.serialNo} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </Grid>
 
               {/* DI No */}
@@ -277,11 +299,7 @@ const AddDeliveryChalan = () => {
 
               {/* PO No */}
               <Grid item size={1}>
-                <TextField
-                  fullWidth
-                  label="PO No"
-                  value={poNo}
-                />
+                <TextField fullWidth label="PO No" value={poNo} />
               </Grid>
 
               {/* PO Date */}
@@ -301,8 +319,6 @@ const AddDeliveryChalan = () => {
                   onChange={(e) => setChallanNo(e.target.value)}
                 />
               </Grid>
-
-              
 
               <Grid item size={2} mt={3}>
                 <Typography variant="h5" fontWeight={600} gutterBottom>
