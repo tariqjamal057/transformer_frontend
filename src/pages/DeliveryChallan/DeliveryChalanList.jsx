@@ -1,189 +1,63 @@
 import { useContext, useEffect, useState } from "react";
 import { Button, InputAdornment, TextField, Tooltip } from "@mui/material";
 import { Link } from "react-router-dom";
-import { FaFileDownload, FaPencilAlt, FaPrint } from "react-icons/fa";
-import { MyContext } from "../../App";
+import { FaEye, FaFileDownload, FaPencilAlt, FaPrint, FaTrash } from "react-icons/fa";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import PdfTemplate from "../../components/PdfTemplate";
 import { createRoot } from "react-dom/client"; // Add this at the top
 import SearchIcon from "@mui/icons-material/Search";
 import DeliveryChalanModal from "../../components/DeliveryChalanModal";
+import DetailsModal from "../../components/DetailsModal";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
+import { MyContext } from "../../App";
+import Swal from "sweetalert2";
 
 const DeliveryChalanList = () => {
-  const { setProgress, setAlertBox, setIsHideSidebarAndHeader } =
-    useContext(MyContext);
+  const { setAlertBox } = useContext(MyContext);
+  const queryClient = useQueryClient();
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedDeliveryChalan, setSelectedDeliveryChalan] = useState(null);
   const [isPreview, setIsPreview] = useState(false);
+  const [openDetailsModal, setOpenDetailsModal] = useState(false);
+  const [selectedChalanDetails, setSelectedChalanDetails] = useState(null);
 
-  // Dummy Data
-  const dummyDeliveryChalans = [
-    {
-      id: "1",
-      finalInspectionDetail: {
-        id: "1",
-        deliverySchedule: {
-          tnNumber: "TN-001",
-          poDetails: "PO-12345",
-          poDate: "2025-05-10",
-          rating: "100",
-          guaranteePeriodMonths: 24,
-          description:
-            "Challan for the supply of high-tension insulators, complete with packing, forwarding, insurance, and all required test certificates for the designated substation.",
-        },
-        offeredDate: "2025-07-12",
-        offeredQuantity: 200,
-        serialNumberFrom: 120,
-        serialNumberTo: 240,
-        snNumber: "120 TO 240",
-        nominationLetterNo: "NL/2025/001",
-        nominationDate: "2025-07-10",
-        inspectionOfficers: ["Ravi Kumar", "Sunita Sharma"],
-        inspectionDate: "2025-07-13",
-        inspectedQuantity: 100,
-        total: 120,
-        diNo: "DI/2025/1001",
-        diDate: "2025-07-16",
-        shellingDetails: "Model X, Batch 3, 50 units per batch",
-      },
-      challanNo: "CH-1001",
-      createdAt: "2025-07-22",
-      subSerialNumberFrom: 120,
-      subSerialNumberTo: 140,
-      consignorName: "PowerTech Transformers Pvt. Ltd.",
-      consignorPhone: "9876543210",
-      consignorAddress: "Plot 12, Industrial Zone, Mumbai",
-      consignorGST: "27AAACP1234F1Z5",
-      consignorEmail: "powertech@gmail.com",
-      consigneeDetails: {
-        id: "2",
-        name: "ABC Power Solutions Pvt. Ltd.",
-        address:
-          "Plot No. 45, Industrial Area, Sector 18, Gurugram, Haryana - 122015",
-        gstNo: "06ABCDE1234F1Z5",
-      },
-      lorryNo: "MH12AB1234",
-      truckDriverName: "Ramesh Yadav",
-      materialDescription: {
-        materialName: "150 Amp Current Transformer (CT)",
-        phase: "11 KV",
-        description:
-          "100 kVA, 11/0.433 kV, 3-Phase, Oil Cooled Distribution Transformer with Copper Winding, ONAN Cooling, complete with standard fittings and accessories suitable for outdoor installation as per IS 1180.",
-      },
+  const { data: deliveryChallans, isLoading, isError } = useQuery({
+    queryKey: ["deliveryChallans"],
+    queryFn: () => api.get("/delivery-challans").then((res) => res.data),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/delivery-challans/${id}`),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "Delivery Challan deleted successfully!", error: false});
+      queryClient.invalidateQueries(["deliveryChallans"]);
     },
-    {
-      id: "2",
-      finalInspectionDetail: {
-        id: "2",
-        deliverySchedule: {
-          tnNumber: "TN-002",
-          poDetails: "PO-22345",
-          poDate: "2025-06-01",
-          rating: "50",
-          guaranteePeriodMonths: 18,
-          description:
-            "Delivery challan for 1000 kVA transformers including transport charges, handling, and on-site installation as per the approved purchase order and delivery schedule.",
-        },
-        offeredDate: "2025-08-05",
-        offeredQuantity: 150,
-        serialNumberFrom: 241,
-        serialNumberTo: 390,
-        snNumber: "241 TO 390",
-        nominationLetterNo: "NL/2025/002",
-        nominationDate: "2025-08-03",
-        inspectionOfficers: ["Amit Verma", "Priya Singh"],
-        inspectionDate: "2025-08-06",
-        inspectedQuantity: 140,
-        total: 150,
-        diNo: "DI/2025/1002",
-        diDate: "2025-08-08",
-        shellingDetails: "Model Y, Batch 2, 30 units per batch",
-      },
-      challanNo: "CH-1002",
-      createdAt: "2025-08-10",
-      subSerialNumberFrom: 241,
-      subSerialNumberTo: 260,
-      consignorName: "MegaVolt Electricals Ltd.",
-      consignorPhone: "9123456780",
-      consignorAddress: "Industrial Plot 88, Pune MIDC, Maharashtra",
-      consignorGST: "27MEGAE5678G1Z2",
-      consignorEmail: "megavolt@gmail.com",
-      consigneeDetails: {
-        id: "3",
-        name: "XYZ Transformers Ltd.",
-        address: "B-12, MIDC Industrial Estate, Pune, Maharashtra - 411019",
-        gstNo: "27XYZAB6789C1Z3",
-      },
-      lorryNo: "MH14XY5678",
-      truckDriverName: "Suresh Patil",
-      materialDescription: {
-        materialName: "500 kVA Power Transformer",
-        phase: "500 KVA",
-        description:
-          "500 kVA, 33/11 kV, 3-Phase transformer with OLTC, ONAN cooling, conservator and marshalling box for grid substation use.",
-      },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
     },
-    {
-      id: "3",
-      finalInspectionDetail: {
-        id: "3",
-        deliverySchedule: {
-          tnNumber: "TN-003",
-          poDetails: "PO-32345",
-          poDate: "2025-07-15",
-          rating: "150",
-          guaranteePeriodMonths: 12,
-          description:
-            "Material dispatch challan for 11kV outdoor vacuum circuit breakers, inclusive of installation accessories and detailed engineering drawings for commissioning.",
-        },
-        offeredDate: "2025-09-15",
-        offeredQuantity: 180,
-        serialNumberFrom: 391,
-        serialNumberTo: 570,
-        snNumber: "391 TO 570",
-        nominationLetterNo: "NL/2025/003",
-        nominationDate: "2025-09-12",
-        inspectionOfficers: ["Rajesh Gupta", "Meena Kapoor"],
-        inspectionDate: "2025-09-16",
-        inspectedQuantity: 160,
-        total: 180,
-        diNo: "DI/2025/1003",
-        diDate: "2025-09-18",
-        shellingDetails: "Model Z, Batch 1, 60 units per batch",
-      },
-      challanNo: "CH-1003",
-      createdAt: "2025-09-20",
-      subSerialNumberFrom: 391,
-      subSerialNumberTo: 410,
-      consignorName: "ElectroTech Industries",
-      consignorPhone: "9988776655",
-      consignorAddress: "Shed No. 21, GIDC Estate, Ahmedabad",
-      consignorGST: "24ETI7654H1Z5",
-      consignorEmail: "electrotech@gmail.com",
-      consigneeDetails: {
-        id: "4",
-        name: "GreenVolt Energy Systems",
-        address:
-          "123/4, Electronic City Phase 2, Bengaluru, Karnataka - 560100",
-        gstNo: "29GVEPL2345D1Z7",
-      },
-      lorryNo: "GJ01ZX4321",
-      truckDriverName: "Mahesh Kumar",
-      materialDescription: {
-        materialName: "200 kVA Copper Wound Distribution Transformer",
-        phase: "200 KVA",
-        description:
-          "200 kVA, 11/0.433 kV, 3-Phase, ONAN cooled, energy efficient distribution transformer as per IS standards.",
-      },
-    },
-  ];
+  });
+
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteMutation.mutate(id);
+      }
+    });
+  };
 
   useEffect(() => {
-    setIsHideSidebarAndHeader(false);
     window.scrollTo(0, 0);
-    setProgress(100);
   }, []);
 
   const handleEditClick = (item) => {
@@ -195,6 +69,16 @@ const DeliveryChalanList = () => {
   const handleModalClose = () => {
     setOpenModal(false);
     setSelectedDeliveryChalan(null);
+  };
+
+  const handleViewClick = (item) => {
+    setSelectedChalanDetails(item);
+    setOpenDetailsModal(true);
+  };
+
+  const handleDetailsModalClose = () => {
+    setOpenDetailsModal(false);
+    setSelectedChalanDetails(null);
   };
 
   // Instant PDF Generator
@@ -231,96 +115,12 @@ const DeliveryChalanList = () => {
     }, 300);
   };
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filteredChallans, setFilteredChallans] =
-    useState(dummyDeliveryChalans);
-
-  useEffect(() => {
-    const results = dummyDeliveryChalans.filter((item) => {
-      const query = searchQuery.toLowerCase();
-
-      const tnMatch = item.finalInspectionDetail?.deliverySchedule?.tnNumber
-        ?.toLowerCase()
-        .includes(query);
-
-      const ratingMatch = item.finalInspectionDetail?.deliverySchedule?.rating
-        ?.toString()
-        .toLowerCase()
-        .includes(query);
-
-      const poMatch = item.finalInspectionDetail?.deliverySchedule?.poDetails
-        ?.toLowerCase()
-        .includes(query);
-
-      const poDateMatch = item.finalInspectionDetail?.deliverySchedule?.poDate
-        ?.toLowerCase()
-        .includes(query);
-
-      const challanNoMatch = item.challanNo?.toLowerCase().includes(query);
-
-      const challanDateMatch = item.createdAt?.toLowerCase().includes(query);
-
-      const consigneeMatch = item.consigneeDetails?.name
-        ?.toLowerCase()
-        .includes(query);
-
-      const materialMatch = item.materialDescription?.materialName
-        ?.toLowerCase()
-        .includes(query);
-
-      return (
-        tnMatch ||
-        ratingMatch ||
-        poMatch ||
-        poDateMatch ||
-        challanNoMatch ||
-        challanDateMatch ||
-        consigneeMatch ||
-        materialMatch
-      );
-    });
-
-    setFilteredChallans(results);
-  }, [searchQuery]);
-
   return (
     <>
       <div className="right-content w-100">
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center gap-3 mb-3 card shadow border-0 w-100 flex-row p-4">
           <h5 className="mb-0">Delivery Challan List</h5>
-
-          <TextField
-            variant="outlined"
-            placeholder="Search...."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            size="small"
-            sx={{
-              width: { xs: "100%", sm: "300px" },
-              marginLeft: "auto",
-              backgroundColor: "#fff",
-              borderRadius: 2,
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  borderColor: "#ccc",
-                },
-                "&:hover fieldset": {
-                  borderColor: "#f0883d",
-                },
-                "&.Mui-focused fieldset": {
-                  borderColor: "#f0883d",
-                },
-              },
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: "#f0883d" }} />
-                </InputAdornment>
-              ),
-            }}
-          />
 
           <div className="d-flex align-items-center">
             <Link to={"/add-deliveryChalan"}>
@@ -352,8 +152,16 @@ const DeliveryChalanList = () => {
               </thead>
 
               <tbody className="text-center align-middle">
-                {filteredChallans.length > 0 ? (
-                  filteredChallans.map((item, index) => (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan="11">Loading...</td>
+                  </tr>
+                ) : isError ? (
+                  <tr>
+                    <td colSpan="11">Error fetching data</td>
+                  </tr>
+                ) : deliveryChallans.length > 0 ? (
+                  deliveryChallans.map((item, index) => (
                     <tr key={item.id}>
                       {/* Sr No */}
                       <td># {index + 1}</td>
@@ -473,6 +281,12 @@ const DeliveryChalanList = () => {
                       <td>
                         <div className="d-flex gap-2 align-items-center justify-content-center">
                           <button
+                            className="btn btn-sm btn-primary"
+                            onClick={() => handleViewClick(item)}
+                          >
+                            <FaEye />
+                          </button>
+                          <button
                             className="btn btn-sm btn-success"
                             onClick={() => handleEditClick(item)}
                           >
@@ -486,13 +300,19 @@ const DeliveryChalanList = () => {
                               <FaFileDownload />
                             </button>
                           </Tooltip>
+                          <button
+                            className="btn btn-sm btn-danger"
+                            onClick={() => handleDelete(item.id)}
+                          >
+                            <FaTrash />
+                          </button>
                         </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="10" className="text-center">
+                    <td colSpan="11" className="text-center">
                       No data found
                     </td>
                   </tr>
@@ -510,6 +330,14 @@ const DeliveryChalanList = () => {
           deliveryChalanData={selectedDeliveryChalan}
           previewOnly={isPreview}
           onPrint={() => generatePDF(selectedDeliveryChalan)}
+        />
+      }
+      {
+        <DetailsModal
+          open={openDetailsModal}
+          handleClose={handleDetailsModalClose}
+          title="Delivery Challan Details"
+          details={selectedChalanDetails}
         />
       }
     </>

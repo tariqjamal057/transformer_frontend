@@ -3,7 +3,6 @@ import { FaPencilAlt } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
-import { MyContext } from "../../App";
 import {
   Dialog,
   DialogTitle,
@@ -14,13 +13,13 @@ import {
   IconButton,
 } from "@mui/material";
 import { IoCloseSharp } from "react-icons/io5";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
+import { MyContext } from "../../App";
 
 const MaterialDescriptionList = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 10; // or calculate based on data length
-
-  const { setProgress, setAlertBox, setIsHideSidebarAndHeader } =
-    useContext(MyContext);
+  const { setAlertBox } = useContext(MyContext);
+  const queryClient = useQueryClient();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedDescription, setSelectedDescription] = useState(null);
@@ -28,65 +27,57 @@ const MaterialDescriptionList = () => {
   const [phase, setPhase] = useState("")
   const [materialDescription, setMaterialDescription] = useState("");
 
-  useEffect(() => {
-    setIsHideSidebarAndHeader(false);
-    window.scrollTo(0, 0);
-  }, []);
+  const { data: materialDescriptions, isLoading, isError } = useQuery({
+    queryKey: ["materialDescriptions"],
+    queryFn: () => api.get("/material-descriptions").then((res) => res.data.data),
+  });
 
-  useEffect(() => {
-    setProgress(20);
-    setProgress(100);
-  }, []);
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/material-descriptions/${id}`),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "Material Description deleted successfully!", error: false});
+      queryClient.invalidateQueries(["materialDescriptions"]);
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
 
-  const handlePageChange = (event, value) => {
-    setPage(value);
+  const updateMutation = useMutation({
+    mutationFn: (updatedDescription) =>
+      api.put(
+        `/material-descriptions/${selectedDescription.id}`,
+        updatedDescription
+      ),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "Material Description updated successfully!", error: false});
+      queryClient.invalidateQueries(["materialDescriptions"]);
+      handleModalClose();
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
+
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteMutation.mutate(id);
+      }
+    });
   };
-
-  const getDummyMaterialDescriptions = () => {
-    return [
-      {
-        materialName: "100 kVA Copper Distribution Transformer",
-        phase: "100 KVA",
-        rating: '100',
-        description:
-          "100 kVA, 11/0.433 kV, 3-Phase, Oil Cooled Distribution Transformer with Copper Winding, ONAN Cooling, complete with standard fittings and accessories suitable for outdoor installation as per IS 1180.",
-      },
-      {
-        materialName: "200 kVA Copper Distribution Transformer",
-        phase: "200 KVA",
-        rating: "200",
-        description:
-          "200 kVA, 11/0.433 kV, 3-Phase, Copper Wound Distribution Transformer, ONAN Cooled, energy efficient level-2 with standard bushings, arcing horns, and lifting lugs as per latest IS standards.",
-      },
-      {
-        materialName: "500 kVA Power Transformer with OLTC",
-        phase: "500 KVA",
-        rating: "500",
-        description:
-          "500 kVA, 33/11 kV, 3-Phase Power Transformer with On-Load Tap Changer (OLTC), Oil Natural Air Natural Cooling, suitable for grid substation applications, complete with conservator, radiators, and marshalling box.",
-      },
-      {
-        materialName: "150 Amp Current Transformer (CT)",
-        phase: "150 Amp",
-        rating: "150",
-        description:
-          "150 Amp Current Transformer (CT), 11 kV Indoor Resin Cast Type, Class 1 accuracy, 5P10 protection class, suitable for metering and protection applications in medium voltage switchgear panels.",
-      },
-      {
-        materialName: "11 kV Single Phase Potential Transformer (PT)",
-        phase: "11 KV",
-        rating: "11",
-        description:
-          "11 kV Single Phase Potential Transformer (PT), Oil Immersed Outdoor Type, with Class 0.5 accuracy for metering and protection, designed for long life and reliable voltage measurement in distribution networks.",
-      },
-    ];
-  };
-
-  const dummyData = getDummyMaterialDescriptions();
 
   const handleEditClick = (item) => {
     setSelectedDescription(item);
-    setMaterialName(item.materialName);
+    setMaterialName(item.name);
     setPhase(item.phase)
     setMaterialDescription(item.description);
     setEditModalOpen(true);
@@ -101,13 +92,11 @@ const MaterialDescriptionList = () => {
   };
 
   const handleSaveChanges = () => {
-    // You can send API call here
-    setAlertBox({
-      open: true,
-      msg: "Material Description updated successfully!",
-      error: false,
+    updateMutation.mutate({
+      materialName,
+      phase,
+      description: materialDescription,
     });
-    setEditModalOpen(false);
   };
 
   return (
@@ -131,14 +120,22 @@ const MaterialDescriptionList = () => {
                 <tr>
                   <th>NO</th>
                   <th>MATERIAL NAME</th>
-                  <th>Rating</th>
+                  <th>Phase</th>
                   <th>MATERIAL DESCRIPTION</th>
                   <th>ACTION</th>
                 </tr>
               </thead>
               <tbody className="text-center">
-                {dummyData.length > 0 ? (
-                  dummyData.map((item, index) => {
+                {isLoading ? (
+                  <tr>
+                    <td colSpan="5">Loading...</td>
+                  </tr>
+                ) : isError ? (
+                  <tr>
+                    <td colSpan="5">Error fetching data</td>
+                  </tr>
+                ) : materialDescriptions.length > 0 ? (
+                  materialDescriptions.map((item, index) => {
                     const shortDescription =
                       item.description.split(" ").slice(0, 8).join(" ") +
                       (item.description.split(" ").length > 8 ? " ..." : "");
@@ -146,8 +143,8 @@ const MaterialDescriptionList = () => {
                     return (
                       <tr key={index}>
                         <td># {index + 1}</td>
-                        <td>{item.materialName}</td>
-                        <td>{item.rating}</td>
+                        <td>{item.name}</td>
+                        <td>{item.phase}</td>
                         <td>{shortDescription}</td>
                         <td>
                           <div className="d-flex gap-2 align-item-center justify-content-center">
@@ -157,6 +154,12 @@ const MaterialDescriptionList = () => {
                             >
                               <FaPencilAlt />
                             </button>
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              <MdDelete />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -164,7 +167,7 @@ const MaterialDescriptionList = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan="10" className="text-center">
+                    <td colSpan="5" className="text-center">
                       No data found
                     </td>
                   </tr>
@@ -173,12 +176,6 @@ const MaterialDescriptionList = () => {
             </table>
           </div>
         </div>
-
-        {/*<ResponsivePagination
-          page={currentPage}
-          count={totalPages}
-          onChange={(event, value) => setCurrentPage(value)}
-        />*/}
       </div>
 
       {/* Edit Modal */}
@@ -186,7 +183,6 @@ const MaterialDescriptionList = () => {
         open={editModalOpen}
         onClose={handleModalClose}
         fullWidth
-        //fullScreen={fullScreen}
       >
         <DialogTitle className="d-flex justify-content-between align-items-center">
           Edit Details
@@ -233,8 +229,9 @@ const MaterialDescriptionList = () => {
             onClick={handleSaveChanges}
             variant="contained"
             color="primary"
+            disabled={updateMutation.isLoading}
           >
-            Save Changes
+            {updateMutation.isLoading ? "Saving..." : "Save Changes"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -243,3 +240,4 @@ const MaterialDescriptionList = () => {
 };
 
 export default MaterialDescriptionList;
+

@@ -13,7 +13,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
-import { dummyDeliveryChalans } from "../pages/GPFailure/AddGPFailure";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../services/api";
 
 const style = {
   position: "absolute",
@@ -31,6 +32,7 @@ const style = {
 };
 
 const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
+  const queryClient = useQueryClient();
   const [accountReceiptNoteNo, setAccountReceiptNoteNo] = useState("");
   const [accountReceiptNoteDate, setAccountReceiptNoteDate] = useState(null);
   const [sinNo, setSinNo] = useState("");
@@ -66,10 +68,15 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
   // extra state to store polySealNo
   const [polySealNo, setPolySealNo] = useState("");
 
+  const { data: deliveryChallans } = useQuery({
+    queryKey: ["deliveryChallans"],
+    queryFn: () => api.get("/delivery-challans").then((res) => res.data),
+  });
+
   // update useEffect
   useEffect(() => {
     if (trfsiNo && rating) {
-      const found = dummyDeliveryChalans.find((ch) => {
+      const found = deliveryChallans?.find((ch) => {
         const hasTrfsi = ch.finalInspectionDetail.shealingDetails.some(
           (s) => String(s.trfsiNo) === String(trfsiNo)
         );
@@ -97,19 +104,53 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
       setSelectedChalan(null);
       setPolySealNo("");
     }
-  }, [trfsiNo, rating]);
+  }, [trfsiNo, rating, deliveryChallans]);
+
+  const { mutate: updateGPReceipt, isLoading } = useMutation({
+    mutationFn: (updatedData) =>
+      api.put(`/gp-receipt-notes/${gpReceiptData.id}`, updatedData),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["gpReceiptNotes"]);
+      handleClose();
+    },
+  });
 
   const handleSubmit = () => {
     const data = {
+      accountReceiptNoteNo,
+      accountReceiptNoteDate: dayjs(accountReceiptNoteDate).format(
+        "YYYY-MM-DD"
+      ),
+      sinNo,
+      consigneeName,
+      discomReceiptNoteNo,
+      discomReceiptNoteDate: dayjs(discomReceiptNoteDate).format("YYYY-MM-DD"),
+      remarks,
       trfsiNo,
       rating,
-      selectedChalan,
+      challanNo: selectedChalan.challanNo,
+      sealNoTimeOfGPReceived,
+      consigneeTFRSerialNo,
+      oilLevel,
+      hvBushing,
+      lvBushing,
+      htMetalParts,
+      ltMetalParts,
+      mAndpBox,
+      mAndpBoxCover,
+      mccb,
+      icb,
+      copperFlexibleCable,
+      alWire,
+      conservator,
+      radiator,
+      fuse,
+      channel,
+      core,
       polySealNo,
     };
     if (data) {
-      console.log("Submitted New G.P. Receipt Record: ", data);
-      alert("Failure information stored successfully!");
-      handleClose()
+      updateGPReceipt(data);
     } else {
       alert("No matching record found.");
     }
@@ -476,8 +517,8 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
             />
 
             <Box mt={4} textAlign="center">
-              <Button variant="contained" size="large" onClick={handleSubmit}>
-                Save Changes
+              <Button variant="contained" size="large" onClick={handleSubmit} disabled={isLoading}>
+                {isLoading? 'Saving...' : 'Save Changes'}
               </Button>
             </Box>
           </Box>

@@ -1,6 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { FaPencilAlt } from "react-icons/fa";
-import { MdDelete } from "react-icons/md";
+import { FaPencilAlt, FaTrash } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
 import {
@@ -20,14 +19,13 @@ import {
   OutlinedInput,
 } from "@mui/material";
 import { IoCloseSharp } from "react-icons/io5";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
 import { MyContext } from "../../App";
 
 const SubAdminList = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 10;
-
-  const { setProgress, setAlertBox, setIsHideSidebarAndHeader } =
-    useContext(MyContext);
+  const { setAlertBox } = useContext(MyContext);
+  const queryClient = useQueryClient();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedSubAdmin, setSelectedSubAdmin] = useState(null);
@@ -47,59 +45,55 @@ const SubAdminList = () => {
     "Settings",
   ];
 
-  useEffect(() => {
-    setIsHideSidebarAndHeader(false);
-    window.scrollTo(0, 0);
-  }, []);
+  const { data: users, isLoading, isError } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => api.get("/users").then((res) => res.data),
+  });
 
-  useEffect(() => {
-    setProgress(20);
-    setProgress(100);
-  }, []);
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/users/${id}`),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "User deleted successfully!", error: false});
+      queryClient.invalidateQueries(["users"]);
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
 
-  const getDummySubAdmins = () => {
-    return [
-      {
-        name: "Amit Sharma",
-        loginId: "amit.sharma",
-        number: "8617019854",
-        password: "Amit@1234",
-        role: "Owner",
-        accessPages: ["Dashboard", "Orders", "Products"],
-      },
-      {
-        name: "Priya Verma",
-        loginId: "priya.verma",
-        number: "9827019854",
-        password: "Priya@4567",
-        role: "Manager",
-        accessPages: ["Users", "Reports"],
-      },
-      {
-        name: "Ravi Mehta",
-        loginId: "ravi.mehta",
-        number: "7231019854",
-        password: "Ravi@7890",
-        role: "Supervisor",
-        accessPages: ["Dashboard", "Settings"],
-      },
-      {
-        name: "Sneha Kapoor",
-        loginId: "sneha.kapoor",
-        number: "8637824348",
-        password: "Sneha@2345",
-        role: "Data Feeder",
-        accessPages: ["Orders", "Reports", "Settings"],
-      },
-    ];
+  const updateMutation = useMutation({
+    mutationFn: (updatedUser) =>
+      api.put(`/users/${selectedSubAdmin.id}`, updatedUser),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "User details updated successfully!", error: false});
+      queryClient.invalidateQueries(["users"]);
+      handleModalClose();
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
+
+  const handleDeleteClick = async (id) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you really want to delete this Sub-admin?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+      deleteMutation.mutate(id);
+    }
   };
-
-  const dummyData = getDummySubAdmins();
 
   const handleEditClick = (item) => {
     setSelectedSubAdmin(item);
     setEditedUserName(item.name);
-    setEditedPageAccess(item.accessPages);
+    setEditedPageAccess(item.accessPages || []);
     setEditedLoginId(item.loginId);
     setEditedNumber(item.number);
     setEditedRole(item.role);
@@ -120,36 +114,16 @@ const SubAdminList = () => {
 
   const handleSaveChanges = () => {
     const editData = {
-      role,
-      editedPageAccess,
+      name: editedUserName,
+      loginId: editedLoginId,
+      number: editedNumber,
+      role: editedRole,
+      pages: editedPageAccess,
     };
-    console.log(editData);
-    setAlertBox({
-      open: true,
-      msg: "User details updated successfully!",
-      error: false,
-    });
-    setEditModalOpen(false);
-  };
-
-  const handleDeleteClick = async (id) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Do you really want to delete this Sub-admin?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it!",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        Swal.fire("Deleted!", "User has been deleted successfully.", "success");
-      } catch (error) {
-        Swal.fire("Error!", "Something went wrong.", "error");
-      }
+    if (editedPassword) {
+      editData.password = editedPassword;
     }
+    updateMutation.mutate(editData);
   };
 
   return (
@@ -173,36 +147,28 @@ const SubAdminList = () => {
                   <th>NAME</th>
                   <th>ROLE</th>
                   <th>Login Id</th>
-                  <th>ACCESS PAGES</th>
                   <th>ACTION</th>
                 </tr>
               </thead>
               <tbody className="text-center">
-                {dummyData.length > 0 ? (
-                  dummyData.map((item, index) => (
-                    <tr
-                      key={index}
-                    >
-                      <td># {index+1}</td>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan="5">Loading...</td>
+                  </tr>
+                ) : isError ? (
+                  <tr>
+                    <td colSpan="5">Error fetching data</td>
+                  </tr>
+                ) : users.length > 0 ? (
+                  users.map((item, index) => (
+                    <tr key={index}>
+                      <td># {index + 1}</td>
                       <td>
                         <div className="fw-semibold">{item.name}</div>
                         <span className="text-muted">{item.number}</span>
                       </td>
                       <td>{item.role}</td>
                       <td>{item.loginId}</td>
-                      <td>
-                        <div className="d-flex flex-wrap gap-2 justify-content-center">
-                          {item.accessPages.map((page, i) => (
-                            <span
-                              key={i}
-                              className="badge rounded-pill text-bg-primary px-3 py-2"
-                              style={{ fontSize: "0.8rem", fontWeight: "500" }}
-                            >
-                              {page}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
                       <td>
                         <div className="d-flex gap-2 align-item-center justify-content-center">
                           <button
@@ -216,10 +182,10 @@ const SubAdminList = () => {
                             className="btn btn-sm btn-danger"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteClick(item.no);
+                              handleDeleteClick(item.id);
                             }}
                           >
-                            <MdDelete />
+                            <FaTrash />
                           </button>
                         </div>
                       </td>
@@ -227,7 +193,7 @@ const SubAdminList = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="10" className="text-center">
+                    <td colSpan="5" className="text-center">
                       No data found
                     </td>
                   </tr>
@@ -236,12 +202,6 @@ const SubAdminList = () => {
             </table>
           </div>
         </div>
-
-        {/*<ResponsivePagination
-          page={currentPage}
-          count={totalPages}
-          onChange={(event, value) => setCurrentPage(value)}
-        />*/}
       </div>
 
       <Dialog open={editModalOpen} onClose={handleModalClose} fullWidth>
@@ -327,8 +287,9 @@ const SubAdminList = () => {
             onClick={handleSaveChanges}
             variant="contained"
             color="primary"
+            disabled={updateMutation.isLoading}
           >
-            Save Changes
+            {updateMutation.isLoading ? "Saving..." : "Save Changes"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -337,3 +298,4 @@ const SubAdminList = () => {
 };
 
 export default SubAdminList;
+

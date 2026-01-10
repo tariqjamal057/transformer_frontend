@@ -3,7 +3,6 @@ import { FaPencilAlt } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
-import { MyContext } from "../../App";
 import {
   Dialog,
   DialogTitle,
@@ -14,63 +13,65 @@ import {
   IconButton,
 } from "@mui/material";
 import { IoCloseSharp } from "react-icons/io5";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
+import { MyContext } from "../../App";
 
 const ChalanDescriptionList = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 10; // or calculate based on data length
-
-  const { setProgress, setAlertBox, setIsHideSidebarAndHeader } =
-    useContext(MyContext);
+  const { setAlertBox } = useContext(MyContext);
+  const queryClient = useQueryClient();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedDescription, setSelectedDescription] = useState(null);
   const [chalanDescription, setChalanDescription] = useState("");
 
-  useEffect(() => {
-    setIsHideSidebarAndHeader(false);
-    window.scrollTo(0, 0);
-  }, []);
+  const { data: chalanDescriptions, isLoading, isError } = useQuery({
+    queryKey: ["chalanDescriptions"],
+    queryFn: () => api.get("/chalan-descriptions").then((res) => res.data),
+  });
 
-  useEffect(() => {
-    setProgress(20);
-    setProgress(100);
-  }, []);
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/chalan-descriptions/${id}`),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "Chalan Description deleted successfully!", error: false});
+      queryClient.invalidateQueries(["chalanDescriptions"]);
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
 
-  const handlePageChange = (event, value) => {
-    setPage(value);
+  const updateMutation = useMutation({
+    mutationFn: (updatedDescription) =>
+      api.put(
+        `/chalan-descriptions/${selectedDescription.id}`,
+        updatedDescription
+      ),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "Chalan Description updated successfully!", error: false});
+      queryClient.invalidateQueries(["chalanDescriptions"]);
+      handleModalClose();
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
+
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteMutation.mutate(id);
+      }
+    });
   };
-
-  const getDummyChalanDescriptions = () => {
-    return [
-      {
-        id: 1,
-        description:
-          "Delivery challan for 1000 kVA transformers including transport charges, handling, and on-site installation as per the approved purchase order and delivery schedule.",
-      },
-      {
-        id: 2,
-        description:
-          "Challan for the supply of high-tension insulators, complete with packing, forwarding, insurance, and all required test certificates for the designated substation.",
-      },
-      {
-        id: 3,
-        description:
-          "Material dispatch challan for 11kV outdoor vacuum circuit breakers, inclusive of installation accessories and detailed engineering drawings for commissioning.",
-      },
-      {
-        id: 4,
-        description:
-          "Challan covering delivery of galvanized steel poles and cross-arms, bundled with all necessary hardware and fasteners for the rural electrification project.",
-      },
-      {
-        id: 5,
-        description:
-          "Delivery challan for power cables and terminations, covering 3.5 core XLPE insulated aluminum cables with full compliance to IS standards and safety protocols.",
-      },
-    ];
-  };
-
-  const dummyData = getDummyChalanDescriptions();
 
   const handleEditClick = (item) => {
     setSelectedDescription(item);
@@ -85,13 +86,7 @@ const ChalanDescriptionList = () => {
   };
 
   const handleSaveChanges = () => {
-    // You can send API call here
-    setAlertBox({
-      open: true,
-      msg: "Chalan Description updated successfully!",
-      error: false,
-    });
-    setEditModalOpen(false);
+    updateMutation.mutate({ description: chalanDescription });
   };
 
   return (
@@ -119,8 +114,16 @@ const ChalanDescriptionList = () => {
                 </tr>
               </thead>
               <tbody className="text-center">
-                {dummyData.length > 0 ? (
-                  dummyData.map((item, index) => {
+                {isLoading ? (
+                  <tr>
+                    <td colSpan="3">Loading...</td>
+                  </tr>
+                ) : isError ? (
+                  <tr>
+                    <td colSpan="3">Error fetching data</td>
+                  </tr>
+                ) : chalanDescriptions.length > 0 ? (
+                  chalanDescriptions.map((item, index) => {
                     const shortDescription =
                       item.description.split(" ").slice(0, 8).join(" ") +
                       (item.description.split(" ").length > 8 ? " ..." : "");
@@ -137,6 +140,12 @@ const ChalanDescriptionList = () => {
                             >
                               <FaPencilAlt />
                             </button>
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              <MdDelete />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -144,7 +153,7 @@ const ChalanDescriptionList = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan="10" className="text-center">
+                    <td colSpan="3" className="text-center">
                       No data found
                     </td>
                   </tr>
@@ -153,12 +162,6 @@ const ChalanDescriptionList = () => {
             </table>
           </div>
         </div>
-
-        {/*<ResponsivePagination
-          page={currentPage}
-          count={totalPages}
-          onChange={(event, value) => setCurrentPage(value)}
-        />*/}
       </div>
 
       {/* Edit Modal */}
@@ -166,7 +169,6 @@ const ChalanDescriptionList = () => {
         open={editModalOpen}
         onClose={handleModalClose}
         fullWidth
-        //fullScreen={fullScreen}
       >
         <DialogTitle className="d-flex justify-content-between align-items-center">
           Edit Details
@@ -195,8 +197,9 @@ const ChalanDescriptionList = () => {
             onClick={handleSaveChanges}
             variant="contained"
             color="primary"
+            disabled={updateMutation.isLoading}
           >
-            Save Changes
+            {updateMutation.isLoading ? "Saving..." : "Save Changes"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -205,3 +208,4 @@ const ChalanDescriptionList = () => {
 };
 
 export default ChalanDescriptionList;
+

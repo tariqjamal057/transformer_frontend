@@ -1,8 +1,8 @@
 import { Navigate } from "react-router-dom";
 
-const PrivateRoute = ({ element, allowedRoles }) => {
-  const role = localStorage.getItem("role");
-  return allowedRoles.includes(role) ? element : <Navigate to="/login" />;
+const PrivateRoute = ({ element }) => {
+  const token = localStorage.getItem("token");
+  return token ? element : <Navigate to="/login" />;
 };
 
 export default PrivateRoute;

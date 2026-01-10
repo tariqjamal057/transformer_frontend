@@ -15,138 +15,20 @@ import {
   Tab,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { MyContext } from "../../App";
 import { useNavigate } from "react-router-dom";
-import SupplyGPExpiredStatementFilter from "../../components/MisGP/SupplyGPExpiredStatementFilter";
 import GPExtendedWarrantyFilter from "../../components/MisGP/GPExtendedWarrantyFilter";
-
-const newGPTransformersData = () => {
-  const rawData = [
-    {
-      id: "1",
-      tfrSrNo: 4007,
-      deliverySchedule: {
-        tnNumber: "TN-001",
-        rating: "10",
-        guaranteePeriodMonths: 24,
-        phase: "Single Phase",
-        wound: "Copper",
-      },
-      inspetionDate: "10-07-2025",
-      gpExpiryDateAsPerOriginalSupply: "15-08-2024",
-      remainingOriginalGuranteePeriod: 60,
-      tranformersNotInService: 120,
-      extendedWarranty: 24,
-      companyName: "Kalpana Industries",
-      discom: "Ajmer",
-    },
-    {
-      id: "8",
-      tfrSrNo: 4012,
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Three Phase",
-        wound: "Aluminium",
-      },
-      inspetionDate: "12-08-2025",
-      gpExpiryDateAsPerOriginalSupply: "20-09-2024",
-      remainingOriginalGuranteePeriod: 90,
-      tranformersNotInService: 50,
-      extendedWarranty: 36,
-      companyName: "Kalpana Industries",
-      discom: "Ajmer",
-    },
-    {
-      id: "2",
-      tfrSrNo: 4015,
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Three Phase",
-        wound: "Copper",
-      },
-      inspetionDate: "14-08-2025",
-      gpExpiryDateAsPerOriginalSupply: "20-09-2024",
-      remainingOriginalGuranteePeriod: 90,
-      tranformersNotInService: 30,
-      extendedWarranty: 36,
-      companyName: "Kalpana Industries",
-      discom: "Jaipur",
-    },
-    {
-      id: "3",
-      tfrSrNo: 4020,
-      deliverySchedule: {
-        tnNumber: "TN-003",
-        rating: "16",
-        guaranteePeriodMonths: 18,
-        phase: "Three Phase",
-        wound: "Aluminium",
-      },
-      inspetionDate: "16-09-2025",
-      gpExpiryDateAsPerOriginalSupply: "25-10-2024",
-      remainingOriginalGuranteePeriod: 30,
-      tranformersNotInService: 10,
-      extendedWarranty: 45,
-      companyName: "Kalpana Industries",
-      discom: "Jodhpur",
-    },
-    {
-      id: "4",
-      tfrSrNo: 4025,
-      deliverySchedule: {
-        tnNumber: "TN-001",
-        rating: "5",
-        guaranteePeriodMonths: 24,
-        phase: "Single Phase",
-        wound: "Copper",
-      },
-      inspetionDate: "18-09-2025",
-      gpExpiryDateAsPerOriginalSupply: "15-08-2024",
-      remainingOriginalGuranteePeriod: 60,
-      tranformersNotInService: 20,
-      extendedWarranty: 24,
-      companyName: "Yash Granties",
-      discom: "Ajmer",
-    },
-    {
-      id: "5",
-      tfrSrNo: 4030,
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Power",
-        wound: "Aluminium",
-      },
-      inspetionDate: "12-09-2025",
-      gpExpiryDateAsPerOriginalSupply: "20-09-2024",
-      remainingOriginalGuranteePeriod: 90,
-      tranformersNotInService: 40,
-      extendedWarranty: 180,
-      companyName: "Yash Granties",
-      discom: "Jaipur",
-    },
-  ];
-  return rawData;
-};
+import { useQuery } from "@tanstack/react-query";
+import api from "../../services/api";
 
 const GPExtendedWarrantyInformation = () => {
   const navigate = useNavigate("");
 
-  const { setIsHideSidebarAndHeader } = useContext(MyContext);
-
-  useEffect(() => {
-    setIsHideSidebarAndHeader(true);
-    window.scrollTo(0, 0);
-  }, [setIsHideSidebarAndHeader]);
-
   const [filteredData, setFilteredData] = useState([]);
 
-  const inspectionData = useMemo(() => newGPTransformersData(), []);
+  const { data: inspectionData, isLoading } = useQuery({
+    queryKey: ["gpExtendedWarranty"],
+    queryFn: () => api.get("/mis-reports/gp-extended-warranty").then((res) => res.data),
+  });
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -190,7 +72,7 @@ const GPExtendedWarrantyInformation = () => {
 
       <GPExtendedWarrantyFilter
         onFilteredData={setFilteredData}
-        data={inspectionData}
+        data={inspectionData || []}
       />
 
       <Paper sx={{ p: 2, mt: 3 }}>
@@ -218,9 +100,15 @@ const GPExtendedWarrantyInformation = () => {
             </TableHead>
 
             <TableBody>
-              {filteredData.length === 0 ? (
+              {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={11} align="center">
+                  <TableCell colSpan={12} align="center">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : filteredData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={12} align="center">
                     No records found
                   </TableCell>
                 </TableRow>

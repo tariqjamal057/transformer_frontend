@@ -15,12 +15,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
-import {
-  getDummyChalanDescriptions,
-  getDummyConsigneeDetails,
-  getDummyFinalInspectionDetails,
-  getDummyMaterialDescriptions,
-} from "../pages/DeliveryChallan/AddDeliveryChalan";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../services/api";
 
 const style = {
   position: "absolute",
@@ -38,13 +34,22 @@ const style = {
 };
 
 const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
-  const dummyData = getDummyFinalInspectionDetails();
+  const queryClient = useQueryClient();
 
-  const dummyConsignee = getDummyConsigneeDetails();
+  const { data: finalInspections } = useQuery({
+    queryKey: ["finalInspections"],
+    queryFn: () => api.get("/final-inspections").then((res) => res.data),
+  });
 
-  const dummyDeliveryChalans = getDummyChalanDescriptions();
+  const { data: consignees } = useQuery({
+    queryKey: ["consignees"],
+    queryFn: () => api.get("/consignees").then((res) => res.data),
+  });
 
-  const dummyMaterialDescriptions = getDummyMaterialDescriptions();
+  const { data: materialDescriptions } = useQuery({
+    queryKey: ["material-descriptions"],
+    queryFn: () => api.get("/material-descriptions").then((res) => res.data),
+  });
 
   const [selectedTN, setSelectedTN] = useState("");
   const [selectedRecord, setSelectedRecord] = useState(null);
@@ -61,7 +66,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
 
   const handleTNChange = (tnNumber) => {
     setSelectedTN(tnNumber);
-    const record = dummyData.find(
+    const record = finalInspections.find(
       (item) => item.deliverySchedule.tnNumber === tnNumber
     );
 
@@ -108,7 +113,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
     const selectedName = event.target.value;
     setConsigneeName(selectedName);
 
-    const record = dummyConsignee.find((item) => item.name === selectedName);
+    const record = consignees.find((item) => item.name === selectedName);
     if (record) {
       setSelectedConsigneeRecord(record);
       setConsigneeAddress(record.address);
@@ -129,7 +134,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
   const handleMaterialSelect = (code) => {
     setSelectedMaterialCode(code);
 
-    const record = dummyMaterialDescriptions.find((item) => item.code === code);
+    const record = materialDescriptions.find((item) => item.code === code);
     if (record) {
       setMaterialDescription(record.description); // Fill the whole description
     } else {
@@ -137,28 +142,33 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
     }
   };
 
-  const [isLoading, setIsLoading] = useState(false);
+  const { mutate: updateChallan, isLoading } = useMutation({
+    mutationFn: (updatedChallan) =>
+      api.put(`/delivery-challans/${deliveryChalanData.id}`, updatedChallan),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["deliveryChallans"]);
+      handleClose();
+    },
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!selectedRecord) return;
 
-    // Store entire final inspection object
     const data = {
-      ...selectedRecord,
+      finalInspectionDetailId: selectedRecord.id,
       challanNo,
       consignorName,
       consigneeAddress,
-      consignorPhoneNo,
-      consigneeGSTNo,
+      consignorPhone: consignorPhoneNo,
+      consigneeGST: consigneeGSTNo,
       consignorEmail,
-      ...selectedConsigneeRecord,
-      materialDescription,
+      consigneeId: selectedConsigneeRecord.id,
+      materialDescriptionId: selectedMaterialCode,
       challanCreatedAt: dayjs().format("YYYY-MM-DD"),
     };
 
-    console.log("Transformer Delivery Chalan Details", data);
-    handleClose();
+    updateChallan(data);
   };
 
   // Load initial data if editing
@@ -237,7 +247,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
             onChange={(e) => handleTNChange(e.target.value)}
             sx={{ mt: 2 }}
           >
-            {dummyData.map((tn) => (
+            {finalInspections?.map((tn) => (
               <MenuItem
                 key={tn.deliverySchedule.tnNumber}
                 value={tn.deliverySchedule.tnNumber}
@@ -388,7 +398,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
             onChange={handleConsigneeChange}
             sx={{ mt: 2 }}
           >
-            {dummyConsignee.map((item) => (
+            {consignees?.map((item) => (
               <MenuItem key={item.name} value={item.name}>
                 {item.name}
               </MenuItem>
@@ -467,7 +477,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
             margin="normal"
             sx={{ mt: 2 }}
           >
-            {dummyMaterialDescriptions.map((item) => {
+            {materialDescriptions?.map((item) => {
               const firstSixWords = item.description
                 .split(" ")
                 .slice(0, 6)
@@ -493,8 +503,8 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
           />
 
           <Box mt={4} textAlign="center">
-            <Button variant="contained" size="large" onClick={handleSubmit}>
-              Save Changes
+            <Button variant="contained" size="large" onClick={handleSubmit} disabled={isLoading}>
+              {isLoading? 'Saving...' : 'Save Changes'}
             </Button>
           </Box>
         </Box>

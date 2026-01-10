@@ -20,12 +20,8 @@ import { DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
-
-import {
-  companies,
-  deliverySchedules,
-  discoms,
-} from "../../pages/MisReports/MaterialOfferedButNominationPending";
+import { useQuery } from "@tanstack/react-query";
+import api from "../../services/api";
 
 const NewGPSummaryFilter = ({ onFilteredData, data }) => {
   // 🔹 Use arrays for multiple selections
@@ -38,6 +34,22 @@ const NewGPSummaryFilter = ({ onFilteredData, data }) => {
   const [selectedDate, setSelectedDate] = useState(null);
 
   const [filteredData, setFilteredData] = useState(data || []);
+
+  const { data: companies } = useQuery({
+    queryKey: ["companies"],
+    queryFn: () => api.get("/companies").then((res) => res.data.data),
+  });
+
+  const { data: deliverySchedules } = useQuery({
+    queryKey: ["deliverySchedules"],
+    queryFn: () => api.get("/delivery-schedules").then((res) => res.data.data),
+  });
+
+  const discoms = [
+    { name: "Ajmer" },
+    { name: "Jaipur" },
+    { name: "Jodhpur" },
+  ];
 
   // 🔹 Unique dropdown values
   const uniqueCompanies = [...new Set(companies.map((item) => item.name))];

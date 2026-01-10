@@ -23,7 +23,8 @@ import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { addMonths, format, isAfter } from "date-fns";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
-import { dummyDeliveryChalans } from "../pages/GPFailure/AddGPFailure";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../services/api";
 
 const style = {
   position: "absolute",
@@ -41,6 +42,7 @@ const style = {
 };
 
 const GPFailureInformationModal = ({ open, handleClose, gpFailureData }) => {
+  const queryClient = useQueryClient();
   const [trfsiNo, setTrfsiNo] = useState("");
   const [rating, setRating] = useState("");
   const [selectedChalan, setSelectedChalan] = useState(null);
@@ -50,10 +52,15 @@ const GPFailureInformationModal = ({ open, handleClose, gpFailureData }) => {
   const [dateOfInformation, setDateOfInformation] = useState(null);
   const [placeWhereFailed, setPlaceWhereFailed] = useState("");
 
+  const { data: deliveryChallans } = useQuery({
+    queryKey: ["deliveryChallans"],
+    queryFn: () => api.get("/delivery-challans").then((res) => res.data),
+  });
+
   // 🔹 Auto fetch whenever trfsiNo and rating are set
   useEffect(() => {
     if (trfsiNo && rating) {
-      const found = dummyDeliveryChalans.find((ch) => {
+      const found = deliveryChallans?.find((ch) => {
         const hasTrfsi = ch.finalInspectionDetail.shealingDetails.some(
           (s) => String(s.trfsiNo) === String(trfsiNo)
         );
@@ -69,7 +76,7 @@ const GPFailureInformationModal = ({ open, handleClose, gpFailureData }) => {
     } else {
       setSelectedChalan(null);
     }
-  }, [trfsiNo, rating]);
+  }, [trfsiNo, rating, deliveryChallans]);
 
   // Add trffailurelist to array
   const handleAddTRFFailureDetails = () => {
@@ -92,16 +99,24 @@ const GPFailureInformationModal = ({ open, handleClose, gpFailureData }) => {
     setTrfFailureList((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const { mutate: updateGPFailure, isLoading } = useMutation({
+    mutationFn: (updatedFailure) =>
+      api.put(`/gp-failures/${gpFailureData.id}`, updatedFailure),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["gpFailures"]);
+      handleClose();
+    },
+  });
+
   const handleSubmit = () => {
     const data = {
-      trfsiNo,
+      trfSiNo: parseInt(trfsiNo),
       rating,
-      selectedChalan,
+      deliveryChalanId: selectedChalan.id,
       trfFailureList,
     };
     if (data) {
-      console.log("Submitted DeliveryChalan: ", data);
-      alert("Failure information data updated successfully!");
+      updateGPFailure(data);
     } else {
       alert("No matching record found.");
     }
@@ -398,8 +413,8 @@ const GPFailureInformationModal = ({ open, handleClose, gpFailureData }) => {
             })()}
 
           <Box mt={4} textAlign="center">
-            <Button variant="contained" size="large" onClick={handleSubmit}>
-              Save Changes
+            <Button variant="contained" size="large" onClick={handleSubmit} disabled={isLoading}>
+              {isLoading ? 'Saving...' : 'Save Changes'}
             </Button>
           </Box>
         </Box>

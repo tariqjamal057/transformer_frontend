@@ -16,163 +16,19 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import dayjs from "dayjs";
 import FiltersComponent from "../../components/FinalInspectionFilter";
-import { MyContext } from "../../App";
 import { useNavigate } from "react-router-dom";
-
-const getDummyFinalInspectionDetails = () => {
-  return [
-    {
-      id: "1",
-      deliverySchedule: {
-        tnNumber: "TN-001",
-        rating: "10",
-        guaranteePeriodMonths: 24,
-        phase: "Single Phase",
-      },
-      offeredDate: "2025-07-12",
-      offeredQuantity: 200,
-      serialNumberFrom: 4907,
-      serialNumberTo: 4911,
-      snNumber: "4907 TO 4911",
-      inspectionOfficers: ["Amit Verma", "Priya Singh"],
-      companyName: "Kalpana Industries",
-      discom: "Ajmer",
-    },
-    {
-      id: "8",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Three Phase",
-      },
-      offeredDate: "2025-08-05",
-      offeredQuantity: 150,
-      serialNumberFrom: 4912,
-      serialNumberTo: 5061,
-      snNumber: "4912 TO 5061",
-      inspectionOfficers: ["Ravi Kumar", "Sunita Sharma"],
-      diNo: "DI/2025/1001",
-      diDate: "2025-07-16",
-      consignees: [
-        {
-          consignee: {
-            id: "1",
-            name: "ABC Power Solutions Pvt. Ltd.",
-          },
-          quantity: 50,
-          dispatch: 0,
-          pending: 50,
-          subSnNumber: "4912 TO 4961",
-        },
-        {
-          consignee: {
-            id: "2",
-            name: "XYZ Transformers Ltd.",
-          },
-          quantity: 50,
-          dispatch: 0,
-          pending: 50,
-          subSnNumber: "4962 TO 5011",
-        },
-        {
-          consignee: {
-            id: "3",
-            name: "GreenVolt Energy Systems",
-          },
-          quantity: 50,
-          dispatch: 0,
-          pending: 50,
-          subSnNumber: "5012 TO 5061",
-        },
-      ],
-      companyName: "Kalpana Industries",
-      discom: "Ajmer",
-    },
-    {
-      id: "2",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Three Phase",
-      },
-      offeredDate: "2025-08-05",
-      offeredQuantity: 150,
-      serialNumberFrom: 4912,
-      serialNumberTo: 4916,
-      snNumber: "4912 TO 4916",
-      inspectionOfficers: ["Rajesh Gupta", "Meena Kapoor"],
-      companyName: "Kalpana Industries",
-      discom: "Jaipur",
-    },
-    {
-      id: "3",
-      deliverySchedule: {
-        tnNumber: "TN-003",
-        rating: "16",
-        guaranteePeriodMonths: 18,
-        phase: "Three Phase",
-      },
-      offeredDate: "2025-08-15",
-      offeredQuantity: 300,
-      serialNumberFrom: 4917,
-      serialNumberTo: 4922,
-      snNumber: "4917 TO 4922",
-      inspectionOfficers: ["Vikas Sharma", "Neha Yadav"],
-      companyName: "Kalpana Industries",
-      discom: "Jodhpur",
-    },
-    {
-      id: "4",
-      deliverySchedule: {
-        tnNumber: "TN-001",
-        rating: "5",
-        guaranteePeriodMonths: 24,
-        phase: "Single Phase",
-      },
-      offeredDate: "2025-07-12",
-      offeredQuantity: 200,
-      serialNumberFrom: 4907,
-      serialNumberTo: 4911,
-      inspectionOfficers: ["Rajesh Gupta", "Raju Roy"],
-      snNumber: "4907 TO 4911",
-      companyName: "Yash Granties",
-      discom: "Ajmer",
-    },
-    {
-      id: "5",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Power",
-      },
-      offeredDate: "2025-08-05",
-      offeredQuantity: 150,
-      serialNumberFrom: 4912,
-      serialNumberTo: 4916,
-      snNumber: "4912 TO 4916",
-      inspectionOfficers: ["Vikas Sharma", "Sunita Sharma"],
-      companyName: "Yash Granties",
-      discom: "Jaipur",
-    },
-  ];
-};
+import { useQuery } from "@tanstack/react-query";
+import api from "../../services/api";
 
 const NominationDone = () => {
   const navigate = useNavigate("");
 
-  const { setIsHideSidebarAndHeader } = useContext(MyContext);
-
-  useEffect(() => {
-    setIsHideSidebarAndHeader(true);
-    window.scrollTo(0, 0);
-  }, [setIsHideSidebarAndHeader]);
-
   const [filteredData, setFilteredData] = useState([]);
 
-  const inspectionData = useMemo(() => getDummyFinalInspectionDetails(), []);
+  const { data: inspectionData, isLoading } = useQuery({
+    queryKey: ["finalInspections"],
+    queryFn: () => api.get("/final-inspections").then((res) => res.data),
+  });
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -216,12 +72,12 @@ const NominationDone = () => {
 
       <FiltersComponent
         onFilteredData={setFilteredData}
-        data={inspectionData}
+        data={inspectionData || []}
         text="Awaiting Inspection"
         onExportPDF={false}
         onExportExcel={false}
         sheetName="Nomination Done But Inspection Pending "
-        pdfTitle= "Nomination Done But Inspection Pending"
+        pdfTitle="Nomination Done But Inspection Pending"
       />
 
       <Paper sx={{ p: 2, mt: 3 }}>
@@ -251,9 +107,15 @@ const NominationDone = () => {
             </TableHead>
 
             <TableBody>
-              {filteredData.length === 0 ? (
+              {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={12} align="center">
+                  <TableCell colSpan={14} align="center">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : filteredData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={14} align="center">
                     No records found
                   </TableCell>
                 </TableRow>

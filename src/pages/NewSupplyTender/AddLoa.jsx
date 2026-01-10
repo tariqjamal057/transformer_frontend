@@ -1,30 +1,51 @@
 import { useContext, useState } from "react";
-import { CircularProgress, FormControl, InputLabel, MenuItem, Select } from "@mui/material";
+import {
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+} from "@mui/material";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import { Grid, TextField, Button, Typography, Paper } from "@mui/material";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
+import { useNavigate } from "react-router-dom";
 import { MyContext } from "../../App";
 
 const AddLoa = () => {
-  const context = useContext(MyContext);
-  const { setIsHideSidebarAndHeader, setAlertBox, districts } = context;
+  const { setAlertBox } = useContext(MyContext);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const tnNumbers = ["TN-001", "TN-002", "TN-003", "Tn_004"];
-
-  const [tnDetail, setTnDetail] = useState("");
+  const [tnId, setTnId] = useState("");
   const [loa, setLoa] = useState("");
   const [po, setPo] = useState("");
 
-  const [isLoading, setIsLoading] = useState(false);
+  const { data: tnNumbers } = useQuery({
+    queryKey: ["tnNumbers"],
+    queryFn: () => api.get("/tns").then((res) => res.data),
+  });
+
+  const addLoaMutation = useMutation({
+    mutationFn: (newLoa) => api.post("/loas", newLoa),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "LOA and PO details added successfully!", error: false});
+      queryClient.invalidateQueries(["loas"]);
+      navigate("/loa-list");
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const data = {
-      tnDetail,
-      loa,
-      po,
-    };
-
-    console.log("Tranformer loa and po details", data);
+    addLoaMutation.mutate({
+      tnId,
+      loaNumber: loa,
+      poNumber: po,
+    });
   };
 
   return (
@@ -36,26 +57,26 @@ const AddLoa = () => {
           </Typography>
 
           <Grid container spacing={3} columns={{ xs: 1, sm: 2 }}>
-            <Grid item size={1}>
+            <Grid item xs={1}>
               <FormControl fullWidth>
                 <InputLabel>Tn Number</InputLabel>
                 <Select
-                  value={tnDetail}
+                  value={tnId}
                   label="Tn Number"
                   onChange={(e) => {
-                    setTnDetail(e.target.value);
+                    setTnId(e.target.value);
                   }}
                 >
-                  {tnNumbers.map((i, idx) => (
-                    <MenuItem key={idx} value={i}>
-                      {i}
+                  {tnNumbers?.map((i) => (
+                    <MenuItem key={i.id} value={i.id}>
+                      {i.name}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
             </Grid>
 
-            <Grid item size={1}>
+            <Grid item xs={1}>
               <TextField
                 label="LOA Details"
                 fullWidth
@@ -64,7 +85,7 @@ const AddLoa = () => {
               />
             </Grid>
 
-            <Grid item size={1}>
+            <Grid item xs={1}>
               <TextField
                 label="PO Details"
                 fullWidth
@@ -73,7 +94,7 @@ const AddLoa = () => {
               />
             </Grid>
 
-            <Grid item size={2}>
+            <Grid item xs={2}>
               <Button
                 type="submit"
                 className="btn-blue btn-lg w-40 gap-2 mt-2 d-flex"
@@ -81,9 +102,10 @@ const AddLoa = () => {
                   margin: "auto",
                 }}
                 onClick={handleSubmit}
+                disabled={addLoaMutation.isLoading}
               >
                 <FaCloudUploadAlt />
-                {isLoading ? (
+                {addLoaMutation.isLoading ? (
                   <CircularProgress color="inherit" size={20} />
                 ) : (
                   "PUBLISH AND VIEW"

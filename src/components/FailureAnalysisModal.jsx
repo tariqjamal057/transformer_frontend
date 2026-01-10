@@ -17,11 +17,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
-import { dummyDeliveryChalans } from "../pages/GPFailure/AddGPFailure";
-import {
-  gpFailureData,
-  gpReceiptNotes,
-} from "../pages/FailureAnalysis/AddFailureAnalysis";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../services/api";
 
 const style = {
   position: "absolute",
@@ -39,6 +36,7 @@ const style = {
 };
 
 const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
+  const queryClient = useQueryClient();
   const [sinNo, setSinNo] = useState("");
   const [reason, setReason] = useState("");
   const [otherReason, setOtherReason] = useState("");
@@ -58,6 +56,16 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
 
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [selectedFailure, setSelectedFailure] = useState(null);
+
+  const { data: gpReceiptNotes } = useQuery({
+    queryKey: ["gpReceiptNotes"],
+    queryFn: () => api.get("/gp-receipt-notes").then((res) => res.data),
+  });
+
+  const { data: gpFailures } = useQuery({
+    queryKey: ["gpFailures"],
+    queryFn: () => api.get("/gp-failures").then((res) => res.data),
+  });
 
   // When user types SIN No → search in gpReceiptNotes
   useEffect(() => {
@@ -82,23 +90,21 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
     let foundRecord = null;
     let foundNote = null;
 
-    gpReceiptNotes.forEach((note) => {
-      note.gpReceiptRecords.forEach((record) => {
-        if (record.sinNo.toLowerCase() === sinNo.toLowerCase()) {
-          foundRecord = record;
-          foundNote = note;
-        }
-      });
+    gpReceiptNotes?.forEach((note) => {
+      if (note.sinNo.toLowerCase() === sinNo.toLowerCase()) {
+        foundRecord = note;
+        foundNote = note;
+      }
     });
 
     if (foundRecord) {
-      const { trfsiNo, rating, deliveryChalanDetails } = foundRecord;
+      const { trfsiNo, rating, deliveryChalan } = foundRecord;
 
       const wound =
-        deliveryChalanDetails.finalInspectionDetail.deliverySchedule.wound;
+        deliveryChalan.finalInspectionDetail.deliverySchedule.wound;
       const tnNumber =
-        deliveryChalanDetails.finalInspectionDetail.deliverySchedule.tnNumber;
-      const phase = deliveryChalanDetails.materialDescription.phase;
+        deliveryChalan.finalInspectionDetail.deliverySchedule.tnNumber;
+      const phase = deliveryChalan.materialDescription.phase;
 
       setSelectedReceipt(foundRecord);
 
@@ -113,13 +119,13 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
       }));
 
       // Match in gpFailureData
-      const matchedFailure = gpFailureData.find(
+      const matchedFailure = gpFailures?.find(
         (f) =>
           f.trfSiNo === trfsiNo &&
           f.rating === rating &&
-          f.deliveryChalanDetails.finalInspectionDetail.deliverySchedule
+          f.deliveryChalan.finalInspectionDetail.deliverySchedule
             .wound === wound &&
-          f.deliveryChalanDetails.finalInspectionDetail.deliverySchedule
+          f.deliveryChalan.finalInspectionDetail.deliverySchedule
             .tnNumber === tnNumber
       );
 
@@ -128,14 +134,23 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
 
         setFormData((prev) => ({
           ...prev,
-          subDivision: matchedFailure.subDivison,
+          subDivision: matchedFailure.subDivision,
           locationOfFailure: matchedFailure.trfFailureList[0]?.place || "",
           dateOfSupply: matchedFailure.trfFailureList[0]?.informationDate || "",
           dateOfExpiry: matchedFailure.trfFailureList[0]?.failureDate || "",
         }));
       }
     }
-  }, [sinNo]);
+  }, [sinNo, gpReceiptNotes, gpFailures]);
+
+  const { mutate: updateFailureAnalysis, isLoading } = useMutation({
+    mutationFn: (updatedData) =>
+      api.put(`/failure-analyses/${failureAnalysisData.id}`, updatedData),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["failureAnalyses"]);
+      handleClose();
+    },
+  });
 
   // Handle Submit
   const handleSubmit = () => {
@@ -143,14 +158,12 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
     const payload = {
       sinNo,
       acosName: formData.acosName,
-      receiptData: selectedReceipt.id,
-      failureData: selectedFailure.id,
+      gpReceiptNoteId: selectedReceipt.id,
+      gpFailureId: selectedFailure.id,
       reasonOfFailure: finalReason,
     };
 
-    console.log("Submitting Failure Info:", payload);
-    handleClose();
-    // 🔥 Here you can push to API or state management
+    updateFailureAnalysis(payload);
   };
 
   // Load initial data if editing
@@ -198,7 +211,7 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
         phase: material.phase || "",
         tnNumber: delivery.tnNumber || "",
         acosName: failureAnalysisData.acosName || "",
-        subDivision: failure.subDivison || "",
+        subDivision: failure.subDivision || "",
         locationOfFailure: failure.trfFailureList?.[0]?.place || "",
         dateOfSupply: failure.trfFailureList?.[0]?.informationDate || "",
         dateOfExpiry: failure.trfFailureList?.[0]?.failureDate || "",
@@ -360,8 +373,8 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
             </Box>
 
             <Box mt={2} textAlign="center">
-              <Button variant="contained" size="large" onClick={handleSubmit}>
-                Save Changes
+              <Button variant="contained" size="large" onClick={handleSubmit} disabled={isLoading}>
+                {isLoading? 'Saving...' : 'Save Changes'}
               </Button>
             </Box>
           </Box>

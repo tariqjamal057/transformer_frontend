@@ -16,11 +16,8 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 
 import dayjs from "dayjs";
-import {
-  companies,
-  deliverySchedules,
-  discoms,
-} from "../../pages/MisReports/MaterialOfferedButNominationPending";
+import { useQuery } from "@tanstack/react-query";
+import api from "../../services/api";
 
 // ✅ Dummy Data (replace with props/imports in your real project)
 
@@ -31,6 +28,22 @@ const GPExtendedWarrantyFilter = ({ onFilteredData, data }) => {
   const [selectedDate, setSelectedDate] = useState(null);
 
   const [filteredData, setFilteredData] = useState(data || []);
+
+  const { data: companies } = useQuery({
+    queryKey: ["companies"],
+    queryFn: () => api.get("/companies").then((res) => res.data.data),
+  });
+
+  const { data: deliverySchedules } = useQuery({
+    queryKey: ["deliverySchedules"],
+    queryFn: () => api.get("/delivery-schedules").then((res) => res.data.data),
+  });
+
+  const discoms = [
+    { name: "Ajmer" },
+    { name: "Jaipur" },
+    { name: "Jodhpur" },
+  ];
 
   // 🔹 Filtering logic
   useEffect(() => {

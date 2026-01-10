@@ -13,96 +13,44 @@ import { DatePicker } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
+import { useNavigate } from "react-router-dom";
 import { MyContext } from "../../App";
 
-const deliveryChalanData = [
-  {
-    id: "101",
-    trData: {
-      id: "2",
-      tnId: { id: "1", name: "TN-001" },
-      serialNumber: "SR-1001",
-      diNo: "DI-001",
-      diDate: "2025-07-15",
-      inspectionOfficers: [
-        { name: "A. Kumar", designation: "Sr. Engineer" },
-        { name: "P. Verma", designation: "Inspector" },
-      ],
-      inspectionDate: "2025-07-18",
-      totalQuantity: 100,
-      suppliedQuantity: 85,
-      gpExpiryDate: "2026-07-24",
-    },
-    poNumber: "PO-5454",
-    poDate: "2025-08-21",
-    challanNo: "CH-1001",
-    challanDate: "2025-07-22",
-    consignorName: "PowerTech Transformers Pvt. Ltd.",
-    consignorPhone: "9876543210",
-    consignorAddress: "Plot 12, Industrial Zone, Mumbai",
-    consignorGST: "27AAACP1234F1Z5",
-    consigneeName: "State Electricity Board",
-    consigneeAddress: "Substation Road, Pune",
-    consigneeGST: "27SEB0001F2Z3",
-    lorryNo: "MH12AB1234",
-    truckDriverName: "Ramesh Yadav",
-    deliveryChallanDescription: "Delivery of 3-phase oil-cooled transformer",
-    materialDescription:
-      "500 KVA 11/0.433 kV Distribution Transformer, Copper Wound, BIS Certified",
-  },
-  {
-    id: "102",
-    trData: {
-      id: "3",
-      tnId: { id: "1", name: "TN-001" },
-      serialNumber: "SR-1002",
-      diNo: "DI-002",
-      diDate: "2025-07-16",
-      inspectionOfficers: [
-        { name: "R. Singh", designation: "Chief Inspector" },
-        { name: "S. Mehra", designation: "Engineer" },
-      ],
-      inspectionDate: "2025-07-22",
-      totalQuantity: 200,
-      suppliedQuantity: 170,
-      gpExpiryDate: "2026-08-12",
-    },
-    poNumber: "PO-5499",
-    poDate: "2025-08-24",
-    challanNo: "CH-1002",
-    challanDate: "2025-07-28",
-    consignorName: "MegaVolt Transformers Ltd.",
-    consignorPhone: "9123456780",
-    consignorAddress: "Sector 45, Electronic City, Bengaluru",
-    consignorGST: "29MEGA1234G1Z9",
-    consigneeName: "Northern Grid Corporation",
-    consigneeAddress: "Grid Office, Delhi",
-    consigneeGST: "07NGC0001F5Z6",
-    lorryNo: "KA01CD5678",
-    truckDriverName: "Sandeep Kumar",
-    deliveryChallanDescription:
-      "Delivery of transformer with testing certificates",
-    materialDescription:
-      "250 KVA 33/0.433 kV Distribution Transformer, Aluminum Wound, Outdoor Type",
-  },
-];
-
 const AddDeliveryDetails = () => {
-  const context = useContext(MyContext);
-  const { setIsHideSidebarAndHeader, setAlertBox, districts } = context;
+  const { setAlertBox } = useContext(MyContext);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [selectedDI, setSelectedDI] = useState("");
   const [selectedData, setSelectedData] = useState(null);
-  const [recieptedChallanNo, setRecieptedChallanNo] = useState("");
-  const [recieptedChallanDate, setRecieptedChallanDate] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [receiptedChallanNo, setReceiptedChallanNo] = useState("");
+  const [receiptedChallanDate, setReceiptedChallanDate] = useState(null);
+
+  const { data: deliveryChallans } = useQuery({
+    queryKey: ["deliveryChallans"],
+    queryFn: () => api.get("/delivery-challans").then((res) => res.data),
+  });
+
+  const addDeliveryDetailsMutation = useMutation({
+    mutationFn: (newDetails) => api.post("/delivery-details", newDetails),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "Delivery Details added successfully!", error: false});
+      queryClient.invalidateQueries(["deliveryDetails"]);
+      navigate("/deliveryDetails-list");
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
 
   const handleDIChange = (event) => {
     const diNo = event.target.value;
     setSelectedDI(diNo);
 
     // find the record
-    const record = deliveryChalanData.find((item) => item.trData.diNo === diNo);
+    const record = deliveryChallans.find((item) => item.finalInspectionDetail.diNo === diNo);
     setSelectedData(record || null);
   };
 
@@ -114,17 +62,12 @@ const AddDeliveryDetails = () => {
     }
 
     const data = {
-        deliveryChalanId: selectedData.id,
-        gpExpiry: selectedData.trData.gpExpiryDate,
-        recieptedChallanNo,
-        recieptedChallanDate: dayjs(recieptedChallanDate).format("YYYY-MM-DD"),
-    }
+      deliveryChalanId: selectedData.id,
+      receiptedChallanNo,
+      receiptedChallanDate: dayjs(receiptedChallanDate).format("YYYY-MM-DD"),
+    };
 
-    // Store or process the selected data
-    console.log("Selected Delivery Details:", data);
-
-    
-    alert(`Delivery Chalan ID ${selectedData.id} saved successfully!`);
+    addDeliveryDetailsMutation.mutate(data);
   };
 
   return (
@@ -150,9 +93,9 @@ const AddDeliveryDetails = () => {
                 onChange={handleDIChange}
                 fullWidth
               >
-                {deliveryChalanData.map((item) => (
-                  <MenuItem key={item.id} value={item.trData.diNo}>
-                    {item.trData.diNo}
+                {deliveryChallans?.map((item) => (
+                  <MenuItem key={item.id} value={item.finalInspectionDetail.diNo}>
+                    {item.finalInspectionDetail.diNo}
                   </MenuItem>
                 ))}
               </TextField>
@@ -162,7 +105,7 @@ const AddDeliveryDetails = () => {
                 <>
                   <TextField
                     label="DI Date"
-                    value={dayjs(selectedData.trData.diDate).format(
+                    value={dayjs(selectedData.finalInspectionDetail.diDate).format(
                       "YYYY-MM-DD"
                     )}
                     fullWidth
@@ -176,37 +119,37 @@ const AddDeliveryDetails = () => {
                   />
                   <TextField
                     label="Challan Date"
-                    value={dayjs(selectedData.challanDate).format("YYYY-MM-DD")}
+                    value={dayjs(selectedData.createdAt).format("YYYY-MM-DD")}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
                   <TextField
                     label="Consignee Name"
-                    value={selectedData.consigneeName}
+                    value={selectedData.consigneeDetails.name}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
                   <TextField
                     label="Total Quantity"
-                    value={selectedData.trData.totalQuantity}
+                    value={selectedData.finalInspectionDetail.inspectedQuantity}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
                   <TextField
                     label="Supplied Quantity"
-                    value={selectedData.trData.suppliedQuantity}
+                    value={selectedData.finalInspectionDetail.inspectedQuantity}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
                   <TextField
                     label="Transformer Serial No"
-                    value={selectedData.trData.serialNumber}
+                    value={`${selectedData.finalInspectionDetail.serialNumberFrom} TO ${selectedData.finalInspectionDetail.serialNumberTo}`}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
                   <TextField
                     label="GP Expiry Date"
-                    value={dayjs(selectedData.trData.gpExpiryDate).format(
+                    value={dayjs(selectedData.finalInspectionDetail.deliverySchedule.guaranteePeriodMonths).format(
                       "YYYY-MM-DD"
                     )}
                     fullWidth
@@ -217,16 +160,16 @@ const AddDeliveryDetails = () => {
 
               <TextField
                 label="Receipt Challan No"
-                value={recieptedChallanNo}
+                value={receiptedChallanNo}
                 fullWidth
-                onChange={(e) => setRecieptedChallanNo(e.target.value)}
+                onChange={(e) => setReceiptedChallanNo(e.target.value)}
               />
 
               <DatePicker
                 label="Receipt Challan Date"
                 //minDate={today}
-                value={recieptedChallanDate}
-                onChange={setRecieptedChallanDate}
+                value={receiptedChallanDate}
+                onChange={setReceiptedChallanDate}
                 slotProps={{ textField: { fullWidth: true } }}
               />
 
@@ -237,9 +180,10 @@ const AddDeliveryDetails = () => {
                 style={{
                   margin: "auto",
                 }}
+                disabled={addDeliveryDetailsMutation.isLoading}
               >
                 <FaCloudUploadAlt />
-                {isLoading ? (
+                {addDeliveryDetailsMutation.isLoading ? (
                   <CircularProgress color="inherit" size={20} />
                 ) : (
                   "PUBLISH AND VIEW"

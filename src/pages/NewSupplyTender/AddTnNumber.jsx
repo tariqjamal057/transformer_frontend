@@ -2,25 +2,35 @@ import { useContext, useState } from "react";
 import { CircularProgress } from "@mui/material";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import { Grid, TextField, Button, Typography, Paper } from "@mui/material";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
+import { useNavigate } from "react-router-dom";
 import { MyContext } from "../../App";
 
 const AddTnNumber = () => {
-  const context = useContext(MyContext);
-  const { setIsHideSidebarAndHeader, setAlertBox, districts } = context;
+  const { setAlertBox } = useContext(MyContext);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [tnNumber, setTnNumber] = useState("");
+  const [rating, setRating] = useState("");
   const [discom, setDiscom] = useState("");
 
-  const [isLoading, setIsLoading] = useState(false);
+  const addTnNumberMutation = useMutation({
+    mutationFn: (newTnNumber) => api.post("/tns", newTnNumber),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "TN Number added successfully!", error: false});
+      queryClient.invalidateQueries(["tnNumbers"]);
+      navigate("/tnNumber-list");
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
 
   const handleSubmit = (e) => {
-    e.preventDefault()
-    const data = {
-      tnNumber,
-      discom,
-    };
-
-    console.log("Tranformer tn number", data);
+    e.preventDefault();
+    addTnNumberMutation.mutate({ name: tnNumber, rating, discom });
   };
 
   return (
@@ -32,7 +42,7 @@ const AddTnNumber = () => {
           </Typography>
 
           <Grid container spacing={3} columns={{ xs: 1, sm: 2 }}>
-            <Grid item size={1}>
+            <Grid item xs={1}>
               <TextField
                 label="TN Number"
                 fullWidth
@@ -41,9 +51,16 @@ const AddTnNumber = () => {
               />
             </Grid>
 
-            
+            <Grid item xs={1}>
+              <TextField
+                label="Rating"
+                fullWidth
+                value={rating}
+                onChange={(e) => setRating(e.target.value)}
+              />
+            </Grid>
 
-            <Grid item size={1}>
+            <Grid item xs={1}>
               <TextField
                 label="Discom"
                 fullWidth
@@ -52,25 +69,24 @@ const AddTnNumber = () => {
               />
             </Grid>
 
-            <Grid item size={2}>
+            <Grid item xs={2}>
               <Button
-              type="submit"
-              onClick={handleSubmit}
-              className="btn-blue btn-lg w-40 gap-2 mt-2 d-flex"
-              style={{
-                margin: "auto",
-              }}
-            >
-              <FaCloudUploadAlt />
-              {isLoading ? (
-                <CircularProgress color="inherit" size={20} />
-              ) : (
-                "PUBLISH AND VIEW"
-              )}
-            </Button>
+                type="submit"
+                onClick={handleSubmit}
+                className="btn-blue btn-lg w-40 gap-2 mt-2 d-flex"
+                style={{
+                  margin: "auto",
+                }}
+                disabled={addTnNumberMutation.isLoading}
+              >
+                <FaCloudUploadAlt />
+                {addTnNumberMutation.isLoading ? (
+                  <CircularProgress color="inherit" size={20} />
+                ) : (
+                  "PUBLISH AND VIEW"
+                )}
+              </Button>
             </Grid>
-
-            
           </Grid>
         </Paper>
       </div>

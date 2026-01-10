@@ -13,215 +13,15 @@ import { DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
+import { useNavigate } from "react-router-dom";
 import { MyContext } from "../../App";
 
-export const getDummyFinalInspectionDetails = () => {
-  return [
-    {
-      id: "1",
-      deliverySchedule: {
-        tnNumber: "TN-001",
-        poDetails: "PO-12345",
-        poDate: "2025-05-10",
-        guaranteePeriodMonths: 24,
-        description:
-          "Delivery challan for 1000 kVA transformers including transport charges, handling, and on-site installation as per the approved purchase order and delivery schedule.",
-      },
-      offeredDate: "2025-07-12",
-      offeredQuantity: 200,
-      serialNumberFrom: 120,
-      serialNumberTo: 240,
-      snNumber: "120 TO 240",
-      nominationLetterNo: "NL/2025/001",
-      nominationDate: "2025-07-10",
-      inspectionOfficers: ["Ravi Kumar", "Sunita Sharma"],
-      inspectionDate: "2025-07-13",
-      inspectedQuantity: 100,
-      total: 120,
-      diNo: "DI/2025/1001",
-      diDate: "2025-07-16",
-      shellingDetails: "Model X, Batch 3, 50 units per batch",
-    },
-    {
-      id: "2",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        poDetails: "PO-22345",
-        poDate: "2025-06-01",
-        guaranteePeriodMonths: 18,
-        description:
-          "Challan for the supply of high-tension insulators, complete with packing, forwarding, insurance, and all required test certificates for the designated substation.",
-      },
-      offeredDate: "2025-08-05",
-      offeredQuantity: 150,
-      serialNumberFrom: 241,
-      serialNumberTo: 390,
-      snNumber: "241 TO 390",
-      nominationLetterNo: "NL/2025/002",
-      nominationDate: "2025-08-03",
-      inspectionOfficers: ["Amit Verma", "Priya Singh"],
-      inspectionDate: "2025-08-06",
-      inspectedQuantity: 140,
-      total: 150,
-      diNo: "DI/2025/1002",
-      diDate: "2025-08-08",
-      shellingDetails: "Model Y, Batch 2, 30 units per batch",
-    },
-    {
-      id: "3",
-      deliverySchedule: {
-        tnNumber: "TN-003",
-        poDetails: "PO-32345",
-        poDate: "2025-07-15",
-        guaranteePeriodMonths: 12,
-        description:
-          "Material dispatch challan for 11kV outdoor vacuum circuit breakers, inclusive of installation accessories and detailed engineering drawings for commissioning.",
-      },
-      offeredDate: "2025-09-15",
-      offeredQuantity: 180,
-      serialNumberFrom: 391,
-      serialNumberTo: 570,
-      snNumber: "391 TO 570",
-      nominationLetterNo: "NL/2025/003",
-      nominationDate: "2025-09-12",
-      inspectionOfficers: ["Rajesh Gupta", "Meena Kapoor"],
-      inspectionDate: "2025-09-16",
-      inspectedQuantity: 160,
-      total: 180,
-      diNo: "DI/2025/1003",
-      diDate: "2025-09-18",
-      shellingDetails: "Model Z, Batch 1, 60 units per batch",
-    },
-    {
-      id: "4",
-      deliverySchedule: {
-        tnNumber: "TN-004",
-        poDetails: "PO-42345",
-        poDate: "2025-08-10",
-        guaranteePeriodMonths: 36,
-        description:
-          "Challan covering delivery of galvanized steel poles and cross-arms, bundled with all necessary hardware and fasteners for the rural electrification project.",
-      },
-      offeredDate: "2025-10-20",
-      offeredQuantity: 220,
-      serialNumberFrom: 571,
-      serialNumberTo: 790,
-      snNumber: "571 TO 790",
-      nominationLetterNo: "NL/2025/004",
-      nominationDate: "2025-10-18",
-      inspectionOfficers: ["Vikas Sharma", "Neha Yadav"],
-      inspectionDate: "2025-10-21",
-      inspectedQuantity: 200,
-      total: 220,
-      diNo: "DI/2025/1004",
-      diDate: "2025-10-23",
-      shellingDetails: "Model A, Batch 4, 55 units per batch",
-    },
-  ];
-};
-
-export const getDummyConsigneeDetails = () => {
-  return [
-    {
-      name: "ABC Power Solutions Pvt. Ltd.",
-      address:
-        "Plot No. 45, Industrial Area, Sector 18, Gurugram, Haryana - 122015",
-      gstNo: "06ABCDE1234F1Z5",
-    },
-    {
-      name: "XYZ Transformers Ltd.",
-      address: "B-12, MIDC Industrial Estate, Pune, Maharashtra - 411019",
-      gstNo: "27XYZAB6789C1Z3",
-    },
-    {
-      name: "GreenVolt Energy Systems",
-      address: "123/4, Electronic City Phase 2, Bengaluru, Karnataka - 560100",
-      gstNo: "29GVEPL2345D1Z7",
-    },
-    {
-      name: "PowerMax Electric Co.",
-      address: "No. 89, GIDC Estate, Ahmedabad, Gujarat - 382445",
-      gstNo: "24PMAXL4567E1Z9",
-    },
-    {
-      name: "Sunrise Electricals",
-      address: "15, Salt Lake Sector V, Kolkata, West Bengal - 700091",
-      gstNo: "19SREPL7890F1Z2",
-    },
-  ];
-};
-
-export const getDummyChalanDescriptions = () => {
-  return [
-    {
-      id: 1,
-      description:
-        "Delivery challan for 1000 kVA transformers including transport charges, handling, and on-site installation as per the approved purchase order and delivery schedule.",
-    },
-    {
-      id: 2,
-      description:
-        "Challan for the supply of high-tension insulators, complete with packing, forwarding, insurance, and all required test certificates for the designated substation.",
-    },
-    {
-      id: 3,
-      description:
-        "Material dispatch challan for 11kV outdoor vacuum circuit breakers, inclusive of installation accessories and detailed engineering drawings for commissioning.",
-    },
-    {
-      id: 4,
-      description:
-        "Challan covering delivery of galvanized steel poles and cross-arms, bundled with all necessary hardware and fasteners for the rural electrification project.",
-    },
-    {
-      id: 5,
-      description:
-        "Delivery challan for power cables and terminations, covering 3.5 core XLPE insulated aluminum cables with full compliance to IS standards and safety protocols.",
-    },
-  ];
-};
-
-export const getDummyMaterialDescriptions = () => {
-  return [
-    {
-      code: "TX-1001",
-      description:
-        "100 kVA, 11/0.433 kV, 3-Phase, Oil Cooled Distribution Transformer with Copper Winding, ONAN Cooling, complete with standard fittings and accessories suitable for outdoor installation as per IS 1180.",
-    },
-    {
-      code: "TX-2002",
-      description:
-        "200 kVA, 11/0.433 kV, 3-Phase, Copper Wound Distribution Transformer, ONAN Cooled, energy efficient level-2 with standard bushings, arcing horns, and lifting lugs as per latest IS standards.",
-    },
-    {
-      code: "TX-5005",
-      description:
-        "500 kVA, 33/11 kV, 3-Phase Power Transformer with On-Load Tap Changer (OLTC), Oil Natural Air Natural Cooling, suitable for grid substation applications, complete with conservator, radiators, and marshalling box.",
-    },
-    {
-      code: "CT-150",
-      description:
-        "150 Amp Current Transformer (CT), 11 kV Indoor Resin Cast Type, Class 1 accuracy, 5P10 protection class, suitable for metering and protection applications in medium voltage switchgear panels.",
-    },
-    {
-      code: "PT-11KV",
-      description:
-        "11 kV Single Phase Potential Transformer (PT), Oil Immersed Outdoor Type, with Class 0.5 accuracy for metering and protection, designed for long life and reliable voltage measurement in distribution networks.",
-    },
-  ];
-};
-
 const AddDeliveryChalan = () => {
-  const context = useContext(MyContext);
-  const { setIsHideSidebarAndHeader, setAlertBox, districts } = context;
-
-  const today = new Date();
-
-  const dummyData = getDummyFinalInspectionDetails();
-
-  const dummyConsignee = getDummyConsigneeDetails();
-
-  const dummyMaterialDescriptions = getDummyMaterialDescriptions();
+  const { setAlertBox } = useContext(MyContext);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [selectedTN, setSelectedTN] = useState("");
   const [selectedRecord, setSelectedRecord] = useState(null);
@@ -236,9 +36,25 @@ const AddDeliveryChalan = () => {
   const [chalanDescription, setChalanDescription] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
 
+  const { data: finalInspections } = useQuery({
+    queryKey: ["finalInspections"],
+    queryFn: () => api.get("/final-inspections").then((res) => res.data),
+  });
+
+  const { data: consignees } = useQuery({
+    queryKey: ["consignees"],
+    queryFn: () => api.get("/consignees").then((res) => res.data),
+  });
+
+  const { data: materialDescriptions } = useQuery({
+    queryKey: ["material-descriptions"],
+    queryFn: () => api.get("/material-descriptions").then((res) => res.data),
+  });
+
+
   const handleTNChange = (tnNumber) => {
     setSelectedTN(tnNumber);
-    const record = dummyData.find(
+    const record = finalInspections.find(
       (item) => item.deliverySchedule.tnNumber === tnNumber
     );
 
@@ -278,16 +94,16 @@ const AddDeliveryChalan = () => {
     }
   }, []);
 
-  const [consigneeName, setConsigneeName] = useState("");
+  const [consigneeId, setConsigneeId] = useState("");
   const [selectedConsigneeRecord, setSelectedConsigneeRecord] = useState(null);
   const [consigneeAddress, setConsigneeAddress] = useState("");
   const [consigneeGSTNo, setConsigneeGSTNo] = useState("");
 
   const handleConsigneeChange = (event) => {
-    const selectedName = event.target.value;
-    setConsigneeName(selectedName);
+    const selectedId = event.target.value;
+    setConsigneeId(selectedId);
 
-    const record = dummyConsignee.find((item) => item.name === selectedName);
+    const record = consignees.find((item) => item.id === selectedId);
     if (record) {
       setSelectedConsigneeRecord(record);
       setConsigneeAddress(record.address);
@@ -304,20 +120,31 @@ const AddDeliveryChalan = () => {
 
 
   const [materialDescription, setMaterialDescription] = useState("");
-  const [selectedMaterialCode, setSelectedMaterialCode] = useState("");
+  const [materialDescriptionId, setMaterialDescriptionId] = useState("");
 
-  const handleMaterialSelect = (code) => {
-    setSelectedMaterialCode(code);
+  const handleMaterialSelect = (id) => {
+    setMaterialDescriptionId(id);
 
-    const record = dummyMaterialDescriptions.find((item) => item.code === code);
+    const record = materialDescriptions.find((item) => item.id === id);
     if (record) {
       setMaterialDescription(record.description); // Fill the whole description
     } else {
       setMaterialDescription("");
     }
   };
+  
+  const addDeliveryChallanMutation = useMutation({
+    mutationFn: (newChallan) => api.post("/delivery-challans", newChallan),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "Delivery Challan added successfully!", error: false});
+      queryClient.invalidateQueries(["deliveryChallans"]);
+      navigate("/deliveryChalan-list");
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
 
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -325,19 +152,22 @@ const AddDeliveryChalan = () => {
 
     // Store entire final inspection object
     const data = {
-      ...selectedRecord,
+      finalInspectionDetailId: selectedRecord.id,
       challanNo,
+      subSerialNumberFrom: parseInt(subSerialFrom),
+      subSerialNumberTo: parseInt(subSerialTo),
       consignorName,
-      consigneeAddress,
-      consignorPhoneNo,
-      consigneeGSTNo,
+      consignorAddress,
+      consignorPhone: consignorPhoneNo,
+      consignorGST: consignorGSTNo,
       consignorEmail,
-      ...selectedConsigneeRecord,
-      materialDescription,
-      challanCreatedAt: dayjs().format("YYYY-MM-DD"),
+      consigneeId,
+      lorryNo,
+      truckDriverName: driverName,
+      materialDescriptionId,
     };
 
-    console.log("Transformer Delivery Chalan Details", data);
+    addDeliveryChallanMutation.mutate(data);
   };
 
   return (
@@ -359,7 +189,7 @@ const AddDeliveryChalan = () => {
                   value={selectedTN}
                   onChange={(e) => handleTNChange(e.target.value)}
                 >
-                  {dummyData.map((tn) => (
+                  {finalInspections?.map((tn) => (
                     <MenuItem
                       key={tn.deliverySchedule.tnNumber}
                       value={tn.deliverySchedule.tnNumber}
@@ -538,11 +368,11 @@ const AddDeliveryChalan = () => {
                   select
                   fullWidth
                   label="Select Consignee Name"
-                  value={consigneeName}
+                  value={consigneeId}
                   onChange={handleConsigneeChange}
                 >
-                  {dummyConsignee.map((item) => (
-                    <MenuItem key={item.name} value={item.name}>
+                  {consignees?.map((item) => (
+                    <MenuItem key={item.id} value={item.id}>
                       {item.name}
                     </MenuItem>
                   ))}
@@ -607,7 +437,7 @@ const AddDeliveryChalan = () => {
                   label="Delivery Challan Description"
                   value={chalanDescription}
                   readOnly
-                  //onChange={(e) => setChallanDescription(e.target.value)}
+                  //onChange={(e) => setChalanDescription(e.target.value)}
                   margin="normal"
                 />
               </Grid>
@@ -623,17 +453,17 @@ const AddDeliveryChalan = () => {
                   select
                   fullWidth
                   label="Select Material Description"
-                  value={selectedMaterialCode}
+                  value={materialDescriptionId}
                   onChange={(e) => handleMaterialSelect(e.target.value)}
                   margin="normal"
                 >
-                  {dummyMaterialDescriptions.map((item) => {
+                  {materialDescriptions?.map((item) => {
                     const firstSixWords = item.description
                       .split(" ")
                       .slice(0, 6)
                       .join(" ");
                     return (
-                      <MenuItem key={item.code} value={item.code}>
+                      <MenuItem key={item.id} value={item.id}>
                         {firstSixWords}...
                       </MenuItem>
                     );
@@ -662,9 +492,10 @@ const AddDeliveryChalan = () => {
                   style={{
                     margin: "auto",
                   }}
+                  disabled={addDeliveryChallanMutation.isLoading}
                 >
                   <FaCloudUploadAlt />
-                  {isLoading ? (
+                  {addDeliveryChallanMutation.isLoading ? (
                     <CircularProgress color="inherit" size={20} />
                   ) : (
                     "PUBLISH AND VIEW"

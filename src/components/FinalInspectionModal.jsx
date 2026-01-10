@@ -24,9 +24,10 @@ import CloseIcon from "@mui/icons-material/Close";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
-import { getDummyConsigneeDetails } from "../pages/Consignee/ConsigneeList";
 import { MyContext } from "../App";
 import { Cancel } from "@mui/icons-material";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../services/api";
 
 const style = {
   position: "absolute",
@@ -43,94 +44,22 @@ const style = {
   overflowY: "auto",
 };
 
-const deliverySchedules = [
-  {
-    id: "1",
-    tnNumber: "TN-001",
-    rating: "100", // in KVA
-    wound: "Aluminium",
-    phase: "100 KVA",
-    poDetails: "PO-12345",
-    poDate: "2025-05-10",
-    loaDetails: "LOA-5678",
-    loaDate: "2025-05-01",
-    cpDays: 90,
-    createdDate: "2025-05-15",
-    cpDate: "2025-08-13", // 90 days from createdDate
-    imposedLetterNo: "IMP-101",
-    liftingLetterNo: "LIFT-201",
-    imposedDate: "2025-08-18",
-    liftingDate: "2025-10-15",
-    totalQuantity: 1000,
-    guaranteePeriodMonths: 24,
-  },
-  {
-    id: "2",
-    tnNumber: "TN-002",
-    rating: "50",
-    wound: "Aluminium",
-    phase: "50 KVA",
-    poDetails: "PO-22345",
-    poDate: "2025-06-01",
-    loaDetails: "LOA-6678",
-    loaDate: "2025-05-20",
-    cpDays: 60,
-    createdDate: "2025-06-05",
-    cpDate: "2025-08-04", // 60 days from createdDate
-    imposedLetterNo: "IMP-102",
-    liftingLetterNo: "LIFT-202",
-    imposedDate: "2025-08-09",
-    liftingDate: "2025-10-01",
-    totalQuantity: 500,
-    guaranteePeriodMonths: 18,
-  },
-  {
-    id: "3",
-    tnNumber: "TN-003",
-    rating: "150",
-    wound: "Copper",
-    phase: "150 KVA",
-    poDetails: "PO-32345",
-    poDate: "2025-07-15",
-    loaDetails: "LOA-7678",
-    loaDate: "2025-07-05",
-    cpDays: 45,
-    createdDate: "2025-07-20",
-    cpDate: "2025-09-03", // 45 days from createdDate
-    imposedLetterNo: "IMP-103",
-    liftingLetterNo: "LIFT-203",
-    imposedDate: "2025-09-08",
-    liftingDate: "2025-11-01",
-    totalQuantity: 750,
-    guaranteePeriodMonths: 12,
-  },
-  {
-    id: "4",
-    tnNumber: "TN-004",
-    rating: "200",
-    wound: "Copper",
-    phase: "200 KVA",
-    poDetails: "PO-42345",
-    poDate: "2025-08-10",
-    loaDetails: "LOA-8678",
-    loaDate: "2025-08-01",
-    cpDays: 30,
-    createdDate: "2025-08-15",
-    cpDate: "2025-09-14", // 30 days from createdDate
-    imposedLetterNo: "IMP-104",
-    liftingLetterNo: "LIFT-204",
-    imposedDate: "2025-09-19",
-    liftingDate: "2025-11-10",
-    totalQuantity: 1200,
-    guaranteePeriodMonths: 36,
-  },
-];
-
 const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
   const today = dayjs();
+  const queryClient = useQueryClient();
 
   const { setProgress, setAlertBox, setIsHideSidebarAndHeader } =
     useContext(MyContext);
+
+  const { data: deliverySchedules } = useQuery({
+    queryKey: ["deliverySchedules"],
+    queryFn: () => api.get("/delivery-schedules").then((res) => res.data.data),
+  });
+
+  const { data: consignees } = useQuery({
+    queryKey: ["consignees"],
+    queryFn: () => api.get("/consignees").then((res) => res.data),
+  });
 
   const [tnDetail, setTnDetail] = useState("");
   const [serialNumberFrom, setSerialNumberFrom] = useState("");
@@ -219,8 +148,6 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     }
   };
 
-  const consignees = getDummyConsigneeDetails();
-
   // 👉 Handle Add Consignee
   const handleAddConsignee = () => {
     if (!selectedConsignee || !consigneeQuantity) {
@@ -282,6 +209,27 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     setConsigneeList(updated);
   };
 
+  const { mutate: updateFinalInspection, isLoading } = useMutation({
+    mutationFn: (updatedData) =>
+      api.put(`/final-inspections/${inspectionData.id}`, updatedData),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["finalInspections"]);
+      handleClose();
+      setAlertBox({
+        open: true,
+        msg: "Final Inspection details updated successfully!",
+        error: false,
+      });
+    },
+    onError: (error) => {
+      setAlertBox({
+        open: true,
+        msg: error.message,
+        error: true,
+      });
+    },
+  });
+
   const handleSubmit = () => {
     const updatedData = {
       tnDetail: tnDetail?.id,
@@ -298,8 +246,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       warranty,
       consignees: consigneeList, // ✅ New Array
     };
-    console.log(updatedData);
-    handleClose();
+    updateFinalInspection(updatedData);
   };
 
   return (
@@ -320,7 +267,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
 
         <Box mt={2}>
           <Autocomplete
-            options={deliverySchedules}
+            options={deliverySchedules || []}
             getOptionLabel={(option) => option.tnNumber}
             value={tnDetail}
             onChange={handleTnChange}
@@ -500,7 +447,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
                   onChange={(e) => setSelectedConsignee(e.target.value)}
                   label="Consignee"
                 >
-                  {consignees.map((c) => (
+                  {consignees?.map((c) => (
                     <MenuItem key={c.id} value={c.id}>
                       {c.name}
                     </MenuItem>
@@ -576,8 +523,8 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
           />*/}
 
           <Box mt={4} textAlign="center">
-            <Button variant="contained" size="large" onClick={handleSubmit}>
-              Save Changes
+            <Button variant="contained" size="large" onClick={handleSubmit} disabled={isLoading}>
+              {isLoading? 'Saving...' : 'Save Changes'}
             </Button>
           </Box>
         </Box>

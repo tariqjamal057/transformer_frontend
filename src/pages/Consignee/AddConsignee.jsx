@@ -2,11 +2,15 @@ import { useContext, useState } from "react";
 import { CircularProgress } from "@mui/material";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import { Grid, TextField, Button, Typography, Paper } from "@mui/material";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
+import { useNavigate } from "react-router-dom";
 import { MyContext } from "../../App";
 
 const AddConsignee = () => {
-  const context = useContext(MyContext);
-  const { setIsHideSidebarAndHeader, setAlertBox, districts } = context;
+  const { setAlertBox } = useContext(MyContext);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
@@ -14,19 +18,27 @@ const AddConsignee = () => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
 
-  const [isLoading, setIsLoading] = useState(false);
+  const addConsigneeMutation = useMutation({
+    mutationFn: (newConsignee) => api.post("/consignees", newConsignee),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "Consignee added successfully!", error: false});
+      queryClient.invalidateQueries(["consignees"]);
+      navigate("/consignee-list");
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const data = {
+    addConsigneeMutation.mutate({
       name,
       address,
       gstNo,
       email,
       phone,
-    };
-
-    console.log("Consignee Details", data);
+    });
   };
 
   return (
@@ -103,9 +115,10 @@ const AddConsignee = () => {
                 style={{
                   margin: "auto",
                 }}
+                disabled={addConsigneeMutation.isLoading}
               >
                 <FaCloudUploadAlt />
-                {isLoading ? (
+                {addConsigneeMutation.isLoading ? (
                   <CircularProgress color="inherit" size={20} />
                 ) : (
                   "PUBLISH AND VIEW"

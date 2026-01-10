@@ -14,18 +14,13 @@ import autoTable from "jspdf-autotable"; // ⬅️ import as a function
 import { DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import {
-  companies,
-  deliverySchedules,
-  discoms,
-} from "../pages/MisReports/MaterialOfferedButNominationPending";
 import dayjs from "dayjs";
-
-// ✅ Dummy Data (replace with props/imports in your real project)
+import { useQuery } from "@tanstack/react-query";
+import api from "../services/api";
 
 const FiltersComponent = ({
   onFilteredData,
-  data,
+  data = [],
   text,
   onExportPDF = true,
   onExportExcel = true,
@@ -39,11 +34,27 @@ const FiltersComponent = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDate, setSelectedDate] = useState(null);
 
-  const [filteredData, setFilteredData] = useState(data || []);
+  const [filteredData, setFilteredData] = useState(data);
+
+  const { data: companies } = useQuery({
+    queryKey: ["companies"],
+    queryFn: () => api.get("/companies").then((res) => res.data.data || []),
+  });
+
+  const { data: deliverySchedules } = useQuery({
+    queryKey: ["deliverySchedules"],
+    queryFn: () => api.get("/delivery-schedules").then((res) => res.data.data || []),
+  });
+
+  const discoms = [
+    { name: "Ajmer" },
+    { name: "Jaipur" },
+    { name: "Jodhpur" },
+  ];
 
   // 🔹 Filtering logic
   useEffect(() => {
-    let result = [...data];
+    let result = Array.isArray(data) ? [...data] : []; // Defensive check
 
     if (selectedCompany !== "all") {
       result = result.filter((item) => item.companyName === selectedCompany);
@@ -85,7 +96,7 @@ const FiltersComponent = ({
     setFilteredData(result);
     onFilteredData(result);
   }, [
-    data,
+    data, // Keep data in dependency array
     selectedCompany,
     selectedDiscom,
     selectedRating,
@@ -95,14 +106,10 @@ const FiltersComponent = ({
   ]);
 
   // 🔹 Unique dropdown values from ALL data
-  const uniqueCompanies = [...new Set(companies.map((item) => item.name))];
+  const uniqueCompanies = companies ? [...new Set(companies.map((item) => item.name))] : [];
   const uniqueDiscoms = [...new Set(discoms.map((item) => item.name))];
-  const uniqueRatings = [
-    ...new Set(deliverySchedules.map((item) => item.rating)),
-  ];
-  const uniquePhases = [
-    ...new Set(deliverySchedules.map((item) => item.phase)),
-  ];
+  const uniqueRatings = deliverySchedules ? [...new Set(deliverySchedules.map((item) => item.rating))] : [];
+  const uniquePhases = deliverySchedules ? [...new Set(deliverySchedules.map((item) => item.phase))] : [];
 
   // ✅ Export Excel (row-wise expansion like uploaded sample)
   const exportExcelForDI = () => {

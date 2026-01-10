@@ -3,7 +3,6 @@ import { FaPencilAlt } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
-import { MyContext } from "../../App";
 import {
   Dialog,
   DialogTitle,
@@ -14,59 +13,13 @@ import {
   IconButton,
 } from "@mui/material";
 import { IoCloseSharp } from "react-icons/io5";
-
-export const getDummyConsigneeDetails = () => {
-  return [
-    {
-      id: "1",
-      name: "ABC Power Solutions Pvt. Ltd.",
-      address:
-        "Plot No. 45, Industrial Area, Sector 18, Gurugram, Haryana - 122015",
-      gstNo: "06ABCDE1234F1Z5",
-      phone: "9876543210",
-      email: "contact@abcpower.com",
-    },
-    {
-      id: "2",
-      name: "XYZ Transformers Ltd.",
-      address: "B-12, MIDC Industrial Estate, Pune, Maharashtra - 411019",
-      gstNo: "27XYZAB6789C1Z3",
-      phone: "9123456780",
-      email: "sales@xyztransformers.com",
-    },
-    {
-      id: "3",
-      name: "GreenVolt Energy Systems",
-      address: "123/4, Electronic City Phase 2, Bengaluru, Karnataka - 560100",
-      gstNo: "29GVEPL2345D1Z7",
-      phone: "9988776655",
-      email: "info@greenvolt.com",
-    },
-    {
-      id: "4",
-      name: "PowerMax Electric Co.",
-      address: "No. 89, GIDC Estate, Ahmedabad, Gujarat - 382445",
-      gstNo: "24PMAXL4567E1Z9",
-      phone: "9090909090",
-      email: "support@powermax.com",
-    },
-    {
-      id: "5",
-      name: "Sunrise Electricals",
-      address: "15, Salt Lake Sector V, Kolkata, West Bengal - 700091",
-      gstNo: "19SREPL7890F1Z2",
-      phone: "9876001234",
-      email: "hello@sunriseelectricals.com",
-    },
-  ];
-};
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
+import { MyContext } from "../../App";
 
 const ConsigneeList = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 10; // or calculate based on data length
-
-  const { setProgress, setAlertBox, setIsHideSidebarAndHeader } =
-    useContext(MyContext);
+  const { setAlertBox } = useContext(MyContext);
+  const queryClient = useQueryClient();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedConsignee, setSelectedConsignee] = useState(null);
@@ -76,21 +29,50 @@ const ConsigneeList = () => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
 
-  useEffect(() => {
-    setIsHideSidebarAndHeader(false);
-    window.scrollTo(0, 0);
-  }, []);
+  const { data: consignees, isLoading, isError } = useQuery({
+    queryKey: ["consignees"],
+    queryFn: () => api.get("/consignees").then((res) => res.data),
+  });
 
-  useEffect(() => {
-    setProgress(20);
-    setProgress(100);
-  }, []);
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/consignees/${id}`),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "Consignee deleted successfully!", error: false});
+      queryClient.invalidateQueries(["consignees"]);
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
 
-  const handlePageChange = (event, value) => {
-    setPage(value);
+  const updateMutation = useMutation({
+    mutationFn: (updatedConsignee) =>
+      api.put(`/consignees/${selectedConsignee.id}`, updatedConsignee),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "Consignee updated successfully!", error: false});
+      queryClient.invalidateQueries(["consignees"]);
+      handleModalClose();
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
+
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteMutation.mutate(id);
+      }
+    });
   };
-
-  const dummyData = getDummyConsigneeDetails();
 
   const handleEditClick = (item) => {
     setSelectedConsignee(item);
@@ -100,13 +82,6 @@ const ConsigneeList = () => {
     setEmail(item.email);
     setPhone(item.phone);
     setEditModalOpen(true);
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setEditedImage(file);
-    }
   };
 
   const handleModalClose = () => {
@@ -120,13 +95,7 @@ const ConsigneeList = () => {
   };
 
   const handleSaveChanges = () => {
-    // You can send API call here
-    setAlertBox({
-      open: true,
-      msg: "Consignee details updated successfully!",
-      error: false,
-    });
-    setEditModalOpen(false);
+    updateMutation.mutate({ name, address, gstNo, email, phone });
   };
 
   return (
@@ -156,8 +125,16 @@ const ConsigneeList = () => {
                 </tr>
               </thead>
               <tbody className="text-center">
-                {dummyData.length > 0 ? (
-                  dummyData.map((item, index) => (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan="7">Loading...</td>
+                  </tr>
+                ) : isError ? (
+                  <tr>
+                    <td colSpan="7">Error fetching data</td>
+                  </tr>
+                ) : consignees.length > 0 ? (
+                  consignees.map((item, index) => (
                     <tr key={index}>
                       <td># {index + 1}</td>
                       <td>{item.name}</td>
@@ -173,13 +150,19 @@ const ConsigneeList = () => {
                           >
                             <FaPencilAlt />
                           </button>
+                          <button
+                            className="btn btn-sm btn-danger"
+                            onClick={() => handleDelete(item.id)}
+                          >
+                            <MdDelete />
+                          </button>
                         </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="10" className="text-center">
+                    <td colSpan="7" className="text-center">
                       No data found
                     </td>
                   </tr>
@@ -188,12 +171,6 @@ const ConsigneeList = () => {
             </table>
           </div>
         </div>
-
-        {/*<ResponsivePagination
-          page={currentPage}
-          count={totalPages}
-          onChange={(event, value) => setCurrentPage(value)}
-        />*/}
       </div>
 
       {/* Edit Modal */}
@@ -201,7 +178,6 @@ const ConsigneeList = () => {
         open={editModalOpen}
         onClose={handleModalClose}
         fullWidth
-        //fullScreen={fullScreen}
       >
         <DialogTitle className="d-flex justify-content-between align-items-center">
           Edit Details
@@ -272,8 +248,9 @@ const ConsigneeList = () => {
             onClick={handleSaveChanges}
             variant="contained"
             color="primary"
+            disabled={updateMutation.isLoading}
           >
-            Save Changes
+            {updateMutation.isLoading ? "Saving..." : "Save Changes"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -282,3 +259,4 @@ const ConsigneeList = () => {
 };
 
 export default ConsigneeList;
+

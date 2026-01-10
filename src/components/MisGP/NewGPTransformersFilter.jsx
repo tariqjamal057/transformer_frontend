@@ -18,11 +18,8 @@ import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 
 dayjs.extend(isSameOrBefore);
 
-import {
-  companies,
-  deliverySchedules,
-  discoms,
-} from "../../pages/MisReports/MaterialOfferedButNominationPending";
+import { useQuery } from "@tanstack/react-query";
+import api from "../../services/api";
 
 export const gpFailureDatas = [
   {
@@ -325,6 +322,22 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const [filteredData, setFilteredData] = useState(data || []);
+
+  const { data: companies } = useQuery({
+    queryKey: ["companies"],
+    queryFn: () => api.get("/companies").then((res) => res.data.data),
+  });
+
+  const { data: deliverySchedules } = useQuery({
+    queryKey: ["deliverySchedules"],
+    queryFn: () => api.get("/delivery-schedules").then((res) => res.data.data),
+  });
+
+  const discoms = [
+    { name: "Ajmer" },
+    { name: "Jaipur" },
+    { name: "Jodhpur" },
+  ];
 
   // 🔹 Filtering logic
   useEffect(() => {

@@ -2,11 +2,15 @@ import { useContext, useState } from "react";
 import { CircularProgress } from "@mui/material";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import { Grid, TextField, Button, Typography, Paper } from "@mui/material";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
+import { useNavigate } from "react-router-dom";
 import { MyContext } from "../../App";
 
 const AddMaterialDescription = () => {
-  const context = useContext(MyContext);
-  const { setIsHideSidebarAndHeader, setAlertBox, districts } = context;
+  const { setAlertBox } = useContext(MyContext);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [materialDescription, setMaterialDescription] = useState("");
   const [materialName, setMaterialName] = useState("");
@@ -14,17 +18,28 @@ const AddMaterialDescription = () => {
   const [rating, setRating] = useState("");
   const [wound, setWound] = useState("");
 
-  const [isLoading, setIsLoading] = useState(false);
+  const addMaterialDescriptionMutation = useMutation({
+    mutationFn: (newDescription) =>
+      api.post("/material-descriptions", newDescription),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "Material Description added successfully!", error: false});
+      queryClient.invalidateQueries(["materialDescriptions"]);
+      navigate("/materialDescription-list");
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const data = {
-      materialName,
+    addMaterialDescriptionMutation.mutate({
+      name: materialName,
       phase,
-      materialDescription,
-    };
-
-    console.log("Description of Material", data);
+      rating,
+      wound,
+      description: materialDescription,
+    });
   };
 
   return (
@@ -46,7 +61,7 @@ const AddMaterialDescription = () => {
               />
             </Grid>
 
-            {/*<Grid item size={1}>
+            <Grid item size={1}>
               <TextField
                 label="Phase"
                 fullWidth
@@ -54,7 +69,7 @@ const AddMaterialDescription = () => {
                 onChange={(e) => setPhase(e.target.value)}
                 required
               />
-            </Grid> */}
+            </Grid>
 
             <Grid item size={1}>
               <TextField
@@ -96,9 +111,10 @@ const AddMaterialDescription = () => {
                 style={{
                   margin: "auto",
                 }}
+                disabled={addMaterialDescriptionMutation.isLoading}
               >
                 <FaCloudUploadAlt />
-                {isLoading ? (
+                {addMaterialDescriptionMutation.isLoading ? (
                   <CircularProgress color="inherit" size={20} />
                 ) : (
                   "PUBLISH AND VIEW"

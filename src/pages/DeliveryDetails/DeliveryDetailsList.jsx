@@ -2,140 +2,32 @@ import { useContext, useEffect, useState } from "react";
 import { Button } from "@mui/material";
 import { Link } from "react-router-dom";
 import { MdDelete } from "react-icons/md";
-import { MyContext } from "../../App";
 import Swal from "sweetalert2";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
+import { MyContext } from "../../App";
 
 const DeliveryDetailsList = () => {
-  const { setProgress, setIsHideSidebarAndHeader } = useContext(MyContext);
+  const { setAlertBox } = useContext(MyContext);
+  const queryClient = useQueryClient();
 
-  const [openModal, setOpenModal] = useState(false);
-  const [selectedDeliveryChalan, setSelectedDeliveryChalan] = useState(null);
-
-  const [selectedTN, setSelectedTN] = useState("all");
-  const [selectedRating, setSelectedRating] = useState("all");
-  const [selectedConsignee, setSelectedConsignee] = useState("all");
-
-  // Dummy Data
-  const dummyData = [
-    {
-      id: "1",
-      deliveryChalanData: {
-        id: "101",
-        trData: {
-          id: "2",
-          tnId: { id: "1", name: "TN-001", rating: "100" },
-          serialNumber: "1001 TO 2000",
-          diNo: "DI-001",
-          diDate: "2025-07-15",
-          inspectionOfficers: [
-            { name: "A. Kumar", designation: "Sr. Engineer" },
-            { name: "P. Verma", designation: "Inspector" },
-          ],
-          inspectionDate: "2025-07-18",
-          totalQuantity: 100,
-          suppliedQuantity: 85,
-          gpExpiryDate: "2026-07-24",
-        },
-        poNumber: "PO-5454",
-        poDate: "2025-08-21",
-        challanNo: "CH-1001",
-        challanDate: "2025-07-22",
-        consignorName: "PowerTech Transformers Pvt. Ltd.",
-        consignorPhone: "9876543210",
-        consignorAddress: "Plot 12, Industrial Zone, Mumbai",
-        consignorGST: "27AAACP1234F1Z5",
-        consigneeName: "State Electricity Board",
-        consigneeAddress: "Substation Road, Pune",
-        consigneeGST: "27SEB0001F2Z3",
-        lorryNo: "MH12AB1234",
-        truckDriverName: "Ramesh Yadav",
-        deliveryChallanDescription:
-          "Delivery of 3-phase oil-cooled transformer",
-        materialDescription:
-          "500 KVA 11/0.433 kV Distribution Transformer, Copper Wound, BIS Certified",
-      },
-      receiptedChallanNo: "CH-10032",
-      receiptedChallanDate: "2025-07-26",
-    },
-    {
-      id: "2",
-      deliveryChalanData: {
-        id: "102",
-        trData: {
-          id: "3",
-          tnId: { id: "1", name: "TN-001", rating: "200" },
-          serialNumber: "2001 TO 3000",
-          diNo: "DI-002",
-          diDate: "2025-07-16",
-          inspectionOfficers: [
-            { name: "R. Singh", designation: "Chief Inspector" },
-            { name: "S. Mehra", designation: "Engineer" },
-          ],
-          inspectionDate: "2025-07-22",
-          totalQuantity: 200,
-          suppliedQuantity: 170,
-          gpExpiryDate: "2026-08-12",
-        },
-        poNumber: "PO-5499",
-        poDate: "2025-08-24",
-        challanNo: "CH-1002",
-        challanDate: "2025-07-28",
-        consignorName: "MegaVolt Transformers Ltd.",
-        consignorPhone: "9123456780",
-        consignorAddress: "Sector 45, Electronic City, Bengaluru",
-        consignorGST: "29MEGA1234G1Z9",
-        consigneeName: "Northern Grid Corporation",
-        consigneeAddress: "Grid Office, Delhi",
-        consigneeGST: "07NGC0001F5Z6",
-        lorryNo: "KA01CD5678",
-        truckDriverName: "Sandeep Kumar",
-        deliveryChallanDescription:
-          "Delivery of transformer with testing certificates",
-        materialDescription:
-          "250 KVA 33/0.433 kV Distribution Transformer, Aluminum Wound, Outdoor Type",
-      },
-      receiptedChallanNo: "CH-20012",
-      receiptedChallanDate: "2025-06-17",
-    },
-  ];
-
-  const tnOptions = [
-    ...new Set(
-      dummyData.map((item) => item.deliveryChalanData.trData.tnId.name)
-    ),
-  ];
-
-  const ratingOptions = [
-    ...new Set(
-      dummyData.map((item) => item.deliveryChalanData.trData.tnId.rating)
-    ),
-  ];
-
-  const consigneeOptions = [
-    ...new Set(dummyData.map((item) => item.deliveryChalanData.consigneeName)),
-  ];
-
-  const filteredList = dummyData.filter((item) => {
-    const dc = item.deliveryChalanData;
-
-    const tnMatch = selectedTN === "all" || dc.trData.tnId.name === selectedTN;
-
-    const ratingMatch =
-      selectedRating === "all" || dc.trData.tnId.rating === selectedRating;
-
-    const consigneeMatch =
-      selectedConsignee === "all" || dc.consigneeName === selectedConsignee;
-
-    return tnMatch && ratingMatch && consigneeMatch;
+  const { data: deliveryDetails, isLoading, isError } = useQuery({
+    queryKey: ["deliveryDetails"],
+    queryFn: () => api.get("/delivery-details").then((res) => res.data),
   });
 
-  useEffect(() => {
-    setIsHideSidebarAndHeader(false);
-    window.scrollTo(0, 0);
-    setProgress(100);
-  }, []);
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/delivery-details/${id}`),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "Delivery Details deleted successfully!", error: false});
+      queryClient.invalidateQueries(["deliveryDetails"]);
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
 
-  const handleDeleteClick = async () => {
+  const handleDeleteClick = async (id) => {
     const result = await Swal.fire({
       title: "Are you sure?",
       text: "Do you really want to delete this delivery details?",
@@ -147,11 +39,7 @@ const DeliveryDetailsList = () => {
     });
 
     if (result.isConfirmed) {
-      Swal.fire(
-        "Deleted!",
-        "Delivery Details has been deleted successfully.",
-        "success"
-      );
+      deleteMutation.mutate(id);
     }
   };
 
@@ -167,73 +55,6 @@ const DeliveryDetailsList = () => {
                 Add New Delivery Detail
               </Button>
             </Link>
-          </div>
-        </div>
-
-        <div className="row mb-3">
-          {/* TN Number */}
-          <div className="col-md-3">
-            <label className="form-label fw-semibold">TN Number</label>
-            <select
-              className="form-select"
-              value={selectedTN}
-              onChange={(e) => setSelectedTN(e.target.value)}
-            >
-              <option value="all">All</option>
-              {tnOptions.map((tn, idx) => (
-                <option key={idx} value={tn}>
-                  {tn}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Rating */}
-          <div className="col-md-3">
-            <label className="form-label fw-semibold">Rating</label>
-            <select
-              className="form-select"
-              value={selectedRating}
-              onChange={(e) => setSelectedRating(e.target.value)}
-            >
-              <option value="all">All</option>
-              {ratingOptions.map((rating, idx) => (
-                <option key={idx} value={rating}>
-                  {rating}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Consignee */}
-          <div className="col-md-3">
-            <label className="form-label fw-semibold">Consignee</label>
-            <select
-              className="form-select"
-              value={selectedConsignee}
-              onChange={(e) => setSelectedConsignee(e.target.value)}
-            >
-              <option value="all">All</option>
-              {consigneeOptions.map((name, idx) => (
-                <option key={idx} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Clear Filters */}
-          <div className="col-md-3 d-flex align-items-end">
-            <button
-              className="btn btn-secondary w-100"
-              onClick={() => {
-                setSelectedTN("all");
-                setSelectedRating("all");
-                setSelectedConsignee("all");
-              }}
-            >
-              Clear Filters
-            </button>
           </div>
         </div>
 
@@ -264,62 +85,70 @@ const DeliveryDetailsList = () => {
               </thead>
 
               <tbody className="text-center align-middle">
-                {filteredList.length > 0 ? (
-                  filteredList.map((item, index) => {
-                    const dc = item.deliveryChalanData;
+                {isLoading ? (
+                  <tr>
+                    <td colSpan="17">Loading...</td>
+                  </tr>
+                ) : isError ? (
+                  <tr>
+                    <td colSpan="17">Error fetching data</td>
+                  </tr>
+                ) : deliveryDetails.length > 0 ? (
+                  deliveryDetails.map((item, index) => {
+                    const dc = item.deliveryChalan;
                     return (
                       <tr key={item.id}>
                         <td># {index + 1}</td>
 
-                        <td>{dc.trData.tnId.name}</td>
+                        <td>{dc.finalInspectionDetail.deliverySchedule.tnNumber}</td>
 
-                        <td>{dc.trData.serialNumber}</td>
+                        <td>{dc.finalInspectionDetail.serialNumberFrom} TO {dc.finalInspectionDetail.serialNumberTo}</td>
 
                         {/* PO Number / Date */}
                         <td>
-                          <div className="fw-semibold">{dc.poNumber}</div>
-                          <div className="text-muted small">{dc.poDate}</div>
+                          <div className="fw-semibold">{dc.finalInspectionDetail.deliverySchedule.poDetails}</div>
+                          <div className="text-muted small">{new Date(dc.finalInspectionDetail.deliverySchedule.poDate).toLocaleDateString()}</div>
                         </td>
 
                         {/* Challan No */}
                         <td>{dc.challanNo}</td>
 
                         {/* Challan Date */}
-                        <td>{dc.challanDate}</td>
+                        <td>{new Date(dc.createdAt).toLocaleDateString()}</td>
 
                         {/* Receipted Challan No */}
                         <td>{item.receiptedChallanNo}</td>
 
                         {/* Receipted Challan Date */}
-                        <td>{item.receiptedChallanDate}</td>
+                        <td>{new Date(item.receiptedChallanDate).toLocaleDateString()}</td>
 
                         {/* Total Qty. */}
-                        <td>{dc.trData.totalQuantity}</td>
+                        <td>{dc.finalInspectionDetail.inspectedQuantity}</td>
 
                         {/* G.P. Expiry Date */}
-                        <td>{dc.trData.gpExpiryDate}</td>
+                        <td>{new Date(dc.finalInspectionDetail.deliverySchedule.guaranteePeriodMonths).toLocaleDateString()}</td>
 
                         {/* Transformer Info */}
                         <td className="text-start">
                           <div>
-                            <strong>TN:</strong> {dc.trData?.tnId?.name}
+                            <strong>TN:</strong> {dc.finalInspectionDetail.deliverySchedule.tnNumber}
                           </div>
                           <div>
                             <strong>Serial No:</strong>{" "}
-                            {dc.trData?.serialNumber}
+                            {dc.finalInspectionDetail.serialNumberFrom} TO {dc.finalInspectionDetail.serialNumberTo}
                           </div>
                           <div>
-                            <strong>DI No:</strong> {dc.trData?.diNo}
+                            <strong>DI No:</strong> {dc.finalInspectionDetail.diNo}
                           </div>
                           <div>
-                            <strong>DI Date:</strong> {dc.trData?.diDate}
+                            <strong>DI Date:</strong> {new Date(dc.finalInspectionDetail.diDate).toLocaleDateString()}
                           </div>
                         </td>
 
                         {/* Inspection Officers */}
                         <td>
                           <div className="d-flex flex-column gap-1">
-                            {dc.trData.inspectionOfficers.map(
+                            {dc.finalInspectionDetail.inspectionOfficers.map(
                               (officer, idx) => (
                                 <span
                                   key={`${item.id}-${idx}`}
@@ -329,7 +158,7 @@ const DeliveryDetailsList = () => {
                                     borderRadius: "10px",
                                   }}
                                 >
-                                  {officer.name} ({officer.designation})
+                                  {officer}
                                 </span>
                               )
                             )}
@@ -337,7 +166,7 @@ const DeliveryDetailsList = () => {
                         </td>
 
                         {/* Inspection Date */}
-                        <td>{dc.trData.inspectionDate}</td>
+                        <td>{new Date(dc.finalInspectionDetail.inspectionDate).toLocaleDateString()}</td>
 
                         {/* Consignor Details */}
                         <td className="text-start">
@@ -358,33 +187,24 @@ const DeliveryDetailsList = () => {
                         {/* Consignee Details */}
                         <td className="text-start">
                           <div>
-                            <strong>Name:</strong> {dc.consigneeName}
+                            <strong>Name:</strong> {dc.consigneeDetails.name}
                           </div>
                           <div>
-                            <strong>Address:</strong> {dc.consigneeAddress}
+                            <strong>Address:</strong> {dc.consigneeDetails.address}
                           </div>
                           <div>
-                            <strong>GST:</strong> {dc.consigneeGST}
+                            <strong>GST:</strong> {dc.consigneeDetails.gstNo}
                           </div>
                         </td>
 
                         {/* Material Description */}
                         <td className="text-start">
-                          <div>{dc.materialDescription}</div>
-                          <div className="text-muted small">
-                            {dc.deliveryChallanDescription}
-                          </div>
+                          <div>{dc.materialDescription.description}</div>
                         </td>
 
                         {/* Action Buttons */}
                         <td>
                           <div className="d-flex gap-2 align-items-center justify-content-center">
-                            {/*<button
-                              className="btn btn-sm btn-success"
-                              onClick={() => handleEditClick(item)}
-                            >
-                              <FaPencilAlt />
-                            </button>*/}
                             <button
                               className="btn btn-sm btn-danger"
                               onClick={(e) => {

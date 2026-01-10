@@ -14,154 +14,20 @@ import {
   Button,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { MyContext } from "../../App";
 import { useNavigate } from "react-router-dom";
 import NewGPSummaryFilter from "../../components/MisGP/NewGPSummaryFilter";
-
-const newGPTransformersData = () => {
-  const rawData = [
-    {
-      id: "1",
-      deliverySchedule: {
-        tnNumber: "TN-001",
-        rating: "10",
-        guaranteePeriodMonths: 24,
-        phase: "Single Phase",
-        wound: "Copper",
-      },
-      totalSuppliedNewTillDate: 500,
-      totalReceivedUnderGPTillDate: 480,
-      totalInspectedTillDate: 470,
-      totalDispatchedTillDate: 460,
-      gpTierBalanceNow: 300,
-      gpReceiptInMonth: 200,
-      gpDispatchInMonth: 150,
-      gpInspectedInMonth: 180,
-      companyName: "Kalpana Industries",
-      discom: "Ajmer",
-    },
-    {
-      id: "8",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Three Phase",
-        wound: "Aluminium",
-      },
-      totalSuppliedNewTillDate: 300,
-      totalReceivedUnderGPTillDate: 290,
-      totalInspectedTillDate: 280,
-      totalDispatchedTillDate: 270,
-      gpTierBalanceNow: 350,
-      gpReceiptInMonth: 400,
-      gpDispatchInMonth: 350,
-      gpInspectedInMonth: 380,
-      companyName: "Kalpana Industries",
-      discom: "Ajmer",
-    },
-    {
-      id: "2",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Three Phase",
-        wound: "Copper",
-      },
-      totalSuppliedNewTillDate: 300,
-      totalReceivedUnderGPTillDate: 290,
-      totalInspectedTillDate: 280,
-      totalDispatchedTillDate: 270,
-      gpTierBalanceNow: 180,
-      gpReceiptInMonth: 240,
-      gpDispatchInMonth: 220,
-      gpInspectedInMonth: 230,
-      companyName: "Kalpana Industries",
-      discom: "Jaipur",
-    },
-    {
-      id: "3",
-      deliverySchedule: {
-        tnNumber: "TN-003",
-        rating: "16",
-        guaranteePeriodMonths: 18,
-        phase: "Three Phase",
-        wound: "Aluminium",
-      },
-      totalSuppliedNewTillDate: 400,
-      totalReceivedUnderGPTillDate: 390,
-      totalInspectedTillDate: 380,
-      totalDispatchedTillDate: 370,
-      gpTierBalanceNow: 380,
-      gpReceiptInMonth: 400,
-      gpDispatchInMonth: 350,
-      gpInspectedInMonth: 380,
-      companyName: "Kalpana Industries",
-      discom: "Jodhpur",
-    },
-    {
-      id: "4",
-      deliverySchedule: {
-        tnNumber: "TN-001",
-        rating: "5",
-        guaranteePeriodMonths: 24,
-        phase: "Single Phase",
-        wound: "Copper",
-      },
-      totalSuppliedNewTillDate: 600,
-      totalReceivedUnderGPTillDate: 590,
-      totalInspectedTillDate: 580,
-      totalDispatchedTillDate: 570,
-      gpTierBalanceNow: 320,
-      gpReceiptInMonth: 260,
-      gpDispatchInMonth: 230,
-      gpInspectedInMonth: 250,
-      companyName: "Yash Granties",
-      discom: "Ajmer",
-    },
-    {
-      id: "5",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Power",
-        wound: "Aluminium",
-      },
-      totalSuppliedNewTillDate: 350,
-      totalReceivedUnderGPTillDate: 340,
-      totalInspectedTillDate: 330,
-      totalDispatchedTillDate: 320,
-      gpTierBalanceNow: 340,
-      gpReceiptInMonth: 480,
-      gpDispatchInMonth: 450,
-      gpInspectedInMonth: 480,
-      companyName: "Yash Granties",
-      discom: "Jaipur",
-    },
-  ];
-  // ✅ Compute derived fields automatically
-  return rawData.map((item) => ({
-    ...item,
-    inspectedPendingToBeDelivered:
-      item.totalReceivedUnderGPTillDate - item.totalDispatchedTillDate,
-  }));
-};
+import { useQuery } from "@tanstack/react-query";
+import api from "../../services/api";
 
 const NewGPSummary = () => {
   const navigate = useNavigate("");
 
-  const { setIsHideSidebarAndHeader } = useContext(MyContext);
-
-  useEffect(() => {
-    setIsHideSidebarAndHeader(true);
-    window.scrollTo(0, 0);
-  }, [setIsHideSidebarAndHeader]);
-
   const [filteredData, setFilteredData] = useState([]);
 
-  const inspectionData = useMemo(() => newGPTransformersData(), []);
+  const { data: inspectionData, isLoading } = useQuery({
+    queryKey: ["newGpSummary"],
+    queryFn: () => api.get("/mis-reports/new-gp-summary").then((res) => res.data),
+  });
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -205,7 +71,7 @@ const NewGPSummary = () => {
 
       <NewGPSummaryFilter
         onFilteredData={setFilteredData}
-        data={inspectionData}
+        data={inspectionData || []}
       />
 
       <Paper sx={{ p: 2, mt: 3 }}>
@@ -236,9 +102,15 @@ const NewGPSummary = () => {
             </TableHead>
 
             <TableBody>
-              {filteredData.length === 0 ? (
+              {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={11} align="center">
+                  <TableCell colSpan={15} align="center">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : filteredData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={15} align="center">
                     No records found
                   </TableCell>
                 </TableRow>
@@ -271,4 +143,4 @@ const NewGPSummary = () => {
   );
 };
 
-export default NewGPSummary
+export default NewGPSummary;

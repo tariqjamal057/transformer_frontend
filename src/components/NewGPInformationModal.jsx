@@ -25,6 +25,8 @@ import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { addMonths, format, isAfter } from "date-fns";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../services/api";
 
 const style = {
   position: "absolute",
@@ -41,173 +43,18 @@ const style = {
   overflowY: "auto",
 };
 
-// Dummy Data
-const dummyDeliveryChalans = [
-  {
-    id: "1",
-    finalInspectionDetail: {
-      id: "1",
-      deliverySchedule: {
-        tnNumber: "TN-001",
-        rating: "100",
-        wound: "Aluminium",
-        phase: "100 KVA",
-        guaranteePeriodMonths: 24,
-      },
-      offeredDate: "2025-07-12",
-      offeredQuantity: 150,
-      serialNumberFrom: 4912,
-      serialNumberTo: 5061,
-      snNumber: "4912 TO 5061",
-      nominationLetterNo: "NL/2025/001",
-      nominationDate: "2025-07-10",
-      inspectionOfficers: ["Ravi Kumar", "Sunita Sharma"],
-      inspectionDate: "2025-08-09",
-      inspectedQuantity: 150,
-      total: 150,
-      diNo: "DI/2025/1001",
-      diDate: "2025-08-18",
-      consignees: [
-        {
-          consignee: { id: "2", name: "XYZ Transformers Ltd." },
-          quantity: 70,
-          dispatch: 0,
-          pending: 70,
-          subSnNumber: "4912 TO 4981",
-        },
-        {
-          consignee: { id: "3", name: "GreenVolt Energy Systems" },
-          quantity: 80,
-          dispatch: 0,
-          pending: 80,
-          subSnNumber: "4982 TO 5061",
-        },
-      ],
-      shealingDetails: [
-        { trfsiNo: 4912, polySealNo: "IAJ 5301 To IAJ 5302", status: "active" },
-        {
-          trfsiNo: 4908,
-          polySealNo: "IAJ 6605 To IAJ 6606",
-          status: "repaired",
-          dispatch: true,
-        },
-        { trfsiNo: 4913, polySealNo: "IAJ 5303 To IAJ 5304", status: "active" },
-        { trfsiNo: 4914, polySealNo: "IAJ 5305 To IAJ 5306", status: "active" },
-        { trfsiNo: 4915, polySealNo: "IAJ 5307 To IAJ 5308", status: "active" },
-        { trfsiNo: 4916, polySealNo: "IAJ 5309 To IAJ 5310", status: "active" },
-      ],
-    },
-    subSerialNumberFrom: 4912,
-    subSerialNumberTo: 4914,
-    challanNo: "CH-1001",
-    createdAt: "2025-06-22",
-    consignorName: "PowerTech Transformers Pvt. Ltd.",
-    consignorPhone: "9876543210",
-    consignorAddress: "Plot 12, Industrial Zone, Mumbai",
-    consignorGST: "27AAACP1234F1Z5",
-    consignorEmail: "powertech@gmail.com",
-    consigneeDetails: {
-      id: "3",
-      name: "GreenVolt Energy Systems",
-      address:
-        "Plot No. 45, Industrial Area, Sector 18, Gurugram, Haryana - 122015",
-      gstNo: "06ABCDE1234F1Z5",
-    },
-    lorryNo: "MH12AB1234",
-    truckDriverName: "Ramesh Yadav",
-    materialDescription: {
-      materialName: "150 Amp Current Transformer (CT)",
-      phase: "11 KV",
-      description:
-        "100 kVA, 11/0.433 kV, 3-Phase, Oil Cooled Distribution Transformer with Copper Winding, ONAN Cooling, complete with standard fittings and accessories suitable for outdoor installation as per IS 1180.",
-    },
-  },
-  {
-    id: "2",
-    finalInspectionDetail: {
-      id: "2",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "50",
-        wound: "Aluminium",
-        phase: "50 KVA",
-        guaranteePeriodMonths: 18,
-      },
-      offeredDate: "2025-08-05",
-      offeredQuantity: 150,
-      serialNumberFrom: 4912,
-      serialNumberTo: 5061,
-      snNumber: "4912 TO 5061",
-      nominationLetterNo: "NL/2025/002",
-      nominationDate: "2025-08-03",
-      inspectionOfficers: ["Amit Verma", "Priya Singh"],
-      inspectionDate: "2025-08-06",
-      inspectedQuantity: 150,
-      total: 150,
-      diNo: "DI/2025/1002",
-      diDate: "2025-08-08",
-      consignees: [
-        {
-          consignee: { id: "2", name: "XYZ Transformers Ltd." },
-          quantity: 70,
-          dispatch: 0,
-          pending: 70,
-          subSnNumber: "4912 TO 4981",
-        },
-        {
-          consignee: { id: "3", name: "GreenVolt Energy Systems" },
-          quantity: 80,
-          dispatch: 0,
-          pending: 80,
-          subSnNumber: "4982 TO 5061",
-        },
-      ],
-      shealingDetails: [
-        { trfsiNo: 4912, polySealNo: "IAJ 5311 To IAJ 5312", status: "active" },
-        { trfsiNo: 4913, polySealNo: "IAJ 5313 To IAJ 5314", status: "active" },
-        {
-          trfsiNo: 9003,
-          polySealNo: "IAJ 7339 To IAJ 7340",
-          status: "repaired",
-          dispatch: true,
-        },
-        { trfsiNo: 4914, polySealNo: "IAJ 5315 To IAJ 5316", status: "active" },
-        { trfsiNo: 4915, polySealNo: "IAJ 5317 To IAJ 5318", status: "active" },
-        { trfsiNo: 4916, polySealNo: "IAJ 5319 To IAJ 5320", status: "active" },
-      ],
-    },
-    subSerialNumberFrom: 5001,
-    subSerialNumberTo: 5033,
-    challanNo: "CH-1002",
-    createdAt: "2025-07-28",
-    consignorName: "Delta Power Equipments Ltd.",
-    consignorPhone: "9811122233",
-    consignorAddress: "Sector 24, Industrial Estate, Pune",
-    consignorGST: "27DELT1234K9Z8",
-    consignorEmail: "contact@deltapower.com",
-    consigneeDetails: {
-      id: "2",
-      name: "XYZ Electricals Ltd.",
-      address: "B-56, Industrial Phase 2, Noida, Uttar Pradesh - 201301",
-      gstNo: "09XYZEL2345Q1W8",
-    },
-    lorryNo: "DL01CD5678",
-    truckDriverName: "Amit Kumar",
-    materialDescription: {
-      materialName: "200 kVA Copper Wound Distribution Transformer",
-      phase: "200 KVA",
-      description:
-        "200 kVA, 11/0.433 kV, 3-Phase, ONAN cooled, energy efficient distribution transformer as per IS standards.",
-    },
-  },
-];
-
 const NewGPInformationModal = ({ open, handleClose, newGPInformation }) => {
+  const queryClient = useQueryClient();
   const [challanReceiptedItemNo, setChallanReceiptedItemNo] = useState("");
   const [challanReceiptedDate, setChallanReceiptedDate] = useState(null);
   const [uploadedData, setUploadedData] = useState([]);
   const [matchedData, setMatchedData] = useState([]);
   const [hasUnmatched, setHasUnmatched] = useState(false);
+
+  const { data: deliveryChallans } = useQuery({
+    queryKey: ["deliveryChallans"],
+    queryFn: () => api.get("/delivery-challans").then((res) => res.data),
+  });
 
   // ✅ Handle Excel Upload
   const handleFileUpload = (e) => {
@@ -222,7 +69,6 @@ const NewGPInformationModal = ({ open, handleClose, newGPInformation }) => {
       const ws = wb.Sheets[wsname];
       const data = XLSX.utils.sheet_to_json(ws);
 
-      
       setUploadedData(data);
 
       const results = data.map((row) => {
@@ -242,7 +88,7 @@ const NewGPInformationModal = ({ open, handleClose, newGPInformation }) => {
           row.ReceivedFromACOS || row.receivedfromacos || "";
 
         // Try to find matching challan
-        const matchedChalan = dummyDeliveryChalans.find((ch) => {
+        const matchedChalan = deliveryChallans.find((ch) => {
           const challanRating = String(
             ch.finalInspectionDetail.deliverySchedule.rating
           ).trim();
@@ -298,12 +144,24 @@ const NewGPInformationModal = ({ open, handleClose, newGPInformation }) => {
     reader.readAsBinaryString(file);
   };
 
+  const { mutate: updateNewGPInformation, isLoading } = useMutation({
+    mutationFn: (updatedData) =>
+      api.put(`/new-gp-informations/${newGPInformation.id}`, updatedData),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["newGPInformations"]);
+      handleClose();
+    },
+  });
+
   // ✅ Handle Submit
   const handleSubmit = () => {
     if (matchedData.length > 0) {
-      console.log("Submitted GP Information:", matchedData);
-      alert("Excel data stored successfully!");
-      handleClose()
+      const data = {
+        challanReceiptedItemNo,
+        challanReceiptedDate: dayjs(challanReceiptedDate).format("YYYY-MM-DD"),
+        sealingStatements: matchedData,
+      };
+      updateNewGPInformation(data);
     } else {
       alert("No data to submit.");
     }
@@ -437,8 +295,9 @@ const NewGPInformationModal = ({ open, handleClose, newGPInformation }) => {
                 color="success"
                 onClick={handleSubmit}
                 sx={{ px: 5, py: 1.5, borderRadius: 3 }}
+                disabled={isLoading}
               >
-                Submit
+                {isLoading ? 'Submitting...' : 'Submit'}
               </Button>
             </Box>
           </>

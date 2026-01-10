@@ -16,182 +16,10 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import dayjs from "dayjs";
-import { MyContext } from "../../App";
 import { useNavigate } from "react-router-dom";
 import ProductionFilter from "../../components/ProductionFilter";
-
-export const getDummyFinalInspectionDetails = () => {
-  return [
-    {
-      id: "1",
-      deliverySchedule: {
-        tnNumber: "TN-001",
-        rating: "10",
-        guaranteePeriodMonths: 24,
-        phase: "Single Phase",
-        status: "Active",
-        scheduleDate: "2025-07-01",
-        totalOrderQuantity: 500,
-      },
-      offeredDate: "2025-07-12",
-      offeredQuantity: 200,
-      serialNumberFrom: 4907,
-      serialNumberTo: 4911,
-      snNumber: "4907 TO 4911",
-      companyName: "Kalpana Industries",
-      discom: "Ajmer",
-
-      quantityPerMonthInSchedule: 100,
-      totalSupplyDueInCurrentMonth: 80,
-      offeredForInspectionTotal: 200,
-      finalInspectionTotal: 180,
-      actualSuppliedTotal: 150,
-      balanceDueToBeInspectedInCurrentMonth: 30,
-      balancePending: 50,
-      plannedForMonth: 120,
-    },
-    {
-      id: "8",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Three Phase",
-        status: "Deferred",
-        scheduleDate: "2025-08-01",
-        totalOrderQuantity: 800,
-      },
-      offeredDate: "2025-08-05",
-      offeredQuantity: 150,
-      serialNumberFrom: 4912,
-      serialNumberTo: 4916,
-      snNumber: "4912 TO 4916",
-      companyName: "Kalpana Industries",
-      discom: "Ajmer",
-
-      quantityPerMonthInSchedule: 200,
-      totalSupplyDueInCurrentMonth: 100,
-      offeredForInspectionTotal: 150,
-      finalInspectionTotal: 140,
-      actualSuppliedTotal: 120,
-      balanceDueToBeInspectedInCurrentMonth: 20,
-      balancePending: 60,
-      plannedForMonth: 180,
-    },
-    {
-      id: "2",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Three Phase",
-        status: "Active",
-        scheduleDate: "2025-08-10",
-        totalOrderQuantity: 600,
-      },
-      offeredDate: "2025-08-05",
-      offeredQuantity: 150,
-      serialNumberFrom: 4912,
-      serialNumberTo: 4916,
-      snNumber: "4912 TO 4916",
-      companyName: "Kalpana Industries",
-      discom: "Jaipur",
-
-      quantityPerMonthInSchedule: 150,
-      totalSupplyDueInCurrentMonth: 90,
-      offeredForInspectionTotal: 150,
-      finalInspectionTotal: 130,
-      actualSuppliedTotal: 100,
-      balanceDueToBeInspectedInCurrentMonth: 50,
-      balancePending: 70,
-      plannedForMonth: 160,
-    },
-    {
-      id: "3",
-      deliverySchedule: {
-        tnNumber: "TN-003",
-        rating: "16",
-        guaranteePeriodMonths: 18,
-        phase: "Three Phase",
-        status: "Active",
-        scheduleDate: "2025-08-15",
-        totalOrderQuantity: 1000,
-      },
-      offeredDate: "2025-08-15",
-      offeredQuantity: 300,
-      serialNumberFrom: 4917,
-      serialNumberTo: 4922,
-      snNumber: "4917 TO 4922",
-      companyName: "Kalpana Industries",
-      discom: "Jodhpur",
-
-      quantityPerMonthInSchedule: 300,
-      totalSupplyDueInCurrentMonth: 150,
-      offeredForInspectionTotal: 300,
-      finalInspectionTotal: 270,
-      actualSuppliedTotal: 200,
-      balanceDueToBeInspectedInCurrentMonth: 100,
-      balancePending: 200,
-      plannedForMonth: 250,
-    },
-    {
-      id: "4",
-      deliverySchedule: {
-        tnNumber: "TN-001",
-        rating: "8",
-        guaranteePeriodMonths: 24,
-        phase: "Single Phase",
-        status: "Deferred",
-        scheduleDate: "2025-07-20",
-        totalOrderQuantity: 400,
-      },
-      offeredDate: "2025-07-12",
-      offeredQuantity: 200,
-      serialNumberFrom: 4907,
-      serialNumberTo: 4911,
-      snNumber: "4907 TO 4911",
-      companyName: "Yash Granties",
-      discom: "Ajmer",
-
-      quantityPerMonthInSchedule: 100,
-      totalSupplyDueInCurrentMonth: 80,
-      offeredForInspectionTotal: 200,
-      finalInspectionTotal: 190,
-      actualSuppliedTotal: 150,
-      balanceDueToBeInspectedInCurrentMonth: 40,
-      balancePending: 60,
-      plannedForMonth: 120,
-    },
-    {
-      id: "5",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Power",
-        status: "Active",
-        scheduleDate: "2025-08-25",
-        totalOrderQuantity: 700,
-      },
-      offeredDate: "2025-08-05",
-      offeredQuantity: 150,
-      serialNumberFrom: 4912,
-      serialNumberTo: 4916,
-      snNumber: "4912 TO 4916",
-      companyName: "Yash Granties",
-      discom: "Jaipur",
-
-      quantityPerMonthInSchedule: 200,
-      totalSupplyDueInCurrentMonth: 120,
-      offeredForInspectionTotal: 150,
-      finalInspectionTotal: 140,
-      actualSuppliedTotal: 100,
-      balanceDueToBeInspectedInCurrentMonth: 60,
-      balancePending: 80,
-      plannedForMonth: 200,
-    },
-  ];
-};
+import { useQuery } from "@tanstack/react-query";
+import api from "../../services/api";
 
 const SinglePhaseTable = ({ data }) => {
   const singlePhaseData = data.filter(
@@ -434,16 +262,12 @@ const InverterDutyTable = ({ data }) => {
 const ProductionPlanning = () => {
   const navigate = useNavigate("");
 
-  const { setIsHideSidebarAndHeader } = useContext(MyContext);
-
-  useEffect(() => {
-    setIsHideSidebarAndHeader(true);
-    window.scrollTo(0, 0);
-  }, [setIsHideSidebarAndHeader]);
-
   const [filteredData, setFilteredData] = useState([]);
 
-  const inspectionData = useMemo(() => getDummyFinalInspectionDetails(), []);
+  const { data: inspectionData, isLoading } = useQuery({
+    queryKey: ["productionPlanning"],
+    queryFn: () => api.get("/mis-reports/production-planning").then((res) => res.data),
+  });
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -487,20 +311,20 @@ const ProductionPlanning = () => {
 
       <ProductionFilter
         onFilteredData={setFilteredData}
-        data={inspectionData}
+        data={inspectionData || []}
       />
 
       <Grid container spacing={3} columns={{ xs: 1, sm: 2 }} sx={{ mt: 3 }}>
-        <Grid item size={1}>
+        <Grid item xs={1}>
           <SinglePhaseTable data={filteredData} />
         </Grid>
-        <Grid item size={1}>
+        <Grid item xs={1}>
           <PowerTransformerTable data={filteredData} />
         </Grid>
-        <Grid item size={1}>
+        <Grid item xs={1}>
           <ThreePhaseTable data={filteredData} />
         </Grid>
-        <Grid item size={1}>
+        <Grid item xs={1}>
           <InverterDutyTable data={filteredData} />
         </Grid>
       </Grid>
@@ -537,9 +361,15 @@ const ProductionPlanning = () => {
             </TableHead>
 
             <TableBody>
-              {filteredData.length === 0 ? (
+              {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={18} align="center">
+                  <TableCell colSpan={19} align="center">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : filteredData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={19} align="center">
                     No records found
                   </TableCell>
                 </TableRow>

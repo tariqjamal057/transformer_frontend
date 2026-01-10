@@ -1,9 +1,7 @@
 import { useContext, useEffect, useState } from "react";
-import { FaPencilAlt } from "react-icons/fa";
-import { MdDelete } from "react-icons/md";
+import { FaPencilAlt, FaTrash } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
-import { MyContext } from "../../App";
 import {
   Dialog,
   DialogTitle,
@@ -18,15 +16,13 @@ import {
   MenuItem,
 } from "@mui/material";
 import { IoCloseSharp } from "react-icons/io5";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
+import { MyContext } from "../../App";
 
 const LoaList = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 10; // or calculate based on data length
-
-  const tnNumbers = ["TN-001", "TN-002", "TN-003", "TN-004"];
-
-  const { setProgress, setAlertBox, setIsHideSidebarAndHeader } =
-    useContext(MyContext);
+  const { setAlertBox } = useContext(MyContext);
+  const queryClient = useQueryClient();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedLoa, setSelectedLoa] = useState(null);
@@ -34,61 +30,59 @@ const LoaList = () => {
   const [editedLoa, setEditedLoa] = useState("");
   const [editedPo, setEditedPo] = useState("");
 
-  /*const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));*/
+  const { data: loas, isLoading, isError } = useQuery({
+    queryKey: ["loas"],
+    queryFn: () => api.get("/loas").then((res) => res.data),
+  });
 
-  useEffect(() => {
-    setIsHideSidebarAndHeader(false);
-    window.scrollTo(0, 0);
-  }, []);
+  const { data: tnNumbers } = useQuery({
+    queryKey: ["tnNumbers"],
+    queryFn: () => api.get("/tns").then((res) => res.data),
+  });
 
-  useEffect(() => {
-    setProgress(20);
-    setProgress(100);
-  }, []);
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/loas/${id}`),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "LOA and PO details deleted successfully!", error: false});
+      queryClient.invalidateQueries(["loas"]);
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
 
-  const handlePageChange = (event, value) => {
-    setPage(value);
+  const updateMutation = useMutation({
+    mutationFn: (updatedLoa) =>
+      api.put(`/loas/${selectedLoa.id}`, updatedLoa),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "LOA and PO details updated successfully!", error: false});
+      queryClient.invalidateQueries(["loas"]);
+      handleModalClose();
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
+
+  const handleDeleteClick = async (id) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you really want to delete this details?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+      deleteMutation.mutate(id);
+    }
   };
-
-  const getDummyLOAandPODetails = () => {
-    return [
-      {
-        tnNumber: "TN-001",
-        loaNumber: "LOA-2025-001",
-        loaDate: "2025-06-12",
-        poNumber: "PO-2025-078",
-        poDate: "2025-07-01",
-      },
-      {
-        tnNumber: "TN-002",
-        loaNumber: "LOA-2025-045",
-        loaDate: "2025-05-20",
-        poNumber: "PO-2025-089",
-        poDate: "2025-06-10",
-      },
-      {
-        tnNumber: "TN-001",
-        loaNumber: "LOA-2025-112",
-        loaDate: "2025-04-15",
-        poNumber: "PO-2025-150",
-        poDate: "2025-05-05",
-      },
-      {
-        tnNumber: "TN-002",
-        loaNumber: "LOA-2025-078",
-        loaDate: "2025-06-01",
-        poNumber: "PO-2025-199",
-        poDate: "2025-06-25",
-      },
-    ];
-  };
-
-  const dummyData = getDummyLOAandPODetails();
 
   const handleEditClick = (item) => {
     setSelectedLoa(item);
-    setEditedTnDetail(item.tnNumber);
+    setEditedTnDetail(item.tnId);
     setEditedLoa(item.loaNumber);
     setEditedPo(item.poNumber);
     setEditModalOpen(true);
@@ -103,38 +97,11 @@ const LoaList = () => {
   };
 
   const handleSaveChanges = () => {
-    // You can send API call here
-    setAlertBox({
-      open: true,
-      msg: "LOA and PO details updated successfully!",
-      error: false,
+    updateMutation.mutate({
+      tnId: editedTnDetail,
+      loaNumber: editedLoa,
+      poNumber: editedPo,
     });
-    setEditModalOpen(false);
-  };
-
-  const handleDeleteClick = async (item) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Do you really want to delete this details?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it!",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        // await deleteCourse(courseId); // your delete API or logic
-        Swal.fire(
-          "Deleted!",
-          "Transformer LOA and PO Details has been deleted.",
-          "success"
-        );
-      } catch (error) {
-        Swal.fire("Error!", "Something went wrong.", "error");
-      }
-    }
   };
 
   return (
@@ -164,11 +131,19 @@ const LoaList = () => {
                 </tr>
               </thead>
               <tbody className="text-center">
-                {dummyData.length > 0 ? (
-                  dummyData.map((item, index) => (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan="5">Loading...</td>
+                  </tr>
+                ) : isError ? (
+                  <tr>
+                    <td colSpan="5">Error fetching data</td>
+                  </tr>
+                ) : loas.length > 0 ? (
+                  loas.map((item, index) => (
                     <tr key={index}>
                       <td># {index + 1}</td>
-                      <td>{item.tnNumber}</td>
+                      <td>{item.tn.name}</td>
                       <td>{item.loaNumber}</td>
                       <td>{item.poNumber}</td>
                       <td>
@@ -184,10 +159,10 @@ const LoaList = () => {
                             className="btn btn-sm btn-danger"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteClick(item.no);
+                              handleDeleteClick(item.id);
                             }}
                           >
-                            <MdDelete />
+                            <FaTrash />
                           </button>
                         </div>
                       </td>
@@ -195,7 +170,7 @@ const LoaList = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="10" className="text-center">
+                    <td colSpan="5" className="text-center">
                       No data found
                     </td>
                   </tr>
@@ -204,12 +179,6 @@ const LoaList = () => {
             </table>
           </div>
         </div>
-
-        {/*<ResponsivePagination
-          page={currentPage}
-          count={totalPages}
-          onChange={(event, value) => setCurrentPage(value)}
-        />*/}
       </div>
 
       {/* Edit Modal */}
@@ -217,7 +186,6 @@ const LoaList = () => {
         open={editModalOpen}
         onClose={handleModalClose}
         fullWidth
-        //fullScreen={fullScreen}
       >
         <DialogTitle className="d-flex justify-content-between align-items-center">
           Edit Details
@@ -236,9 +204,9 @@ const LoaList = () => {
                 setEditedTnDetail(e.target.value);
               }}
             >
-              {tnNumbers.map((i, idx) => (
-                <MenuItem key={idx} value={i}>
-                  {i}
+              {tnNumbers?.map((i) => (
+                <MenuItem key={i.id} value={i.id}>
+                  {i.name}
                 </MenuItem>
               ))}
             </Select>
@@ -269,8 +237,9 @@ const LoaList = () => {
             onClick={handleSaveChanges}
             variant="contained"
             color="primary"
+            disabled={updateMutation.isLoading}
           >
-            Save Changes
+            {updateMutation.isLoading ? "Saving..." : "Save Changes"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -279,3 +248,4 @@ const LoaList = () => {
 };
 
 export default LoaList;
+

@@ -15,14 +15,9 @@ import autoTable from "jspdf-autotable"; // ⬅️ import as a function
 import { DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import {
-  companies,
-  deliverySchedules,
-  discoms,
-} from "../pages/MisReports/MaterialOfferedButNominationPending";
 import dayjs from "dayjs";
-
-// ✅ Dummy Data (replace with props/imports in your real project)
+import { useQuery } from "@tanstack/react-query";
+import api from "../services/api";
 
 const ProductionFilter = ({ onFilteredData, data }) => {
   const [selectedCompany, setSelectedCompany] = useState("all");
@@ -102,13 +97,13 @@ const ProductionFilter = ({ onFilteredData, data }) => {
   ]);
 
   // 🔹 Unique dropdown values from ALL data
-  const uniqueCompanies = [...new Set(companies.map((item) => item.name))];
+  const uniqueCompanies = [...new Set((companies || []).map((item) => item.name))];
   const uniqueDiscoms = [...new Set(discoms.map((item) => item.name))];
   const uniqueRatings = [
-    ...new Set(deliverySchedules.map((item) => item.rating)),
+    ...new Set((deliverySchedules || []).map((item) => item.rating)),
   ];
   const uniquePhases = [
-    ...new Set(deliverySchedules.map((item) => item.phase)),
+    ...new Set((deliverySchedules || []).map((item) => item.phase)),
   ];
 
   // ✅ Export Excel (merged consignees in one row)

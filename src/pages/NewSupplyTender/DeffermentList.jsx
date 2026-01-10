@@ -22,15 +22,27 @@ import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import { format } from "date-fns";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
 
 const DeffermentList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = 10; // or calculate based on data length
 
-  const tnNumbers = ["TN-001", "TN-002", "TN-003", "TN-004"];
-
   const { setProgress, setAlertBox, setIsHideSidebarAndHeader } =
     useContext(MyContext);
+    
+  const queryClient = useQueryClient();
+
+  const { data: defferments, isLoading: deffermentsLoading } = useQuery({
+    queryKey: ["defferments"],
+    queryFn: () => api.get("/defferments").then((res) => res.data.data),
+  });
+  
+  const { data: tnNumbers } = useQuery({
+    queryKey: ["tnNumbers"],
+    queryFn: () => api.get("/tns").then((res) => res.data),
+  });
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedDefferment, setSelectedDefferment] = useState(null);
@@ -57,41 +69,6 @@ const DeffermentList = () => {
     setPage(value);
   };
 
-  const getDummyDefermentDetails = () => {
-    return [
-      {
-        tnNumber: "TN-001",
-        imposedLetterNo: "ILN-001",
-        imposedDate: "2025-09-10",
-        liftingLetterNo: "LLN-101",
-        liftingDate: "2025-10-15",
-      },
-      {
-        tnNumber: "TN-002",
-        imposedLetterNo: "ILN-002",
-        imposedDate: "2025-08-05",
-        liftingLetterNo: "LLN-102",
-        liftingDate: "2025-09-10",
-      },
-      {
-        tnNumber: "TN-003",
-        imposedLetterNo: "ILN-003",
-        imposedDate: "2025-07-22",
-        liftingLetterNo: "LLN-103",
-        liftingDate: "2025-08-25",
-      },
-      {
-        tnNumber: "TN-004",
-        imposedLetterNo: "ILN-004",
-        imposedDate: "2025-06-18",
-        liftingLetterNo: "LLN-104",
-        liftingDate: "2025-07-20",
-      },
-    ];
-  };
-
-  const dummyData = getDummyDefermentDetails();
-
   const handleEditClick = (item) => {
     setSelectedDefferment(item);
     setEditedTnDetail(item.tnNumber);
@@ -111,17 +88,59 @@ const DeffermentList = () => {
     setEditedLiftingDate(null);
   };
 
-  const handleSaveChanges = () => {
-    // You can send API call here
-    setAlertBox({
-      open: true,
-      msg: "Transformer Defferment details details updated successfully!",
-      error: false,
-    });
-    setEditModalOpen(false);
-  };
+  const { mutate: updateDefferment } = useMutation({
+    mutationFn: (updatedData) =>
+      api.put(`/defferments/${selectedDefferment.id}`, updatedData),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["defferments"]);
+      handleModalClose();
+      setAlertBox({
+        open: true,
+        msg: "Defferment details updated successfully!",
+        error: false,
+      });
+    },
+    onError: (error) => {
+      setAlertBox({
+        open: true,
+        msg: error.message,
+        error: true,
+      });
+    },
+  });
 
-  const handleDeleteClick = async (item) => {
+  const handleSaveChanges = () => {
+    const dataToUpdate = {
+      tnNumber: editedTnDetail,
+      imposedLetterNo: editedImposedLetter,
+      imposedDate: editedImposedDate
+        ? dayjs(editedImposedDate).format("YYYY-MM-DD")
+        : null,
+      liftingLetterNo: editedLiftingLetter,
+      liftingDate: editedLiftingDate
+        ? dayjs(editedLiftingDate).format("YYYY-MM-DD")
+        : null,
+    };
+    updateDefferment(dataToUpdate);
+  };
+  
+  const { mutate: deleteDefferment } = useMutation({
+    mutationFn: (id) =>
+      api.delete(`/defferments/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["defferments"]);
+      Swal.fire(
+        "Deleted!",
+        "Transformer Defferment Details has been deleted.",
+        "success"
+      );
+    },
+    onError: (error) => {
+       Swal.fire("Error!", "Something went wrong.", "error");
+    },
+  });
+
+  const handleDeleteClick = async (id) => {
     const result = await Swal.fire({
       title: "Are you sure?",
       text: "Do you really want to delete this details?",
@@ -133,16 +152,7 @@ const DeffermentList = () => {
     });
 
     if (result.isConfirmed) {
-      try {
-        // await deleteCourse(courseId); // your delete API or logic
-        Swal.fire(
-          "Deleted!",
-          "Transformer Defferment Details has been deleted.",
-          "success"
-        );
-      } catch (error) {
-        Swal.fire("Error!", "Something went wrong.", "error");
-      }
+      deleteDefferment(id)
     }
   };
 
@@ -175,8 +185,12 @@ const DeffermentList = () => {
                 </tr>
               </thead>
               <tbody className="text-center">
-                {dummyData.length > 0 ? (
-                  dummyData.map((item, index) => (
+                {deffermentsLoading? (
+                  <tr>
+                    <td colSpan={7}>Loading...</td>
+                  </tr>
+                ) : defferments.length > 0 ? (
+                  defferments.map((item, index) => (
                     <tr key={index}>
                       <td># {index + 1}</td>
                       <td>{item.tnNumber}</td>
@@ -201,7 +215,7 @@ const DeffermentList = () => {
                             className="btn btn-sm btn-danger"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteClick(item.no);
+                              handleDeleteClick(item.id);
                             }}
                           >
                             <MdDelete />
@@ -254,8 +268,8 @@ const DeffermentList = () => {
               }}
             >
               {tnNumbers.map((i, idx) => (
-                <MenuItem key={idx} value={i}>
-                  {i}
+                <MenuItem key={idx} value={i.tnNumber}>
+                  {i.tnNumber}
                 </MenuItem>
               ))}
             </Select>

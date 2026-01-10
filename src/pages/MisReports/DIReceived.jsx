@@ -16,278 +16,19 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import dayjs from "dayjs";
 import FiltersComponent from "../../components/FinalInspectionFilter";
-import { MyContext } from "../../App";
 import { useNavigate } from "react-router-dom";
-
-const getDummyFinalInspectionDetails = () => {
-  return [
-    {
-      id: "8",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Three Phase",
-      },
-      offeredDate: "2025-08-05",
-      offeredQuantity: 150,
-      serialNumberFrom: 4912,
-      serialNumberTo: 5061,
-      snNumber: "4912 TO 5061",
-      inspectionOfficers: ["Ravi Kumar", "Sunita Sharma"],
-      inspectionDate: "2025-07-20",
-      inspectedQuantity: 150,
-      diNo: "DI/2025/1001",
-      diDate: "2025-07-16",
-      consignees: [
-        {
-          consignee: {
-            id: "1",
-            name: "ABC Power Solutions Pvt. Ltd.",
-          },
-          quantity: 50,
-          dispatch: 0,
-          pending: 50,
-          subSnNumber: "4912 TO 4961",
-        },
-        {
-          consignee: {
-            id: "2",
-            name: "XYZ Transformers Ltd.",
-          },
-          quantity: 50,
-          dispatch: 0,
-          pending: 50,
-          subSnNumber: "4962 TO 5011",
-        },
-        {
-          consignee: {
-            id: "3",
-            name: "GreenVolt Energy Systems",
-          },
-          quantity: 50,
-          dispatch: 0,
-          pending: 50,
-          subSnNumber: "5012 TO 5061",
-        },
-      ],
-      specialCase: "no",
-      companyName: "Kalpana Industries",
-      discom: "Ajmer",
-    },
-    {
-      id: "1",
-      deliverySchedule: {
-        tnNumber: "TN-001",
-        rating: "10",
-        guaranteePeriodMonths: 24,
-        phase: "Single Phase",
-      },
-      offeredDate: "2025-07-12",
-      offeredQuantity: 200,
-      serialNumberFrom: 4901,
-      serialNumberTo: 5100, // 4901 + 200 - 1
-      snNumber: "4901 TO 5100",
-      inspectionOfficers: ["Amit Verma", "Priya Singh"],
-      inspectionDate: "2025-07-13",
-      inspectedQuantity: 200,
-      diNo: "DI/2025/1002",
-      diDate: "2025-07-18",
-      consignees: [
-        {
-          consignee: { id: "1", name: "ABC Power Solutions Pvt. Ltd." },
-          quantity: 100,
-          dispatch: 0,
-          pending: 100,
-          subSnNumber: "4901 TO 5000",
-        },
-        {
-          consignee: { id: "5", name: "Jhunjhunu" },
-          quantity: 100,
-          dispatch: 0,
-          pending: 100,
-          subSnNumber: "5001 TO 5100",
-        },
-      ],
-      specialCase: "yes",
-      companyName: "Kalpana Industries",
-      discom: "Ajmer",
-    },
-    {
-      id: "2",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Three Phase",
-      },
-      offeredDate: "2025-08-05",
-      offeredQuantity: 150,
-      serialNumberFrom: 5101,
-      serialNumberTo: 5250, // 5101 + 150 - 1
-      snNumber: "5101 TO 5250",
-      inspectionOfficers: ["Rajesh Gupta", "Meena Kapoor"],
-      inspectionDate: "2025-08-06",
-      inspectedQuantity: 150,
-      diNo: "DI/2025/1003",
-      diDate: "2025-08-10",
-      consignees: [
-        {
-          consignee: { id: "3", name: "GreenVolt Energy Systems" },
-          quantity: 75,
-          dispatch: 0,
-          pending: 75,
-          subSnNumber: "5101 TO 5188",
-        },
-        {
-          consignee: { id: "2", name: "XYZ Transformers Ltd." },
-          quantity: 75,
-          dispatch: 0,
-          pending: 75,
-          subSnNumber: "5189 TO 5250",
-        },
-      ],
-      specialCase: "no",
-      companyName: "Kalpana Industries",
-      discom: "Jaipur",
-    },
-    {
-      id: "3",
-      deliverySchedule: {
-        tnNumber: "TN-003",
-        rating: "16",
-        guaranteePeriodMonths: 18,
-        phase: "Three Phase",
-      },
-      offeredDate: "2025-08-15",
-      offeredQuantity: 300,
-      serialNumberFrom: 5251,
-      serialNumberTo: 5550, // 5251 + 300 - 1
-      snNumber: "5251 TO 5550",
-      inspectionOfficers: ["Vikas Sharma", "Neha Yadav"],
-      inspectionDate: "2025-08-18",
-      inspectedQuantity: 300,
-      diNo: "DI/2025/1004",
-      diDate: "2025-08-22",
-      consignees: [
-        {
-          consignee: { id: "1", name: "ABC Power Solutions Pvt. Ltd." },
-          quantity: 100,
-          dispatch: 0,
-          pending: 100,
-          subSnNumber: "5251 TO 5350",
-        },
-        {
-          consignee: { id: "3", name: "GreenVolt Energy Systems" },
-          quantity: 100,
-          dispatch: 0,
-          pending: 100,
-          subSnNumber: "5351 TO 5450",
-        },
-        {
-          consignee: { id: "2", name: "XYZ Transformers Ltd." },
-          quantity: 100,
-          dispatch: 0,
-          pending: 100,
-          subSnNumber: "5451 TO 5550",
-        },
-      ],
-      specialCase: "yes",
-      companyName: "Kalpana Industries",
-      discom: "Jodhpur",
-    },
-    {
-      id: "4",
-      deliverySchedule: {
-        tnNumber: "TN-004",
-        rating: "5",
-        guaranteePeriodMonths: 24,
-        phase: "Single Phase",
-      },
-      offeredDate: "2025-07-20",
-      offeredQuantity: 100,
-      serialNumberFrom: 5551,
-      serialNumberTo: 5650, // 5551 + 100 - 1
-      snNumber: "5551 TO 5650",
-      inspectionOfficers: ["Rajesh Gupta", "Raju Roy"],
-      inspectionDate: "2025-07-22",
-      inspectedQuantity: 100,
-      diNo: "DI/2025/1005",
-      diDate: "2025-07-25",
-      consignees: [
-        {
-          consignee: { id: "2", name: "XYZ Transformers Ltd." },
-          quantity: 50,
-          dispatch: 0,
-          pending: 50,
-          subSnNumber: "5551 TO 5600",
-        },
-        {
-          consignee: { id: "5", name: "Jhunjhunu" },
-          quantity: 50,
-          dispatch: 0,
-          pending: 50,
-          subSnNumber: "5601 TO 5650",
-        },
-      ],
-      specialCase: "no",
-      companyName: "Yash Granties",
-      discom: "Ajmer",
-    },
-    {
-      id: "5",
-      deliverySchedule: {
-        tnNumber: "TN-005",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Power",
-      },
-      offeredDate: "2025-08-25",
-      offeredQuantity: 200,
-      serialNumberFrom: 5651,
-      serialNumberTo: 5850, // 5651 + 200 - 1
-      snNumber: "5651 TO 5850",
-      inspectionOfficers: ["Vikas Sharma", "Sunita Sharma"],
-      inspectionDate: "2025-08-28",
-      inspectedQuantity: 200,
-      diNo: "DI/2025/1006",
-      diDate: "2025-08-31",
-      consignees: [
-        {
-          consignee: { id: "1", name: "ABC Power Solutions Pvt. Ltd." },
-          quantity: 100,
-          dispatch: 0,
-          pending: 100,
-          subSnNumber: "5651 TO 5750",
-        },
-        {
-          consignee: { id: "3", name: "GreenVolt Energy Systems" },
-          quantity: 100,
-          dispatch: 0,
-          pending: 100,
-          subSnNumber: "5751 TO 5850",
-        },
-      ],
-      specialCase: "no",
-      companyName: "Yash Granties",
-      discom: "Jaipur",
-    },
-  ];
-};
+import { useQuery } from "@tanstack/react-query";
+import api from "../../services/api";
 
 const DIReceived = () => {
   const navigate = useNavigate("");
 
-  const { setIsHideSidebarAndHeader } = useContext(MyContext);
-
-  useEffect(() => {
-    setIsHideSidebarAndHeader(true);
-    window.scrollTo(0, 0);
-  }, [setIsHideSidebarAndHeader]);
-
   const [filteredData, setFilteredData] = useState([]);
 
-  const inspectionData = useMemo(() => getDummyFinalInspectionDetails(), []);
+  const { data: inspectionData, isLoading } = useQuery({
+    queryKey: ["finalInspections"],
+    queryFn: () => api.get("/final-inspections").then((res) => res.data),
+  });
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -331,7 +72,7 @@ const DIReceived = () => {
 
       <FiltersComponent
         onFilteredData={setFilteredData}
-        data={inspectionData}
+        data={inspectionData || []}
         text="Dispatch Pending"
         onExportPDF={false}
         onExportExcel={false}
@@ -371,9 +112,15 @@ const DIReceived = () => {
             </TableHead>
 
             <TableBody>
-              {filteredData.length === 0 ? (
+              {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={12} align="center">
+                  <TableCell colSpan={19} align="center">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : filteredData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={19} align="center">
                     No records found
                   </TableCell>
                 </TableRow>

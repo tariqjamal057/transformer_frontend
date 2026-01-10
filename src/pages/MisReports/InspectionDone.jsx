@@ -16,141 +16,19 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import dayjs from "dayjs";
 import FiltersComponent from "../../components/FinalInspectionFilter";
-import { MyContext } from "../../App";
 import { useNavigate } from "react-router-dom";
-
-const getDummyFinalInspectionDetails = () => {
-  return [
-    {
-      id: "1",
-      deliverySchedule: {
-        tnNumber: "TN-001",
-        rating: "10",
-        guaranteePeriodMonths: 24,
-        phase: "Single Phase",
-      },
-      offeredDate: "2025-07-12",
-      offeredQuantity: 200,
-      serialNumberFrom: 4907,
-      serialNumberTo: 4911,
-      snNumber: "4907 TO 4911",
-      inspectionOfficers: ["Amit Verma", "Priya Singh"],
-      inspectionDate: "2025-07-20",
-      inspectedQuantity: 200,
-      companyName: "Kalpana Industries",
-      discom: "Ajmer",
-    },
-    {
-      id: "8",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Three Phase",
-      },
-      offeredDate: "2025-08-05",
-      offeredQuantity: 150,
-      serialNumberFrom: 4912,
-      serialNumberTo: 4916,
-      snNumber: "4912 TO 4916",
-      inspectionOfficers: ["Ravi Kumar", "Sunita Sharma"],
-      inspectionDate: "2025-08-13",
-      inspectedQuantity: 140,
-      companyName: "Kalpana Industries",
-      discom: "Ajmer",
-    },
-    {
-      id: "2",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Three Phase",
-      },
-      offeredDate: "2025-08-05",
-      offeredQuantity: 150,
-      serialNumberFrom: 4912,
-      serialNumberTo: 4916,
-      snNumber: "4912 TO 4916",
-      inspectionOfficers: ["Rajesh Gupta", "Meena Kapoor"],
-      inspectionDate: "2025-08-20",
-      inspectedQuantity: 150,
-      companyName: "Kalpana Industries",
-      discom: "Jaipur",
-    },
-    {
-      id: "3",
-      deliverySchedule: {
-        tnNumber: "TN-003",
-        rating: "16",
-        guaranteePeriodMonths: 18,
-        phase: "Three Phase",
-      },
-      offeredDate: "2025-08-15",
-      offeredQuantity: 300,
-      serialNumberFrom: 4917,
-      serialNumberTo: 4922,
-      snNumber: "4917 TO 4922",
-      inspectionOfficers: ["Vikas Sharma", "Neha Yadav"],
-      inspectionDate: "2025-08-18",
-      inspectedQuantity: 300,
-      companyName: "Kalpana Industries",
-      discom: "Jodhpur",
-    },
-    {
-      id: "4",
-      deliverySchedule: {
-        tnNumber: "TN-001",
-        rating: "5",
-        guaranteePeriodMonths: 24,
-        phase: "Single Phase",
-      },
-      offeredDate: "2025-07-12",
-      offeredQuantity: 200,
-      serialNumberFrom: 4907,
-      serialNumberTo: 4911,
-      snNumber: "4907 TO 4911",
-      inspectionOfficers: ["Rajesh Gupta", "Raju Roy"],
-      inspectionDate: "2025-07-28",
-      inspectedQuantity: 200,
-      companyName: "Yash Granties",
-      discom: "Ajmer",
-    },
-    {
-      id: "5",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Power",
-      },
-      offeredDate: "2025-08-05",
-      offeredQuantity: 150,
-      serialNumberFrom: 4912,
-      serialNumberTo: 4916,
-      snNumber: "4912 TO 4916",
-      inspectionOfficers: ["Vikas Sharma", "Sunita Sharma"],
-      inspectionDate: "2025-08-18",
-      inspectedQuantity: 140,
-      companyName: "Yash Granties",
-      discom: "Jaipur",
-    },
-  ];
-};
+import { useQuery } from "@tanstack/react-query";
+import api from "../../services/api";
 
 const InspectionDone = () => {
   const navigate = useNavigate("");
 
-  const { setIsHideSidebarAndHeader } = useContext(MyContext);
-
-  useEffect(() => {
-    setIsHideSidebarAndHeader(true);
-    window.scrollTo(0, 0);
-  }, [setIsHideSidebarAndHeader]);
-
   const [filteredData, setFilteredData] = useState([]);
 
-  const inspectionData = useMemo(() => getDummyFinalInspectionDetails(), []);
+  const { data: inspectionData, isLoading } = useQuery({
+    queryKey: ["finalInspections"],
+    queryFn: () => api.get("/final-inspections").then((res) => res.data),
+  });
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -194,8 +72,8 @@ const InspectionDone = () => {
 
       <FiltersComponent
         onFilteredData={setFilteredData}
-        data={inspectionData}
-        text= "Awaiting for D.I."
+        data={inspectionData || []}
+        text="Awaiting for D.I."
         onExportPDF={true}
         onExportExcel={true}
         sheetName="Inspection done but DI pending"
@@ -226,7 +104,13 @@ const InspectionDone = () => {
             </TableHead>
 
             <TableBody>
-              {filteredData.length === 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={11} align="center">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : filteredData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={11} align="center">
                     No records found

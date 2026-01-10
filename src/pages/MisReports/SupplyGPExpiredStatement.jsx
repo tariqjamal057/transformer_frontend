@@ -15,119 +15,21 @@ import {
   Tab,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { MyContext } from "../../App";
 import { useNavigate } from "react-router-dom";
 import SupplyGPExpiredStatementFilter from "../../components/MisGP/SupplyGPExpiredStatementFilter";
-
-const newGPTransformersData = () => {
-  const rawData = [
-    {
-      id: "1",
-      deliverySchedule: {
-        tnNumber: "TN-001",
-        rating: "10",
-        guaranteePeriodMonths: 24,
-        phase: "Single Phase",
-        wound: "Copper",
-      },
-      totalReceivedUnderGPTillDate: 480,
-      qtyBalance: 480,
-      lastGPSupplyExpiryDate: "15-08-2024",
-      companyName: "Kalpana Industries",
-      discom: "Ajmer",
-    },
-    {
-      id: "8",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Three Phase",
-        wound: "Aluminium",
-      },
-      totalReceivedUnderGPTillDate: 290,
-      qtyBalance: 290,
-      lastGPSupplyExpiryDate: "20-09-2024",
-      companyName: "Kalpana Industries",
-      discom: "Ajmer",
-    },
-    {
-      id: "2",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Three Phase",
-        wound: "Copper",
-      },
-      totalReceivedUnderGPTillDate: 290,
-      qtyBalance: 290,
-      lastGPSupplyExpiryDate: "20-09-2024",
-      companyName: "Kalpana Industries",
-      discom: "Jaipur",
-    },
-    {
-      id: "3",
-      deliverySchedule: {
-        tnNumber: "TN-003",
-        rating: "16",
-        guaranteePeriodMonths: 18,
-        phase: "Three Phase",
-        wound: "Aluminium",
-      },
-      totalReceivedUnderGPTillDate: 390,
-      qtyBalance: 390,
-      lastGPSupplyExpiryDate: "25-10-2024",
-      companyName: "Kalpana Industries",
-      discom: "Jodhpur",
-    },
-    {
-      id: "4",
-      deliverySchedule: {
-        tnNumber: "TN-001",
-        rating: "5",
-        guaranteePeriodMonths: 24,
-        phase: "Single Phase",
-        wound: "Copper",
-      },
-      totalReceivedUnderGPTillDate: 590,
-      qtyBalance: 590,
-      lastGPSupplyExpiryDate: "15-08-2024",
-      companyName: "Yash Granties",
-      discom: "Ajmer",
-    },
-    {
-      id: "5",
-      deliverySchedule: {
-        tnNumber: "TN-002",
-        rating: "25",
-        guaranteePeriodMonths: 36,
-        phase: "Power",
-        wound: "Aluminium",
-      },
-      totalReceivedUnderGPTillDate: 340,
-      qtyBalance: 340,
-      lastGPSupplyExpiryDate: "20-09-2024",
-      companyName: "Yash Granties",
-      discom: "Jaipur",
-    },
-  ];
-    return rawData;
-};
+import { useQuery } from "@tanstack/react-query";
+import api from "../../services/api";
 
 const SupplyGPExpiredStatement = () => {
   const navigate = useNavigate("");
 
-  const { setIsHideSidebarAndHeader } = useContext(MyContext);
-
-  useEffect(() => {
-    setIsHideSidebarAndHeader(true);
-    window.scrollTo(0, 0);
-  }, [setIsHideSidebarAndHeader]);
-
   const [filteredData, setFilteredData] = useState([]);
 
-  const inspectionData = useMemo(() => newGPTransformersData(), []);
+  const { data: inspectionData, isLoading } = useQuery({
+    queryKey: ["supplyGpExpiredStatement"],
+    queryFn: () =>
+      api.get("/mis-reports/supply-gp-expired-statement").then((res) => res.data),
+  });
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -165,13 +67,13 @@ const SupplyGPExpiredStatement = () => {
           variant="h4"
           sx={{ fontWeight: "bold", textAlign: "center" }}
         >
-            Supply G.P. Expired Statement
+          Supply G.P. Expired Statement
         </Typography>
       </Box>
 
       <SupplyGPExpiredStatementFilter
         onFilteredData={setFilteredData}
-        data={inspectionData}
+        data={inspectionData || []}
       />
 
       <Paper sx={{ p: 2, mt: 3 }}>
@@ -197,9 +99,15 @@ const SupplyGPExpiredStatement = () => {
             </TableHead>
 
             <TableBody>
-              {filteredData.length === 0 ? (
+              {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={11} align="center">
+                  <TableCell colSpan={10} align="center">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : filteredData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={10} align="center">
                     No records found
                   </TableCell>
                 </TableRow>

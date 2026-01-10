@@ -1,9 +1,7 @@
 import { useContext, useEffect, useState } from "react";
-import { FaPencilAlt } from "react-icons/fa";
-import { MdDelete } from "react-icons/md";
+import { FaPencilAlt, FaTrash } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
-import { MyContext } from "../../App";
 import {
   Dialog,
   DialogTitle,
@@ -14,13 +12,13 @@ import {
   IconButton,
 } from "@mui/material";
 import { IoCloseSharp } from "react-icons/io5";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
+import { MyContext } from "../../App";
 
 const TnNumberList = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 10; // or calculate based on data length
-
-  const { setProgress, setAlertBox, setIsHideSidebarAndHeader } =
-    useContext(MyContext);
+  const { setAlertBox } = useContext(MyContext);
+  const queryClient = useQueryClient();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedTnNumber, setSelectedTnNumber] = useState(null);
@@ -28,59 +26,59 @@ const TnNumberList = () => {
   const [editedRating, setEditedRating] = useState("");
   const [editedDiscom, setEditedDiscom] = useState("");
 
-  /*const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));*/
+  const { data: tnNumbers, isLoading, isError } = useQuery({
+    queryKey: ["tnNumbers"],
+    queryFn: () => api.get("/tns").then((res) => res.data),
+  });
 
-  useEffect(() => {
-    setIsHideSidebarAndHeader(false);
-    window.scrollTo(0, 0);
-  }, []);
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/tns/${id}`),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "TN Number deleted successfully!", error: false});
+      queryClient.invalidateQueries(["tnNumbers"]);
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
 
-  useEffect(() => {
-    setProgress(20);
-    setProgress(100);
-  }, []);
+  const updateMutation = useMutation({
+    mutationFn: (updatedTnNumber) =>
+      api.put(`/tns/${selectedTnNumber.id}`, updatedTnNumber),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "TN Number updated successfully!", error: false});
+      queryClient.invalidateQueries(["tnNumbers"]);
+      handleModalClose();
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
 
-  const handlePageChange = (event, value) => {
-    setPage(value);
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteMutation.mutate(id);
+      }
+    });
   };
-
-  const getDummyTnNumbers = () => {
-    return [
-      {
-        tenderNo: "TN-001",
-        rating: "100 KVA",
-        discom: "AJMER DISCOM",
-      },
-      {
-        tenderNo: "TN-002",
-        rating: "250 KVA",
-        discom: "JAIPUR DISCOM",
-      },
-      {
-        tenderNo: "TN-003",
-        rating: "500 KVA",
-        discom: "JODHPUR DISCOM",
-      },
-      {
-        tenderNo: "TN-004",
-        rating: "200 KVA",
-        discom: "JAIPUR DISCOM",
-      },
-    ];
-  };
-
-  const dummyData = getDummyTnNumbers();
 
   const handleEditClick = (item) => {
     setSelectedTnNumber(item);
-    setEditedTnNumber(item.tenderNo);
+    setEditedTnNumber(item.name);
     setEditedRating(item.rating);
     setEditedDiscom(item.discom);
     setEditModalOpen(true);
   };
 
-  
   const handleModalClose = () => {
     setEditModalOpen(false);
     setSelectedTnNumber(null);
@@ -90,13 +88,11 @@ const TnNumberList = () => {
   };
 
   const handleSaveChanges = () => {
-    // You can send API call here
-    setAlertBox({
-      open: true,
-      msg: "Transformer details updated successfully!",
-      error: false,
+    updateMutation.mutate({
+      name: editedTnNumber,
+      rating: editedRating,
+      discom: editedDiscom,
     });
-    setEditModalOpen(false);
   };
 
   return (
@@ -124,13 +120,19 @@ const TnNumberList = () => {
                 </tr>
               </thead>
               <tbody className="text-center">
-                {dummyData.length > 0 ? (
-                  dummyData.map((item, index) => (
-                    <tr
-                      key={index}
-                    >
+                {isLoading ? (
+                  <tr>
+                    <td colSpan="5">Loading...</td>
+                  </tr>
+                ) : isError ? (
+                  <tr>
+                    <td colSpan="5">Error fetching data</td>
+                  </tr>
+                ) : tnNumbers?.length > 0 ? (
+                  tnNumbers.map((item, index) => (
+                    <tr key={index}>
                       <td># {index + 1}</td>
-                      <td>{item.tenderNo}</td>
+                      <td>{item.name}</td>
                       <td>{item.rating}</td>
                       <td>{item.discom}</td>
                       <td>
@@ -141,15 +143,19 @@ const TnNumberList = () => {
                           >
                             <FaPencilAlt />
                           </button>
-
-                          
+                          <button
+                            className="btn btn-sm btn-danger"
+                            onClick={() => handleDelete(item.id)}
+                          >
+                            <FaTrash />
+                          </button>
                         </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="10" className="text-center">
+                    <td colSpan="5" className="text-center">
                       No data found
                     </td>
                   </tr>
@@ -158,12 +164,6 @@ const TnNumberList = () => {
             </table>
           </div>
         </div>
-
-        {/*<ResponsivePagination
-          page={currentPage}
-          count={totalPages}
-          onChange={(event, value) => setCurrentPage(value)}
-        />*/}
       </div>
 
       {/* Edit Modal */}
@@ -171,7 +171,6 @@ const TnNumberList = () => {
         open={editModalOpen}
         onClose={handleModalClose}
         fullWidth
-        //fullScreen={fullScreen}
       >
         <DialogTitle className="d-flex justify-content-between align-items-center">
           Edit Details
@@ -214,8 +213,9 @@ const TnNumberList = () => {
             onClick={handleSaveChanges}
             variant="contained"
             color="primary"
+            disabled={updateMutation.isLoading}
           >
-            Save Changes
+            {updateMutation.isLoading ? "Saving..." : "Save Changes"}
           </Button>
         </DialogActions>
       </Dialog>

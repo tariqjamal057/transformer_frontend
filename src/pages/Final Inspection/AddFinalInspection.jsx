@@ -30,106 +30,18 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
 import * as XLSX from "xlsx";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import api from "../../services/api";
+import { useNavigate } from "react-router-dom";
 import { MyContext } from "../../App";
-import { getDummyConsigneeDetails } from "../Consignee/ConsigneeList";
 import { Cancel } from "@mui/icons-material";
 
 const AddFinalInspection = () => {
-  const context = useContext(MyContext);
-  const { setIsHideSidebarAndHeader, setAlertBox, districts } = context;
+  const { setAlertBox } = useContext(MyContext);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const today = new Date();
-
-  const deliverySchedules = [
-    {
-      id: "1",
-      tnNumber: "TN-001",
-      rating: "100", // in KVA
-      wound: "Aluminium",
-      phase: "100 KVA",
-      poDetails: "PO-12345",
-      poDate: "2025-05-10",
-      loaDetails: "LOA-5678",
-      loaDate: "2025-05-01",
-      cpDays: 90,
-      createdDate: "2025-05-15",
-      cpDate: "2025-08-13", // 90 days from createdDate
-      imposedLetterNo: "IMP-101",
-      liftingLetterNo: "LIFT-201",
-      imposedDate: "2025-08-18",
-      liftingDate: "2025-10-15",
-      totalQuantity: 1000,
-      guaranteePeriodMonths: 24,
-    },
-    {
-      id: "2",
-      tnNumber: "TN-002",
-      rating: "50",
-      wound: "Aluminium",
-      phase: "50 KVA",
-      poDetails: "PO-22345",
-      poDate: "2025-06-01",
-      loaDetails: "LOA-6678",
-      loaDate: "2025-05-20",
-      cpDays: 60,
-      createdDate: "2025-06-05",
-      cpDate: "2025-08-04", // 60 days from createdDate
-      imposedLetterNo: "IMP-102",
-      liftingLetterNo: "LIFT-202",
-      imposedDate: "2025-08-09",
-      liftingDate: "2025-10-01",
-      totalQuantity: 500,
-      guaranteePeriodMonths: 18,
-    },
-    {
-      id: "3",
-      tnNumber: "TN-003",
-      rating: "150",
-      wound: "Copper",
-      phase: "150 KVA",
-      poDetails: "PO-32345",
-      poDate: "2025-07-15",
-      loaDetails: "LOA-7678",
-      loaDate: "2025-07-05",
-      cpDays: 45,
-      createdDate: "2025-07-20",
-      cpDate: "2025-09-03", // 45 days from createdDate
-      imposedLetterNo: "IMP-103",
-      liftingLetterNo: "LIFT-203",
-      imposedDate: "2025-09-08",
-      liftingDate: "2025-11-01",
-      totalQuantity: 750,
-      guaranteePeriodMonths: 12,
-    },
-    {
-      id: "4",
-      tnNumber: "TN-004",
-      rating: "200",
-      wound: "Copper",
-      phase: "200 KVA",
-      poDetails: "PO-42345",
-      poDate: "2025-08-10",
-      loaDetails: "LOA-8678",
-      loaDate: "2025-08-01",
-      cpDays: 30,
-      createdDate: "2025-08-15",
-      cpDate: "2025-09-14", // 30 days from createdDate
-      imposedLetterNo: "IMP-104",
-      liftingLetterNo: "LIFT-204",
-      imposedDate: "2025-09-19",
-      liftingDate: "2025-11-10",
-      totalQuantity: 1200,
-      guaranteePeriodMonths: 36,
-    },
-  ];
-
-  // 👉 Damaged/Repaired Transformers
-  const damagedRepairedTransformers = [
-    { id: "1", serialNo: "404" },
-    { id: "2", serialNo: "302" },
-    { id: "3", serialNo: "204" },
-    { id: "4", serialNo: "127" },
-  ];
 
   const [tnDetail, setTnDetail] = useState(null); // store full TN object
   const [serialNumberFrom, setSerialNumberFrom] = useState("");
@@ -158,13 +70,40 @@ const AddFinalInspection = () => {
   const [shealingDetails, setShealingDetails] = useState([]);
   const [fileName, setFileName] = useState("");
 
-  // States
-  const [availableTransformers, setAvailableTransformers] = useState(
-    damagedRepairedTransformers
-  );
   const [selectedTransformers, setSelectedTransformers] = useState([]);
 
-  const [isLoading, setIsLoading] = useState(false);
+  const { data: deliverySchedules } = useQuery({
+    queryKey: ["deliverySchedules"],
+    queryFn: () => api.get("/delivery-schedules").then((res) => res.data),
+  });
+
+  const { data: consignees } = useQuery({
+    queryKey: ["consignees"],
+    queryFn: () => api.get("/consignees").then((res) => res.data),
+  });
+  
+  const { data: damagedTransformers } = useQuery({
+    queryKey: ["damagedTransformers"],
+    queryFn: () => api.get("/damaged-transformers").then((res) => res.data),
+  });
+  
+  const [availableTransformers, setAvailableTransformers] = useState(
+    damagedTransformers
+  );
+
+  const addFinalInspectionMutation = useMutation({
+    mutationFn: (newInspection) =>
+      api.post("/final-inspections", newInspection),
+    onSuccess: () => {
+      setAlertBox({open: true, msg: "Final Inspection added successfully!", error: false});
+      queryClient.invalidateQueries(["finalInspections"]);
+      navigate("/finalInspection-list");
+    },
+    onError: (error) => {
+      setAlertBox({open: true, msg: error.message, error: true});
+    },
+  });
+
 
   const handleAddInspectionOfficer = () => {
     if (
@@ -220,27 +159,17 @@ const AddFinalInspection = () => {
     reader.readAsArrayBuffer(file);
   };
 
-  const consignees = getDummyConsigneeDetails();
-
   // 👉 Handle Add Consignee
   const handleAddConsignee = () => {
     if (!selectedConsignee || !consigneeQuantity) {
-      setAlertBox({
-        msg: "Please select consignee & quantity",
-        open: true,
-        error: true,
-      });
+      setAlertBox({open: true, msg: "Please select consignee & quantity", error: true});
       return;
     }
 
     const from = parseInt(serialNumberFrom);
     const to = parseInt(serialNumberTo);
     if (!from || !to || from >= to) {
-      setAlertBox({
-        msg: "Invalid serial number range",
-        open: true,
-        error: true,
-      });
+      setAlertBox({open: true, msg: "Invalid serial number range", error: true});
       return;
     }
 
@@ -252,11 +181,7 @@ const AddFinalInspection = () => {
     const newTotal = totalDistributed + parseInt(consigneeQuantity);
 
     if (newTotal > totalAvailable) {
-      setAlertBox({
-        msg: "Quantity exceeds available transformers!",
-        open: true,
-        error: true,
-      });
+      setAlertBox({open: true, msg: "Quantity exceeds available transformers!", error: true});
       return;
     }
 
@@ -271,10 +196,10 @@ const AddFinalInspection = () => {
     );
 
     const newConsignee = {
-      consignee: consignees.find((c) => c.id === selectedConsignee), // for store id I have to pass only selectedConsignee
+      consigneeId: selectedConsignee,
       quantity: parseInt(consigneeQuantity),
       subSnNumber,
-      repairedTransformers: selectedTransformerObjects, // ✅ Added here
+      repairedTransformerIds: selectedTransformers,
     };
 
     // ✅ Remove assigned transformers from available list
@@ -293,10 +218,10 @@ const AddFinalInspection = () => {
   const handleDeleteConsignee = (idx) => {
     const removed = consigneeList[idx];
     // Restore those transformers back into available list
-    if (removed.repairedTransformers?.length > 0) {
+    if (removed.repairedTransformerIds?.length > 0) {
       setAvailableTransformers((prev) => [
         ...prev,
-        ...removed.repairedTransformers,
+        ...damagedTransformers.filter((t) => removed.repairedTransformerIds.includes(t.id)),
       ]);
     }
     const updated = [...consigneeList];
@@ -308,28 +233,24 @@ const AddFinalInspection = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const data = {
-      tnDetail: tnDetail?.id,
-      serialNumberFrom,
-      serialNumberTo,
-      srNumber: `${serialNumberFrom} TO ${serialNumberTo}`,
-      offerDate: dayjs(offerDate).format("YYYY-MM-DD"),
-      offeredQuantity,
+      deliveryScheduleId: tnDetail?.id,
+      serialNumberFrom: parseInt(serialNumberFrom),
+      serialNumberTo: parseInt(serialNumberTo),
+      offeredDate: dayjs(offerDate).format("YYYY-MM-DD"),
+      offeredQuantity: parseInt(offeredQuantity),
       inspectionDate: dayjs(inspectionDate).format("YYYY-MM-DD"),
-      inspectedQuantity,
-      selectedInspectionOfficer,
+      inspectedQuantity: parseInt(inspectedQuantity),
+      inspectionOfficers: selectedInspectionOfficer,
+      nominationLetterNo,
+      nominationDate: dayjs(nominationDate).format("YYYY-MM-DD"),
       diNo,
       diDate: dayjs(diDate).format("YYYY-MM-DD"),
-      warranty,
-      consignees: consigneeList, // ✅ New Array
+      total: parseInt(total),
+      consignees: consigneeList,
       shealingDetails,
     };
 
-    console.log("Tranformer Final Inspection Report", data);
-    setAlertBox({
-      open: true,
-      msg: "Inspection saved successfully!",
-      error: false,
-    });
+    addFinalInspectionMutation.mutate(data);
   };
 
   return (
@@ -344,7 +265,7 @@ const AddFinalInspection = () => {
             <Grid container spacing={3} columns={{ xs: 1, sm: 2 }}>
               <Grid item size={2}>
                 <Autocomplete
-                  options={deliverySchedules}
+                  options={deliverySchedules || []}
                   getOptionLabel={(option) => option.tnNumber}
                   value={tnDetail}
                   onChange={handleTnChange}
@@ -445,7 +366,7 @@ const AddFinalInspection = () => {
                     onChange={(e) => setSelectedConsignee(e.target.value)}
                     label="Select Consignee"
                   >
-                    {consignees.map((c) => (
+                    {consignees?.map((c) => (
                       <MenuItem key={c.id} value={c.id}>
                         {c.name}
                       </MenuItem>
@@ -480,13 +401,13 @@ const AddFinalInspection = () => {
                       selected
                         .map(
                           (id) =>
-                            availableTransformers.find((t) => t.id === id)
+                            availableTransformers?.find((t) => t.id === id)
                               ?.serialNo || ""
                         )
                         .join(", ")
                     }
                   >
-                    {availableTransformers.map((t) => (
+                    {availableTransformers?.map((t) => (
                       <MenuItem key={t.id} value={t.id}>
                         <Checkbox
                           checked={selectedTransformers.includes(t.id)}
@@ -510,7 +431,7 @@ const AddFinalInspection = () => {
               </Grid>
 
               {/* ✅ Consignee Table */}
-              <Grid item size={12}>
+              <Grid item xs={12}>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
@@ -524,13 +445,13 @@ const AddFinalInspection = () => {
                   <TableBody>
                     {consigneeList.map((c, idx) => (
                       <TableRow key={idx}>
-                        <TableCell>{c.consignee.name}</TableCell>
+                        <TableCell>{consignees.find(con => con.id === c.consigneeId)?.name}</TableCell>
                         <TableCell>{c.quantity}</TableCell>
                         <TableCell>{c.subSnNumber}</TableCell>
                         <TableCell>
-                          {c.repairedTransformers?.length > 0
-                            ? c.repairedTransformers
-                                .map((t) => t.serialNo)
+                          {c.repairedTransformerIds?.length > 0
+                            ? c.repairedTransformerIds
+                                .map((t_id) => damagedTransformers.find(dt => dt.id === t_id)?.serialNo)
                                 .join(", ")
                             : "—"}
                         </TableCell>
@@ -709,9 +630,10 @@ const AddFinalInspection = () => {
                   style={{
                     margin: "auto",
                   }}
+                  disabled={addFinalInspectionMutation.isLoading}
                 >
                   <FaCloudUploadAlt />
-                  {isLoading ? (
+                  {addFinalInspectionMutation.isLoading ? (
                     <CircularProgress color="inherit" size={20} />
                   ) : (
                     "PUBLISH AND VIEW"
