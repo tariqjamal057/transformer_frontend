@@ -10,6 +10,10 @@ import {
   Stack,
   MenuItem,
   Grid,
+  FormControl,
+  InputLabel,
+  Select,
+  OutlinedInput,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
@@ -38,21 +42,26 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
 
   const { data: finalInspections } = useQuery({
     queryKey: ["finalInspections"],
-    queryFn: () => api.get("/final-inspections").then((res) => res.data),
+    queryFn: () =>
+      api.get("/final-inspections?all=true").then((res) => res.data),
   });
 
   const { data: consignees } = useQuery({
     queryKey: ["consignees"],
-    queryFn: () => api.get("/consignees").then((res) => res.data),
+    queryFn: () => api.get("/consignees?all=true").then((res) => res.data),
   });
 
   const { data: materialDescriptions } = useQuery({
     queryKey: ["material-descriptions"],
-    queryFn: () => api.get("/material-descriptions").then((res) => res.data),
+    queryFn: () =>
+      api.get("/material-descriptions?all=true").then((res) => res.data),
   });
 
   const [selectedTN, setSelectedTN] = useState("");
   const [selectedRecord, setSelectedRecord] = useState(null);
+
+  const [selectedTransformers, setSelectedTransformers] = useState([]);
+  const [availableSubSerialNumbers, setAvailableSubSerialNumbers] = useState([]);
 
   // Auto-fill fields
   const [diNo, setDiNo] = useState("");
@@ -67,7 +76,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
   const handleTNChange = (tnNumber) => {
     setSelectedTN(tnNumber);
     const record = finalInspections.find(
-      (item) => item.deliverySchedule.tnNumber === tnNumber
+      (item) => item?.deliverySchedule?.tnNumber === tnNumber
     );
 
     if (record) {
@@ -131,10 +140,10 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
   const [materialDescription, setMaterialDescription] = useState("");
   const [selectedMaterialCode, setSelectedMaterialCode] = useState("");
 
-  const handleMaterialSelect = (code) => {
-    setSelectedMaterialCode(code);
+  const handleMaterialSelect = (id) => {
+    setSelectedMaterialCode(id);
 
-    const record = materialDescriptions.find((item) => item.code === code);
+    const record = materialDescriptions.find((item) => item.id === id);
     if (record) {
       setMaterialDescription(record.description); // Fill the whole description
     } else {
@@ -153,19 +162,34 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!selectedRecord) return;
+
+    const selectedSerialNumbers = availableSubSerialNumbers
+      .filter((s) => selectedTransformers.includes(s.id))
+      .map((s) => s.serialNo);
+
+    const subSerialNumberFrom =
+      selectedSerialNumbers.length > 0
+        ? Math.min(...selectedSerialNumbers)
+        : null;
+    const subSerialNumberTo =
+      selectedSerialNumbers.length > 0
+        ? Math.max(...selectedSerialNumbers)
+        : null;
 
     const data = {
-      finalInspectionDetailId: selectedRecord.id,
+      finalInspectionId: deliveryChalanData.finalInspection.id,
       challanNo,
+      subSerialNumberFrom,
+      subSerialNumberTo,
       consignorName,
-      consigneeAddress,
+      consignorAddress,
       consignorPhone: consignorPhoneNo,
-      consigneeGST: consigneeGSTNo,
+      consignorGST: consignorGSTNo,
       consignorEmail,
-      consigneeId: selectedConsigneeRecord.id,
+      consigneeId: deliveryChalanData.consignee.id,
+      lorryNo,
+      truckDriverName: driverName,
       materialDescriptionId: selectedMaterialCode,
-      challanCreatedAt: dayjs().format("YYYY-MM-DD"),
     };
 
     updateChallan(data);
@@ -173,13 +197,23 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
 
   // Load initial data if editing
   useEffect(() => {
-    if (deliveryChalanData && deliveryChalanData.finalInspectionDetail) {
-      const fi = deliveryChalanData.finalInspectionDetail;
+    if (deliveryChalanData && deliveryChalanData.finalInspection) {
+      const fi = deliveryChalanData.finalInspection;
       const ds = fi.deliverySchedule;
 
       // 🔹 TN & Serial Numbers
-      setSelectedTN(ds.tnNumber || "");
+      setSelectedTN(ds?.tnNumber || "");
       setSerialNumber(fi.snNumber || "");
+
+      const subSerialNumbers = fi.transformers.map((t) => ({
+        id: t.transformer.id,
+        serialNo: t.transformer.serialNo,
+      }));
+      setAvailableSubSerialNumbers(subSerialNumbers);
+      
+      const selectedIds = fi.transformers.map((t) => t.transformer.id);
+      setSelectedTransformers(selectedIds);
+
 
       // 🔹 DI Details
       setDiNo(fi.diNo || "");
@@ -195,12 +229,11 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
 
       // 🔹 Challan
       setChallanNo(deliveryChalanData.challanNo || "");
-      setChalanDescription(
-        ds.description || ""
-      );
+      setChalanDescription(ds.description || "");
       setMaterialDescription(
         deliveryChalanData.materialDescription?.description || ""
       );
+      setSelectedMaterialCode(deliveryChalanData.materialDescriptionId || "");
 
       // 🔹 Consignor
       setConsignorName(deliveryChalanData.consignorName || "");
@@ -210,9 +243,9 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
       setConsignorEmail(deliveryChalanData.consignorEmail || "");
 
       // 🔹 Consignee
-      setConsigneeName(deliveryChalanData.consigneeDetails?.name || "");
-      setConsigneeAddress(deliveryChalanData.consigneeDetails?.address || "");
-      setConsigneeGSTNo(deliveryChalanData.consigneeDetails?.gstNo || "");
+      setConsigneeName(deliveryChalanData.consignee?.name || "");
+      setConsigneeAddress(deliveryChalanData.consignee?.address || "");
+      setConsigneeGSTNo(deliveryChalanData.consignee?.gstNo || "");
 
       // 🔹 Transport Details
       setLorryNo(deliveryChalanData.lorryNo || "");
@@ -249,10 +282,10 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
           >
             {finalInspections?.map((tn) => (
               <MenuItem
-                key={tn.deliverySchedule.tnNumber}
-                value={tn.deliverySchedule.tnNumber}
+                key={tn.deliverySchedule?.tnNumber}
+                value={tn.deliverySchedule?.tnNumber}
               >
-                {tn.deliverySchedule.tnNumber}
+                {tn.deliverySchedule?.tnNumber}
               </MenuItem>
             ))}
           </TextField>
@@ -266,6 +299,36 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
             sx={{ mt: 2 }}
             InputProps={{ readOnly: true }}
           />
+
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel>Sub Serial No</InputLabel>
+            <Select
+              multiple
+              value={selectedTransformers}
+              onChange={(e) => setSelectedTransformers(e.target.value)}
+              input={<OutlinedInput label="Sub Serial No" />}
+              renderValue={(selected) =>
+                selected
+                  .map(
+                    (id) =>
+                      availableSubSerialNumbers.find((s) => s.id === id)
+                        ?.serialNo || ""
+                  )
+                  .join(", ")
+              }
+              disabled={!availableSubSerialNumbers?.length}
+            >
+              {availableSubSerialNumbers?.map((s) => (
+                <MenuItem key={s.id} value={s.id}>
+                  <Checkbox
+                    checked={selectedTransformers.includes(s.id)}
+                  />
+                  <ListItemText primary={s.serialNo} />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
 
           <TextField
             fullWidth
@@ -483,7 +546,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
                 .slice(0, 6)
                 .join(" ");
               return (
-                <MenuItem key={item.code} value={item.code}>
+                <MenuItem key={item.id} value={item.id}>
                   {firstSixWords}...
                 </MenuItem>
               );
@@ -503,8 +566,13 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
           />
 
           <Box mt={4} textAlign="center">
-            <Button variant="contained" size="large" onClick={handleSubmit} disabled={isLoading}>
-              {isLoading? 'Saving...' : 'Save Changes'}
+            <Button
+              variant="contained"
+              size="large"
+              onClick={handleSubmit}
+              disabled={isLoading}
+            >
+              {isLoading ? "Saving..." : "Save Changes"}
             </Button>
           </Box>
         </Box>

@@ -1,7 +1,13 @@
 import { useContext, useEffect, useState } from "react";
 import { Button, InputAdornment, TextField, Tooltip } from "@mui/material";
 import { Link } from "react-router-dom";
-import { FaEye, FaFileDownload, FaPencilAlt, FaPrint, FaTrash } from "react-icons/fa";
+import {
+  FaEye,
+  FaFileDownload,
+  FaPencilAlt,
+  FaPrint,
+  FaTrash,
+} from "react-icons/fa";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import PdfTemplate from "../../components/PdfTemplate";
@@ -9,6 +15,9 @@ import { createRoot } from "react-dom/client"; // Add this at the top
 import SearchIcon from "@mui/icons-material/Search";
 import DeliveryChalanModal from "../../components/DeliveryChalanModal";
 import DetailsModal from "../../components/DetailsModal";
+import SearchBox from "../../components/SearchBox";
+import Pagination from "../../components/Pagination";
+import DeliveryChalanBulkUploadModal from "../../components/DeliveryChalanBulkUploadModal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api";
 import { MyContext } from "../../App";
@@ -23,20 +32,35 @@ const DeliveryChalanList = () => {
   const [isPreview, setIsPreview] = useState(false);
   const [openDetailsModal, setOpenDetailsModal] = useState(false);
   const [selectedChalanDetails, setSelectedChalanDetails] = useState(null);
+  const [openBulkUploadModal, setOpenBulkUploadModal] = useState(false);
 
-  const { data: deliveryChallans, isLoading, isError } = useQuery({
-    queryKey: ["deliveryChallans"],
-    queryFn: () => api.get("/delivery-challans").then((res) => res.data),
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const {
+    data: deliveryChallans,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["deliveryChallans", currentPage, searchQuery],
+    queryFn: () =>
+      api
+        .get(`/delivery-challans?page=${currentPage}&search=${searchQuery}`)
+        .then((res) => res.data),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/delivery-challans/${id}`),
     onSuccess: () => {
-      setAlertBox({open: true, msg: "Delivery Challan deleted successfully!", error: false});
+      setAlertBox({
+        open: true,
+        msg: "Delivery Challan deleted successfully!",
+        error: false,
+      });
       queryClient.invalidateQueries(["deliveryChallans"]);
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.message, error: true});
+      setAlertBox({ open: true, msg: error.message, error: true });
     },
   });
 
@@ -123,6 +147,17 @@ const DeliveryChalanList = () => {
           <h5 className="mb-0">Delivery Challan List</h5>
 
           <div className="d-flex align-items-center">
+            <SearchBox
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              setCurrentPage={setCurrentPage}
+            />
+            <Button
+              className="btn-blue ms-3 ps-3 pe-3"
+              onClick={() => setOpenBulkUploadModal(true)}
+            >
+              Bulk Upload
+            </Button>
             <Link to={"/add-deliveryChalan"}>
               <Button className="btn-blue ms-3 ps-3 pe-3">
                 Create New Delivery Challan
@@ -160,22 +195,21 @@ const DeliveryChalanList = () => {
                   <tr>
                     <td colSpan="11">Error fetching data</td>
                   </tr>
-                ) : deliveryChallans.length > 0 ? (
-                  deliveryChallans.map((item, index) => (
+                ) : deliveryChallans?.items?.length > 0 ? (
+                  deliveryChallans.items.map((item, index) => (
                     <tr key={item.id}>
                       {/* Sr No */}
-                      <td># {index + 1}</td>
+                      <td>
+                        # {(deliveryChallans.currentPage - 1) * 10 + index + 1}
+                      </td>
 
                       {/* PO Number / Date */}
                       <td>
                         <div className="fw-semibold">
-                          {
-                            item.finalInspectionDetail.deliverySchedule
-                              .poDetails
-                          }
+                          {item.finalInspection?.deliverySchedule?.poDetails}
                         </div>
                         <div className="text-muted small">
-                          {item.finalInspectionDetail.deliverySchedule.poDate}
+                          {item.finalInspection?.deliverySchedule?.poDate}
                         </div>
                       </td>
 
@@ -186,19 +220,18 @@ const DeliveryChalanList = () => {
                       <td className="text-start">
                         <div>
                           <strong>TN:</strong>{" "}
-                          {item.finalInspectionDetail.deliverySchedule.tnNumber}
+                          {item.finalInspection?.deliverySchedule?.tnNumber}
                         </div>
                         <div>
                           <strong>Serial No:</strong>{" "}
-                          {item.finalInspectionDetail.snNumber}
+                          {item.finalInspection.snNumber}
                         </div>
                         <div>
-                          <strong>DI No:</strong>{" "}
-                          {item.finalInspectionDetail.diNo}
+                          <strong>DI No:</strong> {item.finalInspection.diNo}
                         </div>
                         <div>
                           <strong>DI Date:</strong>{" "}
-                          {item.finalInspectionDetail.diDate}
+                          {item.finalInspection.diDate}
                         </div>
                       </td>
 
@@ -210,7 +243,7 @@ const DeliveryChalanList = () => {
                       {/* Inspection Officers */}
                       <td>
                         <div className="d-flex flex-column gap-1">
-                          {item.finalInspectionDetail.inspectionOfficers.map(
+                          {item.finalInspection.inspectionOfficers.map(
                             (officer, idx) => (
                               <span
                                 key={`${item.id}-${idx}`}
@@ -228,7 +261,7 @@ const DeliveryChalanList = () => {
                       </td>
 
                       {/* Inspection Date */}
-                      <td>{item.finalInspectionDetail.inspectionDate}</td>
+                      <td>{item.finalInspection.inspectionDate}</td>
 
                       {/* Consignor Details */}
                       <td className="text-start">
@@ -249,14 +282,13 @@ const DeliveryChalanList = () => {
                       {/* Consignee Details */}
                       <td className="text-start">
                         <div>
-                          <strong>Name:</strong> {item.consigneeDetails.name}
+                          <strong>Name:</strong> {item.consignee.name}
                         </div>
                         <div>
-                          <strong>Address:</strong>{" "}
-                          {item.consigneeDetails.address}
+                          <strong>Address:</strong> {item.consignee.address}
                         </div>
                         <div>
-                          <strong>GST:</strong> {item.consigneeDetails.gstNo}
+                          <strong>GST:</strong> {item.consignee.gstNo}
                         </div>
                       </td>
 
@@ -269,7 +301,7 @@ const DeliveryChalanList = () => {
                             .join(" ")}
                         </div>
                         <div className="text-muted small mt-1">
-                          {item.finalInspectionDetail.deliverySchedule.description
+                          {item.finalInspection.deliverySchedule?.chalanDescription
                             .split(" ")
                             .slice(0, 10)
                             .join(" ")}
@@ -320,6 +352,13 @@ const DeliveryChalanList = () => {
               </tbody>
             </table>
           </div>
+          {deliveryChallans?.totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={deliveryChallans.totalPages}
+              onPageChange={setCurrentPage}
+            />
+          )}
         </div>
       </div>
 
@@ -340,6 +379,10 @@ const DeliveryChalanList = () => {
           details={selectedChalanDetails}
         />
       }
+      <DeliveryChalanBulkUploadModal
+        open={openBulkUploadModal}
+        handleClose={() => setOpenBulkUploadModal(false)}
+      />
     </>
   );
 };

@@ -46,17 +46,17 @@ const AddDeliveryChalan = () => {
 
   const { data: finalInspections } = useQuery({
     queryKey: ["finalInspections"],
-    queryFn: () => api.get("/final-inspections").then((res) => res.data),
+    queryFn: () => api.get("/final-inspections?all=true").then((res) => res.data),
   });
 
   const { data: consignees } = useQuery({
     queryKey: ["consignees"],
-    queryFn: () => api.get("/consignees").then((res) => res.data),
+    queryFn: () => api.get("/consignees?all=true").then((res) => res.data),
   });
 
   const { data: materialDescriptions } = useQuery({
     queryKey: ["material-descriptions"],
-    queryFn: () => api.get("/material-descriptions").then((res) => res.data),
+    queryFn: () => api.get("/material-descriptions?all=true").then((res) => res.data),
   });
 
 
@@ -79,12 +79,15 @@ const AddDeliveryChalan = () => {
       setSerialNumber(record.snNumber);
       setChalanDescription(record.deliverySchedule.description);
 
-      // ✅ VERY IMPORTANT
+      const subSerialNumbers = record.transformers.map(t => ({ id: t.transformer.id, serialNo: t.transformer.serialNo }));
+      setAvailableSubSerialNumbers(subSerialNumbers);
       setSelectedTransformers([]); // reset on TN change
     }
   };
 
   const [challanNo, setChallanNo] = useState("");
+  const [selectedTransformers, setSelectedTransformers] = useState([]);
+  const [availableSubSerialNumbers, setAvailableSubSerialNumbers] = useState([]);
 
   const [consignorName, setConsignorName] = useState("");
   const [consignorAddress, setConsignorAddress] = useState("");
@@ -165,11 +168,20 @@ const AddDeliveryChalan = () => {
         ?.filter((s) => selectedTransformers.includes(s.id))
         .map((s) => s.serialNo) || [];
 
+    const selectedSerialNumbers = availableSubSerialNumbers
+      .filter((s) => selectedTransformers.includes(s.id))
+      .map((s) => s.serialNo);
+
+    const subSerialNumberFrom =
+      selectedSerialNumbers.length > 0 ? Math.min(...selectedSerialNumbers) : null;
+    const subSerialNumberTo =
+      selectedSerialNumbers.length > 0 ? Math.max(...selectedSerialNumbers) : null;
+
     const data = {
       finalInspectionDetailId: selectedRecord.id,
       challanNo,
-      subSerialNumberFrom: parseInt(subSerialFrom),
-      subSerialNumberTo: parseInt(subSerialTo),
+      subSerialNumberFrom,
+      subSerialNumberTo,
       consignorName,
       consignorAddress,
       consignorPhone: consignorPhoneNo,
@@ -237,14 +249,14 @@ const AddDeliveryChalan = () => {
                       selected
                         .map(
                           (id) =>
-                            selectedRecord?.subSerialNo.find((s) => s.id === id)
+                            availableSubSerialNumbers.find((s) => s.id === id)
                               ?.serialNo || ""
                         )
                         .join(", ")
                     }
-                    disabled={!selectedRecord?.subSerialNo?.length}
+                    disabled={!availableSubSerialNumbers?.length}
                   >
-                    {selectedRecord?.subSerialNo?.map((s) => (
+                    {availableSubSerialNumbers?.map((s) => (
                       <MenuItem key={s.id} value={s.id}>
                         <Checkbox
                           checked={selectedTransformers.includes(s.id)}

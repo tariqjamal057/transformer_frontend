@@ -12,6 +12,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api";
 import { MyContext } from "../../App";
 import Swal from "sweetalert2";
+import SearchBox from "../../components/SearchBox";
+import GPFailureBulkUploadModal from "../../components/GPFailureBulkUploadModal";
+import Pagination from "../../components/Pagination";
 
 const GPFailureInformationList = () => {
   const { setAlertBox } = useContext(MyContext);
@@ -19,20 +22,35 @@ const GPFailureInformationList = () => {
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedGPFailure, setSelectedGPFailure] = useState(null);
+  const [openBulkUploadModal, setOpenBulkUploadModal] = useState(false);
 
-  const { data: gpFailures, isLoading, isError } = useQuery({
-    queryKey: ["gpFailures"],
-    queryFn: () => api.get("/gp-failures").then((res) => res.data),
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const {
+    data: gpFailures,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["gpFailures", currentPage, searchQuery],
+    queryFn: () =>
+      api
+        .get(`/gp-failures?page=${currentPage}&search=${searchQuery}`)
+        .then((res) => res.data),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/gp-failures/${id}`),
     onSuccess: () => {
-      setAlertBox({open: true, msg: "GP Failure Information deleted successfully!", error: false});
+      setAlertBox({
+        open: true,
+        msg: "GP Failure Information deleted successfully!",
+        error: false,
+      });
       queryClient.invalidateQueries(["gpFailures"]);
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.message, error: true});
+      setAlertBox({ open: true, msg: error.message, error: true });
     },
   });
 
@@ -70,6 +88,17 @@ const GPFailureInformationList = () => {
           <h5 className="mb-0">G.P. Failure Information List</h5>
 
           <div className="d-flex align-items-center gap-2">
+            <SearchBox
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              setCurrentPage={setCurrentPage}
+            />
+            <Button
+              className="btn-blue ms-3 ps-3 pe-3"
+              onClick={() => setOpenBulkUploadModal(true)}
+            >
+              Bulk Upload
+            </Button>
             <Link to={"/add-GPFailureInformation"}>
               <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
             </Link>
@@ -109,74 +138,76 @@ const GPFailureInformationList = () => {
                   <tr>
                     <td colSpan="15">Error fetching data</td>
                   </tr>
-                ) : gpFailures.length > 0 ? (
-                  gpFailures.map((item, index) => {
-                    const challanDate = new Date(
-                      item.deliveryChalan.createdAt
-                    );
+                ) : gpFailures?.items?.length > 0 ? (
+                  gpFailures.items.map((item, index) => {
+                    const challanDate = item.deliveryChallan?.createdAt
+                      ? new Date(item.deliveryChallan.createdAt)
+                      : null;
                     const guaranteeMonths =
-                      item.deliveryChalan.finalInspectionDetail
-                        .deliverySchedule.guaranteePeriodMonths;
+                      item.deliveryChallan?.finalInspection?.deliverySchedule
+                        ?.guaranteePeriodMonths;
 
-                    // Calculate expiry date
-                    const expiryDate = addMonths(challanDate, guaranteeMonths);
+                    let expiryDate = null;
+                    if (challanDate && typeof guaranteeMonths === 'number') {
+                      expiryDate = addMonths(challanDate, guaranteeMonths);
+                    }
 
-                    // Guarantee status
                     const today = new Date();
-                    const isUnderGuarantee = isAfter(expiryDate, today);
+                    const isUnderGuarantee = expiryDate
+                      ? isAfter(expiryDate, today)
+                      : false;
 
                     return (
                       <tr key={item.id}>
                         {/* Sr No */}
-                        <td># {index + 1}</td>
+                        <td>
+                          # {(gpFailures.currentPage - 1) * 10 + index + 1}
+                        </td>
 
                         {/* TRF SI No */}
-                        <td>{item.trfSiNo}</td>
+                        <td>{item.trfsiNo}</td>
 
                         {/* Rating */}
                         <td>{item.rating}</td>
 
-                        <td>{item.deliveryChalan?.finalInspectionDetail?.deliverySchedule?.wound}</td>
-
-                        <td>{item.deliveryChalan?.finalInspectionDetail?.deliverySchedule?.phase}</td>
-
-                        {/* Material Name */}
                         <td>
                           {
-                            item.deliveryChalan.materialDescription
-                              .materialName
+                            item.deliveryChallan?.finalInspection
+                              ?.deliverySchedule?.wound
                           }
                         </td>
+
+                        <td>
+                          {
+                            item.deliveryChallan?.finalInspection
+                              ?.deliverySchedule?.phase
+                          }
+                        </td>
+
+                        {/* Material Name */}
+                        <td>{item.deliveryChallan?.materialDescription?.name}</td>
 
                         {/* TN No */}
                         <td>
                           {
-                            item.deliveryChalan.finalInspectionDetail
-                              .deliverySchedule.tnNumber
+                            item.deliveryChallan?.finalInspection?.deliverySchedule
+                              ?.tnNumber
                           }
                         </td>
 
                         {/* DI No / Date */}
                         <td>
-                          <div>
-                            {
-                              item.deliveryChalan.finalInspectionDetail
-                                .diNo
-                            }
-                          </div>
+                          <div>{item.deliveryChallan?.finalInspection?.diNo}</div>
                           <div className="text-muted small">
-                            {
-                              item.deliveryChalan.finalInspectionDetail
-                                .diDate
-                            }
+                            {item.deliveryChallan?.finalInspection?.diDate}
                           </div>
                         </td>
 
                         {/* Challan No / Date */}
                         <td>
-                          <div>{item.deliveryChalan.challanNo}</div>
+                          <div>{item.deliveryChallan?.challanNo}</div>
                           <div className="text-muted small">
-                            {item.deliveryChalan.createdAt}
+                            {item.deliveryChallan?.createdAt}
                           </div>
                         </td>
 
@@ -184,40 +215,40 @@ const GPFailureInformationList = () => {
                         <td className="text-start">
                           <div>
                             <strong>Name:</strong>{" "}
-                            {item.deliveryChalan.consigneeDetails.name}
+                            {item.deliveryChallan?.consignee?.name}
                           </div>
                           <div>
                             <strong>Address:</strong>{" "}
-                            {
-                              item.deliveryChalan.consigneeDetails
-                                .address
-                            }
+                            {item.deliveryChallan?.consignee?.address}
                           </div>
                           <div>
                             <strong>GST:</strong>{" "}
-                            {item.deliveryChalan.consigneeDetails.gstNo}
+                            {item.deliveryChallan?.consignee?.gstNo}
                           </div>
                         </td>
 
                         {/* TRF Failure List */}
                         <td className="text-start">
-                          
-                            <div className="mb-1">
-                              <strong>Place:</strong> {item.placeOfFailure} <br />
-                              <strong>Failure Date:</strong>{" "}
-                              {item.dateOfFailure} <br />
-                              <strong>Info Date:</strong>{" "}
-                              {item.dateOfInformation}
-                              <hr className="my-1" />
-                            </div>
-                        
+                          {Array.isArray(item.failureDetails) &&
+                            item.failureDetails.map((failure, idx) => (
+                              <div key={idx} className="mb-1">
+                                <strong>Place:</strong> {failure.place} <br />
+                                <strong>Failure Date:</strong>{" "}
+                                {failure.failureDate} <br />
+                                <strong>Info Date:</strong>{" "}
+                                {failure.informationDate}
+                                <hr className="my-1" />
+                              </div>
+                            ))}
                         </td>
 
                         {/* Guarantee Period */}
                         <td>{guaranteeMonths} Months</td>
 
                         {/* Expiry Date */}
-                        <td>{format(expiryDate, "yyyy-MM-dd")}</td>
+                        <td>
+                          {expiryDate ? format(expiryDate, "yyyy-MM-dd") : "N/A"}
+                        </td>
 
                         {/* Guarantee Status */}
                         <td
@@ -259,6 +290,13 @@ const GPFailureInformationList = () => {
               </tbody>
             </table>
           </div>
+          {gpFailures?.totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={gpFailures.totalPages}
+              onPageChange={setCurrentPage}
+            />
+          )}
         </div>
       </div>
 
@@ -269,9 +307,12 @@ const GPFailureInformationList = () => {
           gpFailureData={selectedGPFailure}
         />
       }
+      <GPFailureBulkUploadModal
+        open={openBulkUploadModal}
+        handleClose={() => setOpenBulkUploadModal(false)}
+      />
     </>
   );
 };
 
 export default GPFailureInformationList;
-

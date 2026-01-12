@@ -6,24 +6,43 @@ import Swal from "sweetalert2";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api";
 import { MyContext } from "../../App";
+import SearchBox from "../../components/SearchBox";
+import Pagination from "../../components/Pagination";
+import DeliveryDetailsBulkUploadModal from "../../components/DeliveryDetailsBulkUploadModal";
+import dayjs from "dayjs";
 
 const DeliveryDetailsList = () => {
   const { setAlertBox } = useContext(MyContext);
   const queryClient = useQueryClient();
 
-  const { data: deliveryDetails, isLoading, isError } = useQuery({
-    queryKey: ["deliveryDetails"],
-    queryFn: () => api.get("/delivery-details").then((res) => res.data),
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [openBulkUploadModal, setOpenBulkUploadModal] = useState(false);
+
+  const {
+    data: deliveryDetails,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["deliveryDetails", currentPage, searchQuery],
+    queryFn: () =>
+      api
+        .get(`/delivery-details?page=${currentPage}&search=${searchQuery}`)
+        .then((res) => res.data),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/delivery-details/${id}`),
     onSuccess: () => {
-      setAlertBox({open: true, msg: "Delivery Details deleted successfully!", error: false});
+      setAlertBox({
+        open: true,
+        msg: "Delivery Details deleted successfully!",
+        error: false,
+      });
       queryClient.invalidateQueries(["deliveryDetails"]);
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.message, error: true});
+      setAlertBox({ open: true, msg: error.message, error: true });
     },
   });
 
@@ -50,6 +69,17 @@ const DeliveryDetailsList = () => {
         <div className="d-flex justify-content-between align-items-center gap-3 mb-3 card shadow border-0 w-100 flex-row p-4">
           <h5 className="mb-0">Delivery Details Of Transformers List</h5>
           <div className="ms-auto d-flex align-items-center">
+            {/* <SearchBox
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              setCurrentPage={setCurrentPage}
+            /> */}
+            <Button
+              className="btn-blue ms-3 ps-3 pe-3"
+              onClick={() => setOpenBulkUploadModal(true)}
+            >
+              Bulk Upload
+            </Button>
             <Link to={"/add-deliveryDetails"}>
               <Button className="btn-blue ms-3 ps-3 pe-3">
                 Add New Delivery Detail
@@ -93,21 +123,32 @@ const DeliveryDetailsList = () => {
                   <tr>
                     <td colSpan="17">Error fetching data</td>
                   </tr>
-                ) : deliveryDetails.length > 0 ? (
-                  deliveryDetails.map((item, index) => {
-                    const dc = item.deliveryChalan;
+                ) : deliveryDetails?.items?.length > 0 ? (
+                  deliveryDetails.items.map((item, index) => {
+                    const dc = item.deliveryChallan;
                     return (
                       <tr key={item.id}>
-                        <td># {index + 1}</td>
+                        <td>
+                          # {(deliveryDetails.currentPage - 1) * 10 + index + 1}
+                        </td>
 
-                        <td>{dc.finalInspectionDetail.deliverySchedule.tnNumber}</td>
+                        <td>{dc.finalInspection.deliverySchedule.tnNumber}</td>
 
-                        <td>{dc.finalInspectionDetail.serialNumberFrom} TO {dc.finalInspectionDetail.serialNumberTo}</td>
+                        <td>
+                          {dc.finalInspection.serialNumberFrom} TO{" "}
+                          {dc.finalInspection.serialNumberTo}
+                        </td>
 
                         {/* PO Number / Date */}
                         <td>
-                          <div className="fw-semibold">{dc.finalInspectionDetail.deliverySchedule.poDetails}</div>
-                          <div className="text-muted small">{new Date(dc.finalInspectionDetail.deliverySchedule.poDate).toLocaleDateString()}</div>
+                          <div className="fw-semibold">
+                            {dc.finalInspection.deliverySchedule.poDetails}
+                          </div>
+                          <div className="text-muted small">
+                            {new Date(
+                              dc.finalInspection.deliverySchedule.poDate
+                            ).toLocaleDateString()}
+                          </div>
                         </td>
 
                         {/* Challan No */}
@@ -120,35 +161,55 @@ const DeliveryDetailsList = () => {
                         <td>{item.receiptedChallanNo}</td>
 
                         {/* Receipted Challan Date */}
-                        <td>{new Date(item.receiptedChallanDate).toLocaleDateString()}</td>
+                        <td>
+                          {new Date(
+                            item.receiptedChallanDate
+                          ).toLocaleDateString()}
+                        </td>
 
                         {/* Total Qty. */}
-                        <td>{dc.finalInspectionDetail.inspectedQuantity}</td>
+                        <td>{dc.finalInspection.inspectedQuantity}</td>
 
                         {/* G.P. Expiry Date */}
-                        <td>{new Date(dc.finalInspectionDetail.deliverySchedule.guaranteePeriodMonths).toLocaleDateString()}</td>
+                        <td>
+                          {dayjs(
+                            dc.finalInspection.deliverySchedule
+                              .deliveryScheduleDate
+                          )
+                            .add(
+                              dc.finalInspection.deliverySchedule
+                                .guaranteePeriodMonths,
+                              "month"
+                            )
+                            .format("YYYY-MM-DD")}
+                        </td>
 
                         {/* Transformer Info */}
                         <td className="text-start">
                           <div>
-                            <strong>TN:</strong> {dc.finalInspectionDetail.deliverySchedule.tnNumber}
+                            <strong>TN:</strong>{" "}
+                            {dc.finalInspection.deliverySchedule.tnNumber}
                           </div>
                           <div>
                             <strong>Serial No:</strong>{" "}
-                            {dc.finalInspectionDetail.serialNumberFrom} TO {dc.finalInspectionDetail.serialNumberTo}
+                            {dc.finalInspection.serialNumberFrom} TO{" "}
+                            {dc.finalInspection.serialNumberTo}
                           </div>
                           <div>
-                            <strong>DI No:</strong> {dc.finalInspectionDetail.diNo}
+                            <strong>DI No:</strong> {dc.finalInspection.diNo}
                           </div>
                           <div>
-                            <strong>DI Date:</strong> {new Date(dc.finalInspectionDetail.diDate).toLocaleDateString()}
+                            <strong>DI Date:</strong>{" "}
+                            {new Date(
+                              dc.finalInspection.diDate
+                            ).toLocaleDateString()}
                           </div>
                         </td>
 
                         {/* Inspection Officers */}
                         <td>
                           <div className="d-flex flex-column gap-1">
-                            {dc.finalInspectionDetail.inspectionOfficers.map(
+                            {dc.finalInspection.inspectionOfficers.map(
                               (officer, idx) => (
                                 <span
                                   key={`${item.id}-${idx}`}
@@ -166,7 +227,11 @@ const DeliveryDetailsList = () => {
                         </td>
 
                         {/* Inspection Date */}
-                        <td>{new Date(dc.finalInspectionDetail.inspectionDate).toLocaleDateString()}</td>
+                        <td>
+                          {new Date(
+                            dc.finalInspection.inspectionDate
+                          ).toLocaleDateString()}
+                        </td>
 
                         {/* Consignor Details */}
                         <td className="text-start">
@@ -187,19 +252,19 @@ const DeliveryDetailsList = () => {
                         {/* Consignee Details */}
                         <td className="text-start">
                           <div>
-                            <strong>Name:</strong> {dc.consigneeDetails.name}
+                            <strong>Name:</strong> {dc.consignee.name}
                           </div>
                           <div>
-                            <strong>Address:</strong> {dc.consigneeDetails.address}
+                            <strong>Address:</strong> {dc.consignee.address}
                           </div>
                           <div>
-                            <strong>GST:</strong> {dc.consigneeDetails.gstNo}
+                            <strong>GST:</strong> {dc.consignee.gstNo}
                           </div>
                         </td>
 
                         {/* Material Description */}
                         <td className="text-start">
-                          <div>{dc.materialDescription.description}</div>
+                          <div>{dc.materialDescription?.description}</div>
                         </td>
 
                         {/* Action Buttons */}
@@ -229,8 +294,19 @@ const DeliveryDetailsList = () => {
               </tbody>
             </table>
           </div>
+          {deliveryDetails?.totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={deliveryDetails.totalPages}
+              onPageChange={setCurrentPage}
+            />
+          )}
         </div>
       </div>
+      <DeliveryDetailsBulkUploadModal
+        open={openBulkUploadModal}
+        handleClose={() => setOpenBulkUploadModal(false)}
+      />
     </>
   );
 };

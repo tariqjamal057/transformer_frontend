@@ -23,48 +23,59 @@ const AddDeliveryDetails = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [selectedDI, setSelectedDI] = useState("");
+  const [selectedChallanNo, setSelectedChallanNo] = useState("");
   const [selectedData, setSelectedData] = useState(null);
   const [receiptedChallanNo, setReceiptedChallanNo] = useState("");
   const [receiptedChallanDate, setReceiptedChallanDate] = useState(null);
 
   const { data: deliveryChallans } = useQuery({
     queryKey: ["deliveryChallans"],
-    queryFn: () => api.get("/delivery-challans").then((res) => res.data),
+    queryFn: () =>
+      api.get("/delivery-challans?all=true").then((res) => res.data),
   });
+
+  const availableChallans = deliveryChallans?.filter(
+    (challan) => !challan.deliveryDetail
+  );
 
   const addDeliveryDetailsMutation = useMutation({
     mutationFn: (newDetails) => api.post("/delivery-details", newDetails),
     onSuccess: () => {
-      setAlertBox({open: true, msg: "Delivery Details added successfully!", error: false});
+      setAlertBox({
+        open: true,
+        msg: "Delivery Details added successfully!",
+        error: false,
+      });
       queryClient.invalidateQueries(["deliveryDetails"]);
       navigate("/deliveryDetails-list");
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.message, error: true});
+      setAlertBox({ open: true, msg: error.message, error: true });
     },
   });
 
-  const handleDIChange = (event) => {
-    const diNo = event.target.value;
-    setSelectedDI(diNo);
+  const handleChallanChange = (event) => {
+    const challanNo = event.target.value;
+    setSelectedChallanNo(challanNo);
 
     // find the record
-    const record = deliveryChallans.find((item) => item.finalInspectionDetail.diNo === diNo);
+    const record = availableChallans.find(
+      (item) => item.challanNo === challanNo
+    );
     setSelectedData(record || null);
   };
 
   // Handle Submit
   const handleSubmit = () => {
     if (!selectedData) {
-      alert("Please select a DI Number first.");
+      alert("Please select a Challan Number first.");
       return;
     }
 
     const data = {
       deliveryChalanId: selectedData.id,
       receiptedChallanNo,
-      receiptedChallanDate: dayjs(receiptedChallanDate).format("YYYY-MM-DD"),
+      receiptedChallanDate: dayjs(receiptedChallanDate).toISOString(),
     };
 
     addDeliveryDetailsMutation.mutate(data);
@@ -88,14 +99,14 @@ const AddDeliveryDetails = () => {
               {/* DI Dropdown */}
               <TextField
                 select
-                label="DI No"
-                value={selectedDI}
-                onChange={handleDIChange}
+                label="Challan No"
+                value={selectedChallanNo}
+                onChange={handleChallanChange}
                 fullWidth
               >
-                {deliveryChallans?.map((item) => (
-                  <MenuItem key={item.id} value={item.finalInspectionDetail.diNo}>
-                    {item.finalInspectionDetail.diNo}
+                {availableChallans?.map((item) => (
+                  <MenuItem key={item.id} value={item.challanNo}>
+                    {item.challanNo}
                   </MenuItem>
                 ))}
               </TextField>
@@ -105,7 +116,7 @@ const AddDeliveryDetails = () => {
                 <>
                   <TextField
                     label="DI Date"
-                    value={dayjs(selectedData.finalInspectionDetail.diDate).format(
+                    value={dayjs(selectedData.finalInspection.diDate).format(
                       "YYYY-MM-DD"
                     )}
                     fullWidth
@@ -125,33 +136,40 @@ const AddDeliveryDetails = () => {
                   />
                   <TextField
                     label="Consignee Name"
-                    value={selectedData.consigneeDetails.name}
+                    value={selectedData.consignee.name}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
                   <TextField
                     label="Total Quantity"
-                    value={selectedData.finalInspectionDetail.inspectedQuantity}
+                    value={selectedData.finalInspection.inspectedQuantity}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
                   <TextField
                     label="Supplied Quantity"
-                    value={selectedData.finalInspectionDetail.inspectedQuantity}
+                    value={selectedData.finalInspection.inspectedQuantity}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
                   <TextField
                     label="Transformer Serial No"
-                    value={`${selectedData.finalInspectionDetail.serialNumberFrom} TO ${selectedData.finalInspectionDetail.serialNumberTo}`}
+                    value={`${selectedData.finalInspection.serialNumberFrom} TO ${selectedData.finalInspection.serialNumberTo}`}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
                   <TextField
                     label="GP Expiry Date"
-                    value={dayjs(selectedData.finalInspectionDetail.deliverySchedule.guaranteePeriodMonths).format(
-                      "YYYY-MM-DD"
-                    )}
+                    value={dayjs(
+                      selectedData.finalInspection.deliverySchedule
+                        .deliveryScheduleDate
+                    )
+                      .add(
+                        selectedData.finalInspection.deliverySchedule
+                          .guaranteePeriodMonths,
+                        "month"
+                      )
+                      .format("YYYY-MM-DD")}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
