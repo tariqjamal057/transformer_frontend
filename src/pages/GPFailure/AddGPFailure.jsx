@@ -141,7 +141,7 @@ const AddGPFailureInformation = () => {
 
           {/* Input Section */}
           <Grid container spacing={2} columns={{ xs: 1, sm: 1, lg: 3, md: 3 }} sx={{ mb: 3 }}>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="TRFSI No"
@@ -150,7 +150,7 @@ const AddGPFailureInformation = () => {
                 onChange={(e) => setTrfsiNo(e.target.value)}
               />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Rating"
@@ -160,7 +160,7 @@ const AddGPFailureInformation = () => {
               />
             </Grid>
 
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Sub-division"
@@ -303,7 +303,7 @@ const AddGPFailureInformation = () => {
             columns={{ xs: 1, sm: 1, lg: 3, md: 3 }}
             sx={{ mb: 3, mt: 3 }}
           >
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 label="place Where Failed"
                 fullWidth
@@ -312,7 +312,7 @@ const AddGPFailureInformation = () => {
               />
             </Grid>
 
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <DatePicker
                 label="Information Date"
                 value={dateOfInformation}
@@ -323,7 +323,7 @@ const AddGPFailureInformation = () => {
               />
             </Grid>
 
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <Box display="flex" gap={1}>
                 <DatePicker
                   label="TFR Failure Date"
@@ -344,7 +344,7 @@ const AddGPFailureInformation = () => {
 
             {/* Show List of Failures in Table */}
             {trfFailureList.length > 0 && (
-              <Grid item xs={12}>
+              <Grid item size={12}>
                 <TableContainer
                   component={Paper}
                   sx={{ mt: 2, borderRadius: 2, boxShadow: 3 }}

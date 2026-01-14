@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import {
   Modal,
   Box,
@@ -15,6 +15,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../services/api";
+import { MyContext } from "../App";
 
 const style = {
   position: "absolute",
@@ -32,6 +33,7 @@ const style = {
 };
 
 const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
+  const { setAlertBox } = useContext(MyContext);
   const queryClient = useQueryClient();
   const [accountReceiptNoteNo, setAccountReceiptNoteNo] = useState("");
   const [accountReceiptNoteDate, setAccountReceiptNoteDate] = useState(null);
@@ -47,6 +49,7 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
 
   const [sealNoTimeOfGPReceived, setSealNoTimeOfGPReceived] = useState("");
   const [consigneeTFRSerialNo, setConsigneeTFRSerialNo] = useState("");
+  const [originalTfrSrNo, setOriginalTfrSrNo] = useState("");
 
   //parts missing details state
   const [oilLevel, setOilLevel] = useState("");
@@ -70,67 +73,72 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
 
   const { data: deliveryChallans } = useQuery({
     queryKey: ["deliveryChallans"],
-    queryFn: () => api.get("/delivery-challans").then((res) => res.data),
+    queryFn: () =>
+      api.get("/delivery-challans?all=true").then((res) => res.data),
   });
 
   // update useEffect
   useEffect(() => {
-    if (trfsiNo && rating) {
+    if (trfsiNo) {
       const found = deliveryChallans?.find((ch) => {
-        const hasTrfsi = ch.finalInspectionDetail.shealingDetails.some(
-          (s) => String(s.trfsiNo) === String(trfsiNo)
+        const hasTrfsi = ch.finalInspection.sealingDetails.some(
+          (s) => String(s.trfSiNo) === String(trfsiNo)
         );
-        const sameRating =
-          ch.finalInspectionDetail.deliverySchedule.rating
-            .toLowerCase()
-            .trim() === rating.toLowerCase().trim();
-
-        return hasTrfsi && sameRating;
+        if (hasTrfsi) {
+          return ch;
+        }
       });
 
       if (found) {
         setSelectedChalan(found);
 
-        // 🔹 fetch polySealNo of entered TRFSI
-        const seal = found.finalInspectionDetail.shealingDetails.find(
-          (s) => String(s.trfsiNo) === String(trfsiNo)
+        const seal = found.finalInspection.sealingDetails.find(
+          (s) => String(s.trfSiNo) === String(trfsiNo)
         );
         setPolySealNo(seal?.polySealNo || "");
       } else {
         setSelectedChalan(null);
         setPolySealNo("");
       }
-    } else {
-      setSelectedChalan(null);
-      setPolySealNo("");
     }
-  }, [trfsiNo, rating, deliveryChallans]);
+  }, [trfsiNo, deliveryChallans]);
 
   const { mutate: updateGPReceipt, isLoading } = useMutation({
     mutationFn: (updatedData) =>
-      api.put(`/gp-receipt-notes/${gpReceiptData.id}`, updatedData),
+      api.put(`/new-gp-receipt-records/${gpReceiptData.id}`, updatedData),
     onSuccess: () => {
-      queryClient.invalidateQueries(["gpReceiptNotes"]);
+      queryClient.invalidateQueries(["newGpReceiptRecords"]);
+      setAlertBox({ open: true, msg: "Updated successfully", error: false });
       handleClose();
+    },
+    onError: (error) => {
+      setAlertBox({ open: true, msg: error.message, error: true });
     },
   });
 
   const handleSubmit = () => {
+    if (!selectedChalan) {
+      setAlertBox({
+        open: true,
+        msg: "No matching record found. Please check TRFSI No.",
+        error: true,
+      });
+      return;
+    }
     const data = {
       accountReceiptNoteNo,
-      accountReceiptNoteDate: dayjs(accountReceiptNoteDate).format(
-        "YYYY-MM-DD"
-      ),
+      accountReceiptNoteDate: dayjs(accountReceiptNoteDate).toISOString(),
       sinNo,
       consigneeName,
       discomReceiptNoteNo,
-      discomReceiptNoteDate: dayjs(discomReceiptNoteDate).format("YYYY-MM-DD"),
+      discomReceiptNoteDate: dayjs(discomReceiptNoteDate).toISOString(),
       remarks,
-      trfsiNo,
+      trfsiNo: String(trfsiNo),
       rating,
-      challanNo: selectedChalan.challanNo,
+      deliveryChallanId: selectedChalan.id,
       sealNoTimeOfGPReceived,
       consigneeTFRSerialNo,
+      originalTfrSrNo,
       oilLevel,
       hvBushing,
       lvBushing,
@@ -149,11 +157,7 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
       core,
       polySealNo,
     };
-    if (data) {
-      updateGPReceipt(data);
-    } else {
-      alert("No matching record found.");
-    }
+    updateGPReceipt(data);
   };
 
   // Load initial data if editing
@@ -176,6 +180,7 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
       setRemarks(gpReceiptData.remarks);
       setTrfsiNo(gpReceiptData.trfsiNo || "");
       setRating(gpReceiptData.rating || "");
+      setOriginalTfrSrNo(gpReceiptData.originalTfrSrNo || "");
       setPolySealNo(gpReceiptData.polySealNo || "");
       setSealNoTimeOfGPReceived(gpReceiptData.sealNoTimeOfGPReceived || "");
       setConsigneeTFRSerialNo(gpReceiptData.consigneeTFRSerialNo || "");
@@ -302,6 +307,15 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
               onChange={(e) => setTrfsiNo(e.target.value)}
             />
 
+            <TextField
+              fullWidth
+              label="Original Tfr. Sr. No."
+              variant="outlined"
+              margin="normal"
+              value={originalTfrSrNo}
+              onChange={(e) => setOriginalTfrSrNo(e.target.value)}
+            />
+
             {/* Rating */}
 
             <TextField
@@ -317,7 +331,7 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
               <>
                 <TextField
                   label="Material Name"
-                  value={selectedChalan?.materialDescription?.materialName}
+                  value={selectedChalan?.materialDescription?.name}
                   fullWidth
                   margin="normal"
                   InputProps={{ readOnly: true }}
@@ -326,8 +340,7 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
                 <TextField
                   label="TN Number"
                   value={
-                    selectedChalan?.finalInspectionDetail?.deliverySchedule
-                      ?.tnNumber
+                    selectedChalan?.finalInspection?.deliverySchedule?.tnNumber
                   }
                   fullWidth
                   margin="normal"
@@ -517,8 +530,13 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
             />
 
             <Box mt={4} textAlign="center">
-              <Button variant="contained" size="large" onClick={handleSubmit} disabled={isLoading}>
-                {isLoading? 'Saving...' : 'Save Changes'}
+              <Button
+                variant="contained"
+                size="large"
+                onClick={handleSubmit}
+                disabled={isLoading}
+              >
+                {isLoading ? "Saving..." : "Save Changes"}
               </Button>
             </Box>
           </Box>

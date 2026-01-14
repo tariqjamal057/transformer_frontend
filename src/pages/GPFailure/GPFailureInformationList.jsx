@@ -88,10 +88,27 @@ const GPFailureInformationList = () => {
           <h5 className="mb-0">G.P. Failure Information List</h5>
 
           <div className="d-flex align-items-center gap-2">
-            <SearchBox
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              setCurrentPage={setCurrentPage}
+            <TextField
+              variant="outlined"
+              placeholder="Search ...."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              size="small"
+              sx={{
+                width: { xs: "100%", sm: "300px" },
+                "& .MuiOutlinedInput-root": {
+                  "& fieldset": { borderColor: "#ccc" },
+                  "&:hover fieldset": { borderColor: "#f0883d" },
+                  "&.Mui-focused fieldset": { borderColor: "#f0883d" },
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: "#f0883d" }} />
+                  </InputAdornment>
+                ),
+              }}
             />
             <Button
               className="btn-blue ms-3 ps-3 pe-3"
@@ -148,7 +165,7 @@ const GPFailureInformationList = () => {
                         ?.guaranteePeriodMonths;
 
                     let expiryDate = null;
-                    if (challanDate && typeof guaranteeMonths === 'number') {
+                    if (challanDate && typeof guaranteeMonths === "number") {
                       expiryDate = addMonths(challanDate, guaranteeMonths);
                     }
 
@@ -185,19 +202,23 @@ const GPFailureInformationList = () => {
                         </td>
 
                         {/* Material Name */}
-                        <td>{item.deliveryChallan?.materialDescription?.name}</td>
+                        <td>
+                          {item.deliveryChallan?.materialDescription?.name}
+                        </td>
 
                         {/* TN No */}
                         <td>
                           {
-                            item.deliveryChallan?.finalInspection?.deliverySchedule
-                              ?.tnNumber
+                            item.deliveryChallan?.finalInspection
+                              ?.deliverySchedule?.tnNumber
                           }
                         </td>
 
                         {/* DI No / Date */}
                         <td>
-                          <div>{item.deliveryChallan?.finalInspection?.diNo}</div>
+                          <div>
+                            {item.deliveryChallan?.finalInspection?.diNo}
+                          </div>
                           <div className="text-muted small">
                             {item.deliveryChallan?.finalInspection?.diDate}
                           </div>
@@ -247,7 +268,9 @@ const GPFailureInformationList = () => {
 
                         {/* Expiry Date */}
                         <td>
-                          {expiryDate ? format(expiryDate, "yyyy-MM-dd") : "N/A"}
+                          {expiryDate
+                            ? format(expiryDate, "yyyy-MM-dd")
+                            : "N/A"}
                         </td>
 
                         {/* Guarantee Status */}
@@ -269,12 +292,12 @@ const GPFailureInformationList = () => {
                             >
                               <FaPencilAlt />
                             </button>
-                            <button
+                            {/* <button
                               className="btn btn-sm btn-danger"
                               onClick={() => handleDelete(item.id)}
                             >
                               <FaTrash />
-                            </button>
+                            </button> */}
                           </div>
                         </td>
                       </tr>

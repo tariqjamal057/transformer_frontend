@@ -45,41 +45,26 @@ const GPFailureInformationModal = ({ open, handleClose, gpFailureData }) => {
   const queryClient = useQueryClient();
   const [trfsiNo, setTrfsiNo] = useState("");
   const [rating, setRating] = useState("");
-  const [selectedChalan, setSelectedChalan] = useState(null);
+  const [subDivision, setSubDivision] = useState("");
 
   const [trfFailureList, setTrfFailureList] = useState([]);
   const [trfFailureDate, setTrfFailureDate] = useState(null);
   const [dateOfInformation, setDateOfInformation] = useState(null);
   const [placeWhereFailed, setPlaceWhereFailed] = useState("");
+  const [editingIndex, setEditingIndex] = useState(null);
 
-  const { data: deliveryChallans } = useQuery({
-    queryKey: ["deliveryChallans"],
-    queryFn: () => api.get("/delivery-challans").then((res) => res.data),
-  });
-
-  // 🔹 Auto fetch whenever trfsiNo and rating are set
+  // Load initial data if editing
   useEffect(() => {
-    if (trfsiNo && rating) {
-      const found = deliveryChallans?.find((ch) => {
-        const hasTrfsi = ch.finalInspectionDetail.shealingDetails.some(
-          (s) => String(s.trfsiNo) === String(trfsiNo)
-        );
-        const sameRating =
-          ch.finalInspectionDetail.deliverySchedule.rating
-            .toLowerCase()
-            .trim() === rating.toLowerCase().trim();
-
-        return hasTrfsi && sameRating;
-      });
-
-      setSelectedChalan(found || null);
-    } else {
-      setSelectedChalan(null);
+    if (gpFailureData) {
+      setTrfsiNo(gpFailureData.trfsiNo || "");
+      setRating(gpFailureData.rating || "");
+      setSubDivision(gpFailureData.subDivision || "");
+      setTrfFailureList(gpFailureData.failureDetails || []);
     }
-  }, [trfsiNo, rating, deliveryChallans]);
+  }, [gpFailureData]);
 
-  // Add trffailurelist to array
-  const handleAddTRFFailureDetails = () => {
+  // Add or update trffailurelist to array
+  const handleAddOrUpdateTRFFailureDetails = () => {
     if (!trfFailureDate || !dateOfInformation || !placeWhereFailed) return; // simple validation
 
     const newItem = {
@@ -88,7 +73,15 @@ const GPFailureInformationModal = ({ open, handleClose, gpFailureData }) => {
       place: placeWhereFailed,
     };
 
-    setTrfFailureList((prev) => [...prev, newItem]);
+    if (editingIndex !== null) {
+      const updatedList = [...trfFailureList];
+      updatedList[editingIndex] = newItem;
+      setTrfFailureList(updatedList);
+      setEditingIndex(null);
+    } else {
+      setTrfFailureList((prev) => [...prev, newItem]);
+    }
+    
     setPlaceWhereFailed(""); // clear input
     setTrfFailureDate(null); // clear date
     setDateOfInformation(null);
@@ -97,6 +90,14 @@ const GPFailureInformationModal = ({ open, handleClose, gpFailureData }) => {
   // Remove particular trffailuredata from array
   const handleRemoveTRFFailureData = (index) => {
     setTrfFailureList((prev) => prev.filter((_, i) => i !== index));
+  };
+  
+  const handleEditTRFFailureData = (index) => {
+    const item = trfFailureList[index];
+    setTrfFailureDate(dayjs(item.failureDate));
+    setDateOfInformation(dayjs(item.informationDate));
+    setPlaceWhereFailed(item.place);
+    setEditingIndex(index);
   };
 
   const { mutate: updateGPFailure, isLoading } = useMutation({
@@ -109,36 +110,30 @@ const GPFailureInformationModal = ({ open, handleClose, gpFailureData }) => {
   });
 
   const handleSubmit = () => {
+    // if (!gpFailureData || !gpFailureData.deliveryChallan) {
+    //   // Handle the case where deliveryChalan is not available
+    //   alert("Delivery Challan data is not available.");
+    //   return;
+    // }
+
+    const challanDate = new Date(gpFailureData.deliveryChallan?.createdAt);
+    const guaranteeMonths =
+      gpFailureData.deliveryChallan.finalInspection.deliverySchedule.guaranteePeriodMonths;
+    const expiryDate = addMonths(challanDate, guaranteeMonths);
+    const today = new Date();
+    const isUnderGuarantee = isAfter(expiryDate, today);
+
     const data = {
-      trfSiNo: parseInt(trfsiNo),
+      trfsiNo: trfsiNo,
       rating,
-      deliveryChalanId: selectedChalan.id,
-      trfFailureList,
+      deliveryChalanId: gpFailureData?.deliveryChalanId,
+      subDivision,
+      failureDetails: trfFailureList,
+      guaranteeExpiry: expiryDate.toISOString(),
+      guaranteeStatus: isUnderGuarantee ? "Under Guarantee" : "Expired",
     };
-    if (data) {
-      updateGPFailure(data);
-    } else {
-      alert("No matching record found.");
-    }
+    updateGPFailure(data);
   };
-
-  // Load initial data if editing
-  useEffect(() => {
-    if (gpFailureData) {
-      setTrfsiNo(gpFailureData.trfSiNo || "");
-      setRating(gpFailureData.rating || "");
-
-      setSelectedChalan(gpFailureData.deliveryChalanDetails || "");
-
-      const trfFailureList = (gpFailureData.trfFailureList || []).map((gp) => ({
-        failureDate: gp.failureDate ? dayjs(gp.failureDate) : null,
-        informationDate: gp.informationDate ? dayjs(gp.imposedDate) : null,
-        place: gp.place,
-      }));
-
-      setTrfFailureList(trfFailureList);
-    }
-  }, [gpFailureData]);
 
   return (
     <Modal open={open} onClose={handleClose}>
@@ -174,243 +169,260 @@ const GPFailureInformationModal = ({ open, handleClose, gpFailureData }) => {
             value={rating}
             onChange={(e) => setRating(e.target.value)}
           />
+          
+          <TextField
+            fullWidth
+            label="Sub-division"
+            variant="outlined"
+            margin="normal"
+            value={subDivision}
+            onChange={(e) => setSubDivision(e.target.value)}
+          />
 
-          {selectedChalan &&
-            (() => {
-              const challanDate = new Date(selectedChalan.createdAt);
-              const guaranteeMonths =
-                selectedChalan.finalInspectionDetail.deliverySchedule
-                  .guaranteePeriodMonths;
-
-              // Expiry = challanCreatedDate + guaranteePeriodMonths
-              const expiryDate = addMonths(challanDate, guaranteeMonths);
-
-              // Status check
-              const today = new Date();
-              const isUnderGuarantee = isAfter(expiryDate, today);
-
-              return (
-                <>
+          {gpFailureData?.deliveryChallan && (
+            <Paper
+              elevation={2}
+              sx={{
+                p: 3,
+                bgcolor: "#f9f9f9",
+                borderRadius: 2,
+                mt: 2,
+              }}
+            >
+              <Typography variant="h6" gutterBottom color="secondary">
+                Transformer Details
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     label="Material Name"
-                    value={selectedChalan.materialDescription.materialName}
+                    value={gpFailureData.deliveryChallan?.materialDescription?.name}
                     fullWidth
-                    margin="normal"
                     InputProps={{ readOnly: true }}
                   />
-
+                </Grid>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     label="TN Number"
                     value={
-                      selectedChalan.finalInspectionDetail.deliverySchedule
-                        .tnNumber
+                      gpFailureData?.deliveryChallan?.finalInspection?.deliverySchedule
+                        ?.tnNumber
                     }
                     fullWidth
-                    margin="normal"
                     InputProps={{ readOnly: true }}
                   />
-
+                </Grid>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     label="DI No"
-                    value={selectedChalan.finalInspectionDetail.diNo}
+                    value={gpFailureData.deliveryChallan?.finalInspection?.diNo}
                     fullWidth
-                    margin="normal"
                     InputProps={{ readOnly: true }}
                   />
-
+                </Grid>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     label="DI Date"
-                    value={selectedChalan.finalInspectionDetail.diDate}
+                    value={gpFailureData.deliveryChallan?.finalInspection?.diDate}
                     fullWidth
-                    margin="normal"
                     InputProps={{ readOnly: true }}
                   />
-
+                </Grid>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     label="Challan No"
-                    value={selectedChalan.challanNo}
+                    value={gpFailureData.deliveryChallan?.challanNo}
                     fullWidth
-                    margin="normal"
                     InputProps={{ readOnly: true }}
                   />
-
+                </Grid>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     label="Challan Created Date"
-                    value={selectedChalan.createdAt}
+                    value={gpFailureData.deliveryChallan?.createdAt}
                     fullWidth
-                    margin="normal"
                     InputProps={{ readOnly: true }}
                   />
-
+                </Grid>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     label="Consignee Name"
-                    value={selectedChalan.consigneeDetails.name}
+                    value={gpFailureData.deliveryChallan?.consignee?.name}
                     fullWidth
-                    margin="normal"
                     InputProps={{ readOnly: true }}
                   />
-
+                </Grid>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     label="Guarantee Period (Months)"
                     value={
-                      selectedChalan.finalInspectionDetail.deliverySchedule
-                        .guaranteePeriodMonths
+                      gpFailureData.deliveryChallan?.finalInspection?.deliverySchedule
+                        ?.guaranteePeriodMonths
                     }
                     fullWidth
-                    margin="normal"
                     InputProps={{ readOnly: true }}
                   />
+                </Grid>
 
+                {/* New Fields */}
+                {/* <Grid item xs={12} sm={6}>
                   <TextField
                     label="Guarantee Expiry Date"
-                    value={format(expiryDate, "yyyy-MM-dd")}
+                    value={gpFailureData.guaranteeExpiry && !isNaN(new Date(gpFailureData.guaranteeExpiry)) ? format(new Date(gpFailureData.guaranteeExpiry), "yyyy-MM-DD") : "N/A"}
                     fullWidth
                     InputProps={{ readOnly: true }}
-                    margin="normal"
                   />
-
+                </Grid> */}
+                <Grid item xs={12} sm={6}>
                   <TextField
                     label="Guarantee Status"
-                    value={isUnderGuarantee ? "Under Guarantee" : "Expired"}
+                    value={gpFailureData.guaranteeStatus}
                     fullWidth
-                    margin="normal"
                     InputProps={{
                       readOnly: true,
                       style: {
-                        color: isUnderGuarantee ? "green" : "red",
+                        color: gpFailureData.guaranteeStatus === "Under Guarantee" ? "green" : "red",
                         fontWeight: "bold",
                       },
                     }}
                   />
+                </Grid>
+              </Grid>
+            </Paper>
+          )}
 
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                      label="TFR Failure Date"
-                      value={trfFailureDate}
-                      onChange={(date) => setTrfFailureDate(date)}
-                      sx={{ mt: 1, mb: 1 }}
-                      slotProps={{ textField: { fullWidth: true } }}
-                    />
-                  </LocalizationProvider>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DatePicker
+              label="TFR Failure Date"
+              value={trfFailureDate}
+              onChange={(date) => setTrfFailureDate(date)}
+              sx={{ mt: 1, mb: 1 }}
+              slotProps={{ textField: { fullWidth: true } }}
+            />
+          </LocalizationProvider>
 
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                      label="Information Date"
-                      value={dateOfInformation}
-                      onChange={(date) => setDateOfInformation(date)}
-                      sx={{ mt: 1, mb: 1 }}
-                      slotProps={{ textField: { fullWidth: true } }}
-                    />
-                  </LocalizationProvider>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DatePicker
+              label="Information Date"
+              value={dateOfInformation}
+              onChange={(date) => setDateOfInformation(date)}
+              sx={{ mt: 1, mb: 1 }}
+              slotProps={{ textField: { fullWidth: true } }}
+            />
+          </LocalizationProvider>
 
-                  <TextField
-                    label="place Where Failed"
-                    fullWidth
-                    value={placeWhereFailed}
-                    margin="normal"
-                    onChange={(e) => setPlaceWhereFailed(e.target.value)}
-                  />
+          <TextField
+            label="place Where Failed"
+            fullWidth
+            value={placeWhereFailed}
+            margin="normal"
+            onChange={(e) => setPlaceWhereFailed(e.target.value)}
+          />
 
-                  <Button
-                    variant="outlined"
-                    onClick={handleAddTRFFailureDetails}
-                    sx={{ mt: 1 }}
-                  >
-                    Add TRF Failure Details
-                  </Button>
+          <Button
+            variant="outlined"
+            onClick={handleAddOrUpdateTRFFailureDetails}
+            sx={{ mt: 1 }}
+          >
+            {editingIndex !== null ? "Update" : "Add"} TRF Failure Details
+          </Button>
 
-                  <Box mt={3}>
-                    <Typography
-                      variant="h6"
-                      sx={{ mb: 2, fontWeight: "bold", color: "primary.main" }}
+          <Box mt={3}>
+            <Typography
+              variant="h6"
+              sx={{ mb: 2, fontWeight: "bold", color: "primary.main" }}
+            >
+              TRF Failure List
+            </Typography>
+
+            <TableContainer
+              component={Paper}
+              elevation={3}
+              sx={{ borderRadius: 2 }}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: "#1976d2" }}>
+                    <TableCell
+                      sx={{ color: "white", fontWeight: "bold" }}
                     >
-                      TRF Failure List
-                    </Typography>
-
-                    <TableContainer
-                      component={Paper}
-                      elevation={3}
-                      sx={{ borderRadius: 2 }}
+                      #
+                    </TableCell>
+                    <TableCell
+                      sx={{ color: "white", fontWeight: "bold" }}
                     >
-                      <Table>
-                        <TableHead>
-                          <TableRow sx={{ backgroundColor: "#1976d2" }}>
-                            <TableCell
-                              sx={{ color: "white", fontWeight: "bold" }}
-                            >
-                              #
-                            </TableCell>
-                            <TableCell
-                              sx={{ color: "white", fontWeight: "bold" }}
-                            >
-                              Failure Date
-                            </TableCell>
-                            <TableCell
-                              sx={{ color: "white", fontWeight: "bold" }}
-                            >
-                              Information Date
-                            </TableCell>
-                            <TableCell
-                              sx={{ color: "white", fontWeight: "bold" }}
-                            >
-                              Place
-                            </TableCell>
-                            <TableCell
-                              sx={{
-                                color: "white",
-                                fontWeight: "bold",
-                                textAlign: "center",
-                              }}
-                            >
-                              Action
-                            </TableCell>
-                          </TableRow>
-                        </TableHead>
+                      Failure Date
+                    </TableCell>
+                    <TableCell
+                      sx={{ color: "white", fontWeight: "bold" }}
+                    >
+                      Information Date
+                    </TableCell>
+                    <TableCell
+                      sx={{ color: "white", fontWeight: "bold" }}
+                    >
+                      Place
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        color: "white",
+                        fontWeight: "bold",
+                        textAlign: "center",
+                      }}
+                    >
+                      Action
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
 
-                        <TableBody>
-                          {trfFailureList.length > 0 ? (
-                            trfFailureList.map((gp, i) => (
-                              <TableRow key={i} hover>
-                                <TableCell>{i + 1}</TableCell>
-                                <TableCell>
-                                  {gp.failureDate
-                                    ? dayjs(gp.failureDate).format("YYYY-MM-DD")
-                                    : "-"}
-                                </TableCell>
-                                <TableCell>
-                                  {gp.informationDate
-                                    ? dayjs(gp.informationDate).format(
-                                        "YYYY-MM-DD"
-                                      )
-                                    : "-"}
-                                </TableCell>
-                                <TableCell>{gp.place || "-"}</TableCell>
-                                <TableCell align="center">
-                                  <IconButton
-                                    color="error"
-                                    onClick={() =>
-                                      handleRemoveTRFFailureData(i)
-                                    }
-                                  >
-                                    ❌
-                                  </IconButton>
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          ) : (
-                            <TableRow>
-                              <TableCell colSpan={5} align="center">
-                                No TRF Failure Data Found
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </Box>
-                </>
-              );
-            })()}
+                <TableBody>
+                  {trfFailureList.length > 0 ? (
+                    trfFailureList.map((gp, i) => (
+                      <TableRow key={i} hover>
+                        <TableCell>{i + 1}</TableCell>
+                        <TableCell>
+                          {gp.failureDate
+                            ? dayjs(gp.failureDate).format("YYYY-MM-DD")
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {gp.informationDate
+                            ? dayjs(gp.informationDate).format(
+                                "YYYY-MM-DD"
+                              )
+                            : "-"}
+                        </TableCell>
+                        <TableCell>{gp.place || "-"}</TableCell>
+                        <TableCell align="center">
+                          {/* <IconButton
+                            color="primary"
+                            onClick={() => handleEditTRFFailureData(i)}
+                          >
+                            Edit
+                          </IconButton> */}
+                          <IconButton
+                            color="error"
+                            onClick={() =>
+                              handleRemoveTRFFailureData(i)
+                            }
+                          >
+                            ❌
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">
+                        No TRF Failure Data Found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+        </Box>
 
           <Box mt={4} textAlign="center">
             <Button variant="contained" size="large" onClick={handleSubmit} disabled={isLoading}>
@@ -418,7 +430,6 @@ const GPFailureInformationModal = ({ open, handleClose, gpFailureData }) => {
             </Button>
           </Box>
         </Box>
-      </Box>
     </Modal>
   );
 };

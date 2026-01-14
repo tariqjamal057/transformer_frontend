@@ -235,11 +235,18 @@ const DamagedTransformerList = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             size="small"
-            sx={{ width: { xs: "100%", sm: "300px" }, marginLeft: "auto" }}
+            sx={{
+              width: { xs: "100%", sm: "300px" },
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": { borderColor: "#ccc" },
+                "&:hover fieldset": { borderColor: "#f0883d" },
+                "&.Mui-focused fieldset": { borderColor: "#f0883d" },
+              },
+            }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon />
+                  <SearchIcon sx={{ color: "#f0883d" }} />
                 </InputAdornment>
               ),
             }}
@@ -273,10 +280,10 @@ const DamagedTransformerList = () => {
                 <th>Lifting Letter No</th>
                 <th>Lifting Letter Date</th>
                 <th>Lifting From Acos</th>
-                <th>Inspection After Repair Date</th>
+                {/* <th>Inspection After Repair Date</th>
                 <th>Challan No</th>
                 <th>Challan Date</th>
-                <th>Delivered To ACOS</th>
+                <th>Delivered To ACOS</th> */}
                 <th>Action</th>
               </tr>
             </thead>
@@ -308,7 +315,7 @@ const DamagedTransformerList = () => {
                         : "-"}
                     </td>
                     <td>{row.liftingFromAcos}</td>
-                    <td>
+                    {/* <td>
                       {row.dateOfInspectionAfterRepair
                         ? dayjs(row.dateOfInspectionAfterRepair).format(
                             "YYYY-MM-DD"
@@ -321,7 +328,7 @@ const DamagedTransformerList = () => {
                         ? dayjs(row.challanDate).format("YYYY-MM-DD")
                         : "-"}
                     </td>
-                    <td>{row.deliveredToAcos || "-"}</td>
+                    <td>{row.deliveredToAcos || "-"}</td> */}
                     <td>
                       <div className="d-flex gap-2 align-items-center justify-content-center">
                         <button

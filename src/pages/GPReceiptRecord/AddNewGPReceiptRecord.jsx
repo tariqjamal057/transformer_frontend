@@ -59,19 +59,23 @@ const AddNewGPReceiptRecord = () => {
 
   const { data: deliveryChallans } = useQuery({
     queryKey: ["deliveryChallans"],
-    queryFn: () => api.get("/delivery-challans").then((res) => res.data),
+    queryFn: () =>
+      api.get("/delivery-challans?all=true").then((res) => res.data),
   });
 
   const addNewGPReceiptRecordMutation = useMutation({
-    mutationFn: (newRecord) =>
-      api.post("/new-gp-receipt-records", newRecord),
+    mutationFn: (newRecord) => api.post("/new-gp-receipt-records", newRecord),
     onSuccess: () => {
-      setAlertBox({open: true, msg: "New GP Receipt Record added successfully!", error: false});
+      setAlertBox({
+        open: true,
+        msg: "New GP Receipt Record added successfully!",
+        error: false,
+      });
       queryClient.invalidateQueries(["newGpReceiptRecords"]);
       navigate("/GPReceiptRecord-list");
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.message, error: true});
+      setAlertBox({ open: true, msg: error.message, error: true });
     },
   });
 
@@ -79,23 +83,24 @@ const AddNewGPReceiptRecord = () => {
   useEffect(() => {
     if (trfsiNo && rating) {
       const found = deliveryChallans?.find((ch) => {
-        const hasTrfsi = ch.finalInspectionDetail.shealingDetails.some(
-          (s) => String(s.trfsiNo) === String(trfsiNo)
+        console.log("---------------- trfsiNo ", trfsiNo);
+        console.log(ch.finalInspection);
+        const hasTrfsi = ch.finalInspection.sealingDetails.some(
+          (s) => String(s.trfSiNo) === String(trfsiNo)
         );
-        const sameRating =
-          ch.finalInspectionDetail.deliverySchedule.rating
-            .toLowerCase()
-            .trim() === rating.toLowerCase().trim();
-
-        return hasTrfsi && sameRating;
+        if (hasTrfsi) {
+          return ch;
+        }
+        // const sameRating =
+        //   ch.finalInspection.deliverySchedule.rating === parseInt(rating);
+        // return hasTrfsi && sameRating;
       });
-
+      console.log("found ------------", found);
       if (found) {
         setSelectedChalan(found);
 
-        // 🔹 fetch polySealNo of entered TRFSI
-        const seal = found.finalInspectionDetail.shealingDetails.find(
-          (s) => String(s.trfsiNo) === String(trfsiNo)
+        const seal = found.finalInspection.sealingDetails.find(
+          (s) => String(s.trfSiNo) === String(trfsiNo)
         );
         setPolySealNo(seal?.polySealNo || "");
       } else {
@@ -109,17 +114,25 @@ const AddNewGPReceiptRecord = () => {
   }, [trfsiNo, rating, deliveryChallans]);
 
   const handleSubmit = () => {
+    if (!selectedChalan) {
+      setAlertBox({
+        open: true,
+        msg: "No matching record found. Please check TRFSI No and Rating.",
+        error: true,
+      });
+      return;
+    }
     const data = {
       accountReceiptNoteNo,
-      accountReceiptNoteDate: dayjs(accountReceiptNoteDate).format("YYYY-MM-DD"),
+      accountReceiptNoteDate: dayjs(accountReceiptNoteDate).toISOString(),
       sinNo,
       consigneeName,
       discomReceiptNoteNo,
-      discomReceiptNoteDate: dayjs(discomReceiptNoteDate).format("YYYY-MM-DD"),
+      discomReceiptNoteDate: dayjs(discomReceiptNoteDate).toISOString(),
       remarks,
-      trfsiNo: parseInt(trfsiNo),
+      trfsiNo: String(trfsiNo),
       rating,
-      deliveryChalanId: selectedChalan.id,
+      deliveryChallanId: selectedChalan.id,
       sealNoTimeOfGPReceived,
       consigneeTFRSerialNo,
       originalTfrSrNo,
@@ -141,11 +154,7 @@ const AddNewGPReceiptRecord = () => {
       core,
       polySealNo,
     };
-    if (data) {
-      addNewGPReceiptRecordMutation.mutate(data);
-    } else {
-      setAlertBox({open: true, msg: "No matching record found.", error: true});
-    }
+    addNewGPReceiptRecordMutation.mutate(data);
   };
 
   return (
@@ -164,7 +173,7 @@ const AddNewGPReceiptRecord = () => {
           {/* Input Section */}
           <Grid container spacing={2} columns={{ xs: 1, sm: 2 }} sx={{ mb: 3 }}>
             {/* Account Receipt Note No */}
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Account Receipt Note No"
@@ -175,7 +184,7 @@ const AddNewGPReceiptRecord = () => {
             </Grid>
 
             {/* Account Receipt Note Date */}
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <DatePicker
                 label="Account Receipt Note Date"
                 value={accountReceiptNoteDate}
@@ -185,7 +194,7 @@ const AddNewGPReceiptRecord = () => {
             </Grid>
 
             {/* SIN No */}
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="SIN No"
@@ -196,7 +205,7 @@ const AddNewGPReceiptRecord = () => {
             </Grid>
 
             {/* Consignee Name */}
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Consignee Name"
@@ -207,7 +216,7 @@ const AddNewGPReceiptRecord = () => {
             </Grid>
 
             {/* Discom Receipt Note No */}
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Discom Receipt Note No"
@@ -218,7 +227,7 @@ const AddNewGPReceiptRecord = () => {
             </Grid>
 
             {/* Discom Receipt Note Date */}
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <DatePicker
                 label="Discom Receipt Note Date"
                 value={discomReceiptNoteDate}
@@ -227,7 +236,7 @@ const AddNewGPReceiptRecord = () => {
               />
             </Grid>
 
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="TRFSI No"
@@ -238,7 +247,7 @@ const AddNewGPReceiptRecord = () => {
             </Grid>
 
             {/* Original Tfr. Sr. No. */}
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Original Tfr. Sr. No."
@@ -248,7 +257,7 @@ const AddNewGPReceiptRecord = () => {
               />
             </Grid>
             {/* Consignee TFR Serial No */}
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Consignee TFR Serial No"
@@ -259,7 +268,7 @@ const AddNewGPReceiptRecord = () => {
             </Grid>
 
             {/* Rating */}
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Rating"
@@ -271,26 +280,26 @@ const AddNewGPReceiptRecord = () => {
 
             {selectedChalan && (
               <>
-                <Grid item xs={1}>
+                <Grid item size={1}>
                   <TextField
                     label="Material Name"
-                    value={selectedChalan?.materialDescription?.materialName}
+                    value={selectedChalan?.materialDescription?.name}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
                 </Grid>
-                <Grid item xs={1}>
+                <Grid item size={1}>
                   <TextField
                     label="TN Number"
                     value={
-                      selectedChalan?.finalInspectionDetail?.deliverySchedule
+                      selectedChalan?.finalInspection?.deliverySchedule
                         ?.tnNumber
                     }
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
                 </Grid>
-                <Grid item xs={1}>
+                <Grid item size={1}>
                   <TextField
                     label="Phase"
                     value={selectedChalan?.materialDescription?.phase}
@@ -299,7 +308,7 @@ const AddNewGPReceiptRecord = () => {
                   />
                 </Grid>
 
-                <Grid item xs={1}>
+                <Grid item size={1}>
                   <TextField
                     label="Date Of Supply"
                     value={selectedChalan?.createdAt}
@@ -308,7 +317,7 @@ const AddNewGPReceiptRecord = () => {
                   />
                 </Grid>
 
-                <Grid item xs={1}>
+                <Grid item size={1}>
                   <TextField
                     label="Seal No Time Of New Supply"
                     value={polySealNo}
@@ -320,7 +329,7 @@ const AddNewGPReceiptRecord = () => {
             )}
 
             {/* Seal No */}
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Seal No Time Of GP Received"
@@ -331,7 +340,7 @@ const AddNewGPReceiptRecord = () => {
             </Grid>
 
             {/* Remarks */}
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Remarks"
@@ -340,16 +349,15 @@ const AddNewGPReceiptRecord = () => {
                 onChange={(e) => setRemarks(e.target.value)}
               />
             </Grid>
-            
 
-            <Grid item xs={2} mt={3}>
+            <Grid item size={2} mt={3}>
               <Typography variant="h5" fontWeight={600} gutterBottom>
                 Parts Missing Details
               </Typography>
             </Grid>
 
             {/* Parts Missing Section */}
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Oil Level"
@@ -357,7 +365,7 @@ const AddNewGPReceiptRecord = () => {
                 onChange={(e) => setOilLevel(e.target.value)}
               />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="HV Bushing"
@@ -365,7 +373,7 @@ const AddNewGPReceiptRecord = () => {
                 onChange={(e) => setHvBushing(e.target.value)}
               />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="LV Bushing"
@@ -373,7 +381,7 @@ const AddNewGPReceiptRecord = () => {
                 onChange={(e) => setLvBushing(e.target.value)}
               />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="HT Metal Parts"
@@ -381,7 +389,7 @@ const AddNewGPReceiptRecord = () => {
                 onChange={(e) => setHtMetalParts(e.target.value)}
               />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="LT Metal Parts"
@@ -389,7 +397,7 @@ const AddNewGPReceiptRecord = () => {
                 onChange={(e) => setLtMetalParts(e.target.value)}
               />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="M&P Box"
@@ -397,7 +405,7 @@ const AddNewGPReceiptRecord = () => {
                 onChange={(e) => setMAndPBox(e.target.value)}
               />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="M&P Box Cover"
@@ -405,7 +413,7 @@ const AddNewGPReceiptRecord = () => {
                 onChange={(e) => setMAndPBoxCover(e.target.value)}
               />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="MCCB"
@@ -413,7 +421,7 @@ const AddNewGPReceiptRecord = () => {
                 onChange={(e) => setMCCB(e.target.value)}
               />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="ICB"
@@ -421,7 +429,7 @@ const AddNewGPReceiptRecord = () => {
                 onChange={(e) => setICB(e.target.value)}
               />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Copper Flexible Cable"
@@ -429,7 +437,7 @@ const AddNewGPReceiptRecord = () => {
                 onChange={(e) => setCopperFlexibleCable(e.target.value)}
               />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="AL Wire"
@@ -437,7 +445,7 @@ const AddNewGPReceiptRecord = () => {
                 onChange={(e) => setALWire(e.target.value)}
               />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Conservator"
@@ -445,7 +453,7 @@ const AddNewGPReceiptRecord = () => {
                 onChange={(e) => setConservator(e.target.value)}
               />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Radiator"
@@ -453,7 +461,7 @@ const AddNewGPReceiptRecord = () => {
                 onChange={(e) => setRadiator(e.target.value)}
               />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Fuse"
@@ -461,7 +469,7 @@ const AddNewGPReceiptRecord = () => {
                 onChange={(e) => setFuse(e.target.value)}
               />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Channel"
@@ -469,7 +477,7 @@ const AddNewGPReceiptRecord = () => {
                 onChange={(e) => setChannel(e.target.value)}
               />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <TextField
                 fullWidth
                 label="Core"
@@ -486,12 +494,14 @@ const AddNewGPReceiptRecord = () => {
               color="success"
               onClick={handleSubmit}
               sx={{ px: 5, py: 1.5, borderRadius: 3 }}
-              disabled={addNewGPReceiptRecordMutation.isLoading}
+              disabled={
+                addNewGPReceiptRecordMutation.isLoading || !selectedChalan
+              }
             >
               {addNewGPReceiptRecordMutation.isLoading ? (
                 <CircularProgress color="inherit" size={20} />
               ) : (
-                "Submit"
+                "Submit Failure Info"
               )}
             </Button>
           </Box>

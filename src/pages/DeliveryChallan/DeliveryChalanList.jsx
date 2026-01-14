@@ -147,11 +147,21 @@ const DeliveryChalanList = () => {
           <h5 className="mb-0">Delivery Challan List</h5>
 
           <div className="d-flex align-items-center">
-            <SearchBox
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              setCurrentPage={setCurrentPage}
-            />
+            <TextField
+            variant="outlined"
+            placeholder="Search ...."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            size="small"
+            sx={{ width: { xs: '100%', sm: '300px' }, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: '#ccc' }, '&:hover fieldset': { borderColor: '#f0883d' }, '&.Mui-focused fieldset': { borderColor: '#f0883d' } } }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: '#f0883d' }} />
+                </InputAdornment>
+              ),
+            }}
+          />
             <Button
               className="btn-blue ms-3 ps-3 pe-3"
               onClick={() => setOpenBulkUploadModal(true)}
@@ -312,12 +322,12 @@ const DeliveryChalanList = () => {
                       {/* Actions */}
                       <td>
                         <div className="d-flex gap-2 align-items-center justify-content-center">
-                          <button
+                          {/* <button
                             className="btn btn-sm btn-primary"
                             onClick={() => handleViewClick(item)}
                           >
                             <FaEye />
-                          </button>
+                          </button> */}
                           <button
                             className="btn btn-sm btn-success"
                             onClick={() => handleEditClick(item)}
@@ -332,12 +342,12 @@ const DeliveryChalanList = () => {
                               <FaFileDownload />
                             </button>
                           </Tooltip>
-                          <button
+                          {/* <button
                             className="btn btn-sm btn-danger"
                             onClick={() => handleDelete(item.id)}
                           >
                             <FaTrash />
-                          </button>
+                          </button> */}
                         </div>
                       </td>
                     </tr>
