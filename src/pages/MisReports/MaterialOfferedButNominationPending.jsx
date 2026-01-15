@@ -1,5 +1,4 @@
-// MaterialOfferedPage.jsx
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   Container,
   Paper,
@@ -12,6 +11,8 @@ import {
   TableContainer,
   Box,
   Button,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import dayjs from "dayjs";
@@ -20,32 +21,33 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import api from "../../services/api";
 import { MyContext } from "../../App";
+import Pagination from "../../components/Pagination";
 
 const MaterialOfferedButNominationPending = () => {
   const { setIsHideSidebarAndHeader } = useContext(MyContext);
+  const PAGE_SIZE = 10;
   
     useEffect(() => {
       setIsHideSidebarAndHeader(true);
       window.scrollTo(0, 0);
+      return () => setIsHideSidebarAndHeader(false);
     }, [setIsHideSidebarAndHeader]);
   const navigate = useNavigate("");
 
   const [filteredData, setFilteredData] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: inspectionData, isLoading } = useQuery({
-    queryKey: ["finalInspections"],
-    queryFn: () => api.get("/final-inspections").then((res) => res.data || []), // Ensure it always returns an array
+  const { data: inspectionData, isLoading, isError } = useQuery({
+    queryKey: ["nominationPendingInspections"],
+    queryFn: () => api.get("/final-inspections/nomination-pending").then((res) => res.data || []),
   });
 
-  const { data: companies } = useQuery({
-    queryKey: ["companies"],
-    queryFn: () => api.get("/companies").then((res) => res.data.data),
-  });
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredData]);
 
-  const { data: deliverySchedules } = useQuery({
-    queryKey: ["deliverySchedules"],
-    queryFn: () => api.get("/delivery-schedules").then((res) => res.data.data),
-  });
+  const totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
+  const paginatedData = filteredData.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -58,7 +60,6 @@ const MaterialOfferedButNominationPending = () => {
           mb: 3,
         }}
       >
-        {/* Back Button (left corner) */}
         <Button
           variant="outlined"
           startIcon={<ArrowBackIcon />}
@@ -77,8 +78,6 @@ const MaterialOfferedButNominationPending = () => {
         >
           Back
         </Button>
-
-        {/* Center Title */}
         <Typography
           variant="h4"
           sx={{ fontWeight: "bold", textAlign: "center" }}
@@ -119,30 +118,28 @@ const MaterialOfferedButNominationPending = () => {
 
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={8} align="center">
-                    Loading...
-                  </TableCell>
-                </TableRow>
-              ) : filteredData.length === 0 ? (
+                <TableRow><TableCell colSpan={8} align="center"><CircularProgress /></TableCell></TableRow>
+              ) : isError ? (
+                <TableRow><TableCell colSpan={8} align="center"><Alert severity="error">Error fetching data</Alert></TableCell></TableRow>
+              ) : paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} align="center">
                     No records found
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredData?.map((row, idx) => (
+                paginatedData.map((row, idx) => (
                   <TableRow key={row.id}>
-                    <TableCell>{idx + 1}</TableCell>
+                    <TableCell>{(currentPage - 1) * PAGE_SIZE + idx + 1}</TableCell>
                     <TableCell>
                       {dayjs(row.offeredDate).format("DD MMM YYYY")}
                     </TableCell>
-                    <TableCell>{row.companyName}</TableCell>
-                    <TableCell>{row.discom}</TableCell>
-                    <TableCell>{row.deliverySchedule.tnNumber}</TableCell>
+                    <TableCell>{row.deliverySchedule?.supplyTender?.company?.name}</TableCell>
+                    <TableCell>{row.deliverySchedule?.tn?.discom}</TableCell>
+                    <TableCell>{row.deliverySchedule?.tn?.tnNumber}</TableCell>
                     <TableCell>
-                      {row.deliverySchedule.rating} KVA{" "}
-                      {row.deliverySchedule.phase}
+                      {row.deliverySchedule?.rating} KVA{" "}
+                      {row.deliverySchedule?.phase}
                     </TableCell>
                     <TableCell>{row.snNumber}</TableCell>
                     <TableCell>{row.offeredQuantity}</TableCell>
@@ -153,8 +150,16 @@ const MaterialOfferedButNominationPending = () => {
           </Table>
         </TableContainer>
       </Paper>
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
     </Container>
   );
 };
 
 export default MaterialOfferedButNominationPending;
+

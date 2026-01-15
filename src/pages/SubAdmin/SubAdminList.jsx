@@ -64,7 +64,7 @@ const SubAdminList = () => {
     "New Supply Tender",
     "Offer Letter",
   ];
-  const subAdminRoles = ["MANAGER", "DATA_FEEDER", "SUPERVISOR"];
+  const subAdminRoles = ["OWNER", "MANAGER", "DATA_FEEDER", "SUPERVISOR"];
 
   const {
     data: usersData,
@@ -182,11 +182,26 @@ const SubAdminList = () => {
   const handleEditClick = (item) => {
     setSelectedSubAdmin(item);
     setEditedUserName(item.name);
-    setEditedPageAccess(item.pages || []);
+
+    let pages = [];
+    if (item.pages) {
+      if (typeof item.pages === "string") {
+        try {
+          pages = JSON.parse(item.pages);
+        } catch (e) {
+          console.error("Failed to parse pages JSON string:", e);
+          pages = [];
+        }
+      } else if (Array.isArray(item.pages)) {
+        pages = item.pages;
+      }
+    }
+    setEditedPageAccess(pages);
+
     setEditedLoginId(item.loginId);
     setEditedNumber(item.number);
     setEditedRole(item.role);
-    setEditedPassword(""); // Clear password field for security
+    setEditedPassword(item.password); // Clear password field for security
     setEditModalOpen(true);
   };
 

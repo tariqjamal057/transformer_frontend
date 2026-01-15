@@ -93,6 +93,7 @@ const AppContent = () => {
       "/nomination-done",
       "/inspection-done",
       "/di-received",
+      "materialOfferedButNominationPending-list",
     ];
     setIsHideSidebarAndHeader(
       noSidebarAndHeaderPages.includes(location.pathname)
