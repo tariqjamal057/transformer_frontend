@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import {
   Modal,
   Box,
@@ -12,13 +12,15 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  CircularProgress,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
+import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../services/api";
+import { MyContext } from "../App";
 
 const style = {
   position: "absolute",
@@ -36,10 +38,13 @@ const style = {
 };
 
 const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
+  const { setAlertBox } = useContext(MyContext);
   const queryClient = useQueryClient();
+
   const [sinNo, setSinNo] = useState("");
   const [reason, setReason] = useState("");
   const [otherReason, setOtherReason] = useState("");
+  const [acosName, setAcosName] = useState("");
 
   const [formData, setFormData] = useState({
     trfSiNo: "",
@@ -47,143 +52,27 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
     wound: "",
     phase: "",
     tnNumber: "",
-    acosName: "",
     subDivision: "",
     locationOfFailure: "",
     dateOfSupply: "",
     dateOfExpiry: "",
   });
 
-  const [selectedReceipt, setSelectedReceipt] = useState(null);
-  const [selectedFailure, setSelectedFailure] = useState(null);
-
-  const { data: gpReceiptNotes } = useQuery({
-    queryKey: ["gpReceiptNotes"],
-    queryFn: () => api.get("/gp-receipt-notes").then((res) => res.data),
-  });
-
-  const { data: gpFailures } = useQuery({
-    queryKey: ["gpFailures"],
-    queryFn: () => api.get("/gp-failures").then((res) => res.data),
-  });
-
-  // When user types SIN No → search in gpReceiptNotes
-  useEffect(() => {
-    if (sinNo === "") {
-      setFormData({
-        trfSiNo: "",
-        rating: "",
-        wound: "",
-        phase: "",
-        tnNumber: "",
-        acosName: "",
-        subDivision: "",
-        locationOfFailure: "",
-        dateOfSupply: "",
-        dateOfExpiry: "",
-      });
-      setSelectedReceipt(null);
-      setSelectedFailure(null);
-      return;
-    }
-
-    let foundRecord = null;
-    let foundNote = null;
-
-    gpReceiptNotes?.forEach((note) => {
-      if (note.sinNo.toLowerCase() === sinNo.toLowerCase()) {
-        foundRecord = note;
-        foundNote = note;
-      }
-    });
-
-    if (foundRecord) {
-      const { trfsiNo, rating, deliveryChalan } = foundRecord;
-
-      const wound =
-        deliveryChalan.finalInspectionDetail.deliverySchedule.wound;
-      const tnNumber =
-        deliveryChalan.finalInspectionDetail.deliverySchedule.tnNumber;
-      const phase = deliveryChalan.materialDescription.phase;
-
-      setSelectedReceipt(foundRecord);
-
-      setFormData((prev) => ({
-        ...prev,
-        trfSiNo: trfsiNo,
-        rating,
-        wound,
-        phase,
-        tnNumber,
-        acosName: foundNote?.acosName || "", // ✅ FIX: pull from gpReceiptNotes.acosName
-      }));
-
-      // Match in gpFailureData
-      const matchedFailure = gpFailures?.find(
-        (f) =>
-          f.trfSiNo === trfsiNo &&
-          f.rating === rating &&
-          f.deliveryChalan.finalInspectionDetail.deliverySchedule
-            .wound === wound &&
-          f.deliveryChalan.finalInspectionDetail.deliverySchedule
-            .tnNumber === tnNumber
-      );
-
-      if (matchedFailure) {
-        setSelectedFailure(matchedFailure);
-
-        setFormData((prev) => ({
-          ...prev,
-          subDivision: matchedFailure.subDivision,
-          locationOfFailure: matchedFailure.trfFailureList[0]?.place || "",
-          dateOfSupply: matchedFailure.trfFailureList[0]?.informationDate || "",
-          dateOfExpiry: matchedFailure.trfFailureList[0]?.failureDate || "",
-        }));
-      }
-    }
-  }, [sinNo, gpReceiptNotes, gpFailures]);
-
-  const { mutate: updateFailureAnalysis, isLoading } = useMutation({
-    mutationFn: (updatedData) =>
-      api.put(`/failure-analyses/${failureAnalysisData.id}`, updatedData),
-    onSuccess: () => {
-      queryClient.invalidateQueries(["failureAnalyses"]);
-      handleClose();
-    },
-  });
-
-  // Handle Submit
-  const handleSubmit = () => {
-    const finalReason = reason === "Other Reason" ? otherReason : reason;
-    const payload = {
-      sinNo,
-      acosName: formData.acosName,
-      gpReceiptNoteId: selectedReceipt.id,
-      gpFailureId: selectedFailure.id,
-      reasonOfFailure: finalReason,
-    };
-
-    updateFailureAnalysis(payload);
-  };
-
-  // Load initial data if editing
   useEffect(() => {
     if (failureAnalysisData) {
-      setSinNo(failureAnalysisData.sinNo || "");
+      const { newGPReceiptRecord, gpFailure } = failureAnalysisData;
 
-      // Predefined reasons
+      setSinNo(newGPReceiptRecord?.sinNo || "");
+      setAcosName(failureAnalysisData.acosName || "");
+
       const predefinedReasons = [
         "Oil theft",
         "Oil leakage",
         "Over Load",
         "Insulation Failure",
-        "Water Presense",
+        "Water Presence",
         "Protection By Pass",
-        "Other Reason",
       ];
-
-      // ✅ If reason is in list → set normally
-      // ✅ If reason is custom → set dropdown to "Other Reason" and input value separately
       if (predefinedReasons.includes(failureAnalysisData.reasonOfFailure)) {
         setReason(failureAnalysisData.reasonOfFailure);
         setOtherReason("");
@@ -192,32 +81,65 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
         setOtherReason(failureAnalysisData.reasonOfFailure || "");
       }
 
-      // ✅ set receipt & failure objects directly
-      setSelectedReceipt(failureAnalysisData.receiptData || null);
-      setSelectedFailure(failureAnalysisData.failureData || null);
+      const wound =
+        newGPReceiptRecord?.deliveryChallan?.finalInspection?.deliverySchedule
+          ?.wound || "";
+      const tnNumber =
+        newGPReceiptRecord?.deliveryChallan?.finalInspection?.deliverySchedule
+          ?.tnNumber || "";
+      const phase =
+        newGPReceiptRecord?.deliveryChallan?.materialDescription?.phase || "";
+      const trfSiNo = newGPReceiptRecord?.trfsiNo || "";
+      const rating = newGPReceiptRecord?.rating || "";
 
-      // ✅ map into formData for inputs
-      const receipt = failureAnalysisData.receiptData || {};
-      const failure = failureAnalysisData.failureData || {};
-      const delivery =
-        receipt.deliveryChalanDetails?.finalInspectionDetail
-          ?.deliverySchedule || {};
-      const material = receipt.deliveryChalanDetails?.materialDescription || {};
+      const failureDetails = gpFailure?.failureDetails?.[0]; // Assuming first detail for display
 
       setFormData({
-        trfSiNo: receipt.trfsiNo || failure.trfSiNo || "",
-        rating: receipt.rating || failure.rating || "",
-        wound: delivery.wound || "",
-        phase: material.phase || "",
-        tnNumber: delivery.tnNumber || "",
-        acosName: failureAnalysisData.acosName || "",
-        subDivision: failure.subDivision || "",
-        locationOfFailure: failure.trfFailureList?.[0]?.place || "",
-        dateOfSupply: failure.trfFailureList?.[0]?.informationDate || "",
-        dateOfExpiry: failure.trfFailureList?.[0]?.failureDate || "",
+        trfSiNo: trfSiNo,
+        rating: rating,
+        wound: wound,
+        phase: phase,
+        tnNumber: tnNumber,
+        subDivision: gpFailure?.subDivision || "",
+        locationOfFailure: failureDetails?.place || "",
+        dateOfSupply: failureDetails?.informationDate
+          ? dayjs(failureDetails.informationDate).format("DD-MM-YYYY")
+          : "",
+        dateOfExpiry: failureDetails?.failureDate
+          ? dayjs(failureDetails.failureDate).format("DD-MM-YYYY")
+          : "",
       });
     }
   }, [failureAnalysisData]);
+
+  const { mutate: updateFailureAnalysis, isLoading } = useMutation({
+    mutationFn: (updatedData) =>
+      api.put(`/failure-analyses/${failureAnalysisData.id}`, updatedData),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["failureAnalyses"]);
+      setAlertBox({
+        open: true,
+        msg: "Failure Analysis updated successfully!",
+        error: false,
+      });
+      handleClose();
+    },
+    onError: (error) => {
+      setAlertBox({ open: true, msg: error.message, error: true });
+    },
+  });
+
+  // Handle Submit
+  const handleSubmit = () => {
+    const finalReason = reason === "Other Reason" ? otherReason : reason;
+    const payload = {
+      acosName: acosName, // This can be edited
+      reasonOfFailure: finalReason,
+      newGPReceiptRecordId: failureAnalysisData.newGPReceiptRecordId, // Not editable in this modal
+      gpFailureId: failureAnalysisData.gpFailureId, // Not editable in this modal
+    };
+    updateFailureAnalysis(payload);
+  };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -244,14 +166,13 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
               columns={{ xs: 1, sm: 2 }}
               sx={{ mb: 3 }}
             >
-              {/* SIN No */}
               <Grid item size={1}>
                 <TextField
                   fullWidth
                   label="SIN No"
                   variant="outlined"
                   value={sinNo}
-                  onChange={(e) => setSinNo(e.target.value)}
+                  InputProps={{ readOnly: true }}
                 />
               </Grid>
 
@@ -261,6 +182,7 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
                   label="TRFSI No"
                   variant="outlined"
                   value={formData.trfSiNo}
+                  InputProps={{ readOnly: true }}
                 />
               </Grid>
 
@@ -270,6 +192,7 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
                   label="Rating"
                   variant="outlined"
                   value={formData.rating}
+                  InputProps={{ readOnly: true }}
                 />
               </Grid>
 
@@ -279,6 +202,7 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
                   label="Wound"
                   variant="outlined"
                   value={formData.wound}
+                  InputProps={{ readOnly: true }}
                 />
               </Grid>
 
@@ -288,15 +212,28 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
                   label="Phase"
                   variant="outlined"
                   value={formData.phase}
+                  InputProps={{ readOnly: true }}
                 />
               </Grid>
 
               <Grid item size={1}>
                 <TextField
                   fullWidth
-                  label="Received From Acos"
+                  label="TN No."
                   variant="outlined"
-                  value={formData.acosName}
+                  value={formData.tnNumber}
+                  InputProps={{ readOnly: true }}
+                />
+              </Grid>
+
+              <Grid item size={1}>
+                <TextField
+                  fullWidth
+                  label="ACOS Name"
+                  variant="outlined"
+                  value={acosName}
+                  onChange={(e) => setAcosName(e.target.value)}
+                  disabled={isLoading}
                 />
               </Grid>
 
@@ -306,6 +243,7 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
                   label="Sub-Division"
                   variant="outlined"
                   value={formData.subDivision}
+                  InputProps={{ readOnly: true }}
                 />
               </Grid>
 
@@ -315,6 +253,7 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
                   label="Location Of Failure"
                   variant="outlined"
                   value={formData.locationOfFailure}
+                  InputProps={{ readOnly: true }}
                 />
               </Grid>
 
@@ -324,6 +263,7 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
                   label="Date Of Supply"
                   variant="outlined"
                   value={formData.dateOfSupply}
+                  InputProps={{ readOnly: true }}
                 />
               </Grid>
 
@@ -333,6 +273,7 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
                   label="Date Of Expiry Of GP"
                   variant="outlined"
                   value={formData.dateOfExpiry}
+                  InputProps={{ readOnly: true }}
                 />
               </Grid>
             </Grid>
@@ -342,9 +283,11 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
               <FormControl fullWidth>
                 <InputLabel id="reason-label">Reason of Failure</InputLabel>
                 <Select
+                  labelId="reason-label"
                   label="Reason Of Failure"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
+                  disabled={isLoading}
                 >
                   <MenuItem value="Oil theft">Oil theft</MenuItem>
                   <MenuItem value="Oil leakage">Oil leakage</MenuItem>
@@ -368,13 +311,20 @@ const FailureAnalysisModal = ({ open, handleClose, failureAnalysisData }) => {
                   variant="outlined"
                   value={otherReason}
                   onChange={(e) => setOtherReason(e.target.value)}
+                  disabled={isLoading}
                 />
               )}
             </Box>
 
             <Box mt={2} textAlign="center">
-              <Button variant="contained" size="large" onClick={handleSubmit} disabled={isLoading}>
-                {isLoading? 'Saving...' : 'Save Changes'}
+              <Button
+                variant="contained"
+                size="large"
+                onClick={handleSubmit}
+                sx={{ px: 5, py: 1.5, borderRadius: 3 }}
+                disabled={isLoading}
+              >
+                {isLoading ? "Saving..." : "Save Changes"}
               </Button>
             </Box>
           </Box>

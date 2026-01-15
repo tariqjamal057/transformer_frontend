@@ -13,18 +13,18 @@ import {
   TableBody,
   Checkbox,
 } from "@mui/material";
-
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { MyContext } from "../../App";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api";
 import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
 
 const AddGPReceiptNote = () => {
-  const context = useContext(MyContext);
-  const { setIsHideSidebarAndHeader, setAlertBox, districts } = context;
+  const { setAlertBox } = useContext(MyContext);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [selectDateFrom, setSelectDateFrom] = useState(null);
   const [selectDateTo, setSelectDateTo] = useState(null);
@@ -32,16 +32,16 @@ const AddGPReceiptNote = () => {
   const [accountReceiptNoteNo, setAccountReceiptNoteNo] = useState("");
   const [accountReceiptNoteDate, setAccountReceiptNoteDate] = useState(null);
   const [acos, setAcos] = useState("");
-
   const [discomReceiptNoteNo, setDiscomReceiptNoteNo] = useState("");
   const [discomReceiptNoteDate, setDiscomReceiptNoteDate] = useState(null);
 
   const [filteredRecords, setFilteredRecords] = useState([]);
-  const [matchedIds, setMatchedIds] = useState([]);
-  
-  const { data: gpReceiptRecords, isLoading } = useQuery({
-    queryKey: ["gpReceiptRecords"],
-    queryFn: () => api.get("/gp-receipt-notes").then((res) => res.data.data),
+  const [selectedRecordIds, setSelectedRecordIds] = useState([]);
+
+  const { data: newGpReceiptRecords, isLoading } = useQuery({
+    queryKey: ["newGpReceiptRecords"],
+    queryFn: () =>
+      api.get("/new-gp-receipt-records?all=true").then((res) => res.data.items),
   });
 
   const { mutate: addGPReceiptNote, isLoading: isAdding } = useMutation({
@@ -53,6 +53,7 @@ const AddGPReceiptNote = () => {
         msg: "GP Receipt Note added successfully!",
         error: false,
       });
+      navigate("GPReceiptNote-list");
     },
     onError: (error) => {
       setAlertBox({
@@ -60,45 +61,59 @@ const AddGPReceiptNote = () => {
         msg: error.message,
         error: true,
       });
-    }
+    },
   });
 
-
-  // Whenever consigneeName changes, filter data and update ids
   useEffect(() => {
     if (consigneeName.trim() === "") {
       setFilteredRecords([]);
-      setMatchedIds([]);
       return;
     }
 
-    if(gpReceiptRecords){
-      const matches = gpReceiptRecords.filter((record) =>
-        record.consigneeName.toLowerCase().includes(consigneeName.toLowerCase())
+    if (newGpReceiptRecords) {
+      const matches = newGpReceiptRecords.filter(
+        (record) =>
+          record.consigneeName
+            .toLowerCase()
+            .includes(consigneeName.toLowerCase()) && !record.gpReceiptNoteId
       );
-  
       setFilteredRecords(matches);
-      setMatchedIds(matches.map((rec) => rec.id));
     }
-  }, [consigneeName, gpReceiptRecords]);
+  }, [consigneeName, newGpReceiptRecords]);
+
+  const handleSelectRecord = (id) => {
+    setSelectedRecordIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((recordId) => recordId !== id)
+        : [...prev, id]
+    );
+  };
 
   const handleSubmit = () => {
-    const dataToSubmit = {
-      selectDateFrom: selectDateFrom? dayjs(selectDateFrom).format("YYYY-MM-DD"): null,
-      selectDateTo: selectDateTo? dayjs(selectDateTo).format("YYYY-MM-DD"): null,
+    const gpReceiptNoteData = {
+      selectDateFrom: selectDateFrom
+        ? dayjs(selectDateFrom).toISOString()
+        : null,
+      selectDateTo: selectDateTo ? dayjs(selectDateTo).toISOString() : null,
       consigneeName,
       accountReceiptNoteNo,
-      accountReceiptNoteDate: accountReceiptNoteDate? dayjs(accountReceiptNoteDate).format("YYYY-MM-DD"): null,
+      accountReceiptNoteDate: accountReceiptNoteDate
+        ? dayjs(accountReceiptNoteDate).toISOString()
+        : null,
       acos,
       discomReceiptNoteNo,
-      discomReceiptNoteDate: discomReceiptNoteDate? dayjs(discomReceiptNoteDate).format("YYYY-MM-DD"): null,
-      gpReceiptRecordIds: matchedIds,
-    }
-    addGPReceiptNote(dataToSubmit)
+      discomReceiptNoteDate: discomReceiptNoteDate
+        ? dayjs(discomReceiptNoteDate).toISOString()
+        : null,
+    };
+    addGPReceiptNote({
+      gpReceiptNoteData,
+      recordIds: selectedRecordIds,
+    });
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
       <div className="right-content w-100">
         <Paper elevation={4} sx={{ p: 4, borderRadius: 3 }}>
           <Typography
@@ -130,7 +145,6 @@ const AddGPReceiptNote = () => {
               />
             </Grid>
 
-            {/* Consignee Name */}
             <Grid item size={2}>
               <TextField
                 fullWidth
@@ -141,7 +155,6 @@ const AddGPReceiptNote = () => {
               />
             </Grid>
 
-            {/* Account Receipt Note No */}
             <Grid item size={1}>
               <TextField
                 fullWidth
@@ -152,7 +165,6 @@ const AddGPReceiptNote = () => {
               />
             </Grid>
 
-            {/* Account Receipt Note Date */}
             <Grid item size={1}>
               <DatePicker
                 label="Account Receipt Note Date"
@@ -172,7 +184,6 @@ const AddGPReceiptNote = () => {
               />
             </Grid>
 
-            {/* Discom Receipt Note No */}
             <Grid item size={1}>
               <TextField
                 fullWidth
@@ -183,7 +194,6 @@ const AddGPReceiptNote = () => {
               />
             </Grid>
 
-            {/* Discom Receipt Note Date */}
             <Grid item size={1}>
               <DatePicker
                 label="Discom Receipt Note Date"
@@ -194,81 +204,90 @@ const AddGPReceiptNote = () => {
             </Grid>
           </Grid>
 
-          {/* Conditionally Show Table */}
-          {isLoading? <p>Loading...</p> : filteredRecords.length > 0 && (
-            <Box sx={{ mt: 3, overflowX: "auto" }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Matching Records
-              </Typography>
-              <Table sx={{ minWidth: 1200, border: "1px solid #ddd" }}>
-                <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
-                  <TableRow>
-                    <TableCell>Sin No</TableCell>
-                    <TableCell>TRFSI No</TableCell>
-                    <TableCell>Rating</TableCell>
-                    <TableCell>Material</TableCell>
-                    <TableCell>Phase</TableCell>
-                    <TableCell>TN No</TableCell>
-                    <TableCell>Oil Level</TableCell>
-                    <TableCell>HV Bushing</TableCell>
-                    <TableCell>LV Bushing</TableCell>
-                    <TableCell>HT Metal Parts</TableCell>
-                    <TableCell>LT Metal Parts</TableCell>
-                    <TableCell>M&P Box</TableCell>
-                    <TableCell>M&P Box Cover</TableCell>
-                    <TableCell>MCCB</TableCell>
-                    <TableCell>ICB</TableCell>
-                    <TableCell>Copper Flexible Cable</TableCell>
-                    <TableCell>AL Wire</TableCell>
-                    <TableCell>Conservator</TableCell>
-                    <TableCell>Radiator</TableCell>
-                    <TableCell>Fuse</TableCell>
-                    <TableCell>Channel</TableCell>
-                    <TableCell>Core</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredRecords.map((rec) => (
-                    <TableRow key={rec.id}>
-                      <TableCell>{rec.sinNo}</TableCell>
-                      <TableCell>{rec.trfsiNo}</TableCell>
-                      <TableCell>{rec.rating}</TableCell>
-                      <TableCell>{rec.deliveryChalanDetails.materialDescription.materialName}</TableCell>
-                      <TableCell>{rec.deliveryChalanDetails.materialDescription.phase}</TableCell>
-                      <TableCell>{rec.deliveryChalanDetails.finalInspectionDetail.deliverySchedule.tnNumber}</TableCell>
-                      <TableCell>{rec.oilLevel}</TableCell>
-                      <TableCell>{rec.hvBushing}</TableCell>
-                      <TableCell>{rec.lvBushing}</TableCell>
-                      <TableCell>{rec.htMetalParts}</TableCell>
-                      <TableCell>{rec.ltMetalParts}</TableCell>
-                      <TableCell>{rec.mAndpBox}</TableCell>
-                      <TableCell>{rec.mAndpBoxCover}</TableCell>
-                      <TableCell>{rec.mccb}</TableCell>
-                      <TableCell>{rec.icb}</TableCell>
-                      <TableCell>{rec.copperFlexibleCable}</TableCell>
-                      <TableCell>{rec.alWire}</TableCell>
-                      <TableCell>{rec.conservator}</TableCell>
-                      <TableCell>{rec.radiator}</TableCell>
-                      <TableCell>{rec.fuse}</TableCell>
-                      <TableCell>{rec.channel}</TableCell>
-                      <TableCell>{rec.core}</TableCell>
+          {isLoading ? (
+            <p>Loading...</p>
+          ) : (
+            filteredRecords.length > 0 && (
+              <Box sx={{ mt: 3, overflowX: "auto" }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                  Matching Records
+                </Typography>
+                <Table sx={{ minWidth: 1200, border: "1px solid #ddd" }}>
+                  <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
+                    <TableRow>
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedRecordIds(
+                                filteredRecords.map((rec) => rec.id)
+                              );
+                            } else {
+                              setSelectedRecordIds([]);
+                            }
+                          }}
+                          checked={
+                            selectedRecordIds.length ===
+                              filteredRecords.length &&
+                            filteredRecords.length > 0
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>Sin No</TableCell>
+                      <TableCell>TRFSI No</TableCell>
+                      <TableCell>Rating</TableCell>
+                      <TableCell>Material</TableCell>
+                      <TableCell>Phase</TableCell>
+                      <TableCell>TN No</TableCell>
+                      <TableCell>Oil Level</TableCell>
+                      <TableCell>HV Bushing</TableCell>
+                      <TableCell>LV Bushing</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Box>
+                  </TableHead>
+                  <TableBody>
+                    {filteredRecords.map((rec) => (
+                      <TableRow key={rec.id} hover>
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            checked={selectedRecordIds.includes(rec.id)}
+                            onChange={() => handleSelectRecord(rec.id)}
+                          />
+                        </TableCell>
+                        <TableCell>{rec.sinNo}</TableCell>
+                        <TableCell>{rec.trfsiNo}</TableCell>
+                        <TableCell>{rec.rating}</TableCell>
+                        <TableCell>
+                          {rec.deliveryChallan.materialDescription.name}
+                        </TableCell>
+                        <TableCell>
+                          {rec.deliveryChallan.materialDescription.phase}
+                        </TableCell>
+                        <TableCell>
+                          {
+                            rec.deliveryChallan.finalInspection.deliverySchedule
+                              .tnNumber
+                          }
+                        </TableCell>
+                        <TableCell>{rec.oilLevel}</TableCell>
+                        <TableCell>{rec.hvBushing}</TableCell>
+                        <TableCell>{rec.lvBushing}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Box>
+            )
           )}
 
-          {/* Submit Button */}
           <Box textAlign="center" sx={{ mt: 4 }}>
             <Button
               variant="contained"
               color="success"
               onClick={handleSubmit}
               sx={{ px: 5, py: 1.5, borderRadius: 3 }}
-              disabled={isAdding}
+              disabled={isAdding || selectedRecordIds.length === 0}
             >
-              {isAdding? 'Submitting...' : 'Submit Failure Info'}
+              {isAdding ? "Submitting..." : "Submit"}
             </Button>
           </Box>
         </Paper>

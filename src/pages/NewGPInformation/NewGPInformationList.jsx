@@ -1,36 +1,53 @@
-import { useContext, useEffect, useState } from "react";
-import { Button, InputAdornment, TextField } from "@mui/material";
+import { useContext, useState } from "react";
+import { Button, TextField, InputAdornment } from "@mui/material";
 import { Link } from "react-router-dom";
-import { FaPencilAlt, FaTrash } from "react-icons/fa";
-import { format } from "date-fns";
+import { FaEye, FaPencilAlt, FaTrash } from "react-icons/fa";
 import SearchIcon from "@mui/icons-material/Search";
-import NewGPInformationModal from "../../components/NewGPInformationModal";
+import dayjs from "dayjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api";
 import { MyContext } from "../../App";
 import Swal from "sweetalert2";
+import Pagination from "../../components/Pagination";
+import EditNewGPInformationModal from "../../components/EditNewGPInformationModal";
+import ViewNewGPInformationModal from "../../components/ViewNewGPInformationModal";
+import NewGPInformationBulkUploadModal from "../../components/NewGPInformationBulkUploadModal";
 
 const NewGPInformationList = () => {
   const { setAlertBox } = useContext(MyContext);
   const queryClient = useQueryClient();
 
-  const [openModal, setOpenModal] = useState(false);
-  const [selectedNewGPInformation, setSelectedNewGPInformation] =
-    useState(null);
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [openViewModal, setOpenViewModal] = useState(false);
+  const [openBulkUploadModal, setOpenBulkUploadModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: newGPInformations, isLoading, isError } = useQuery({
-    queryKey: ["newGpInformations"],
-    queryFn: () => api.get("/new-gp-informations").then((res) => res.data),
+  const {
+    data: newGPInfoData,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["newGpInformations", currentPage, searchQuery],
+    queryFn: () =>
+      api
+        .get(`/new-gp-informations?page=${currentPage}&search=${searchQuery}`)
+        .then((res) => res.data),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/new-gp-informations/${id}`),
     onSuccess: () => {
-      setAlertBox({open: true, msg: "New GP Information deleted successfully!", error: false});
+      setAlertBox({
+        open: true,
+        msg: "New GP Information deleted successfully!",
+        error: false,
+      });
       queryClient.invalidateQueries(["newGpInformations"]);
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.message, error: true});
+      setAlertBox({ open: true, msg: error.message, error: true });
     },
   });
 
@@ -51,90 +68,118 @@ const NewGPInformationList = () => {
   };
 
   const handleEditClick = (item) => {
-    setSelectedNewGPInformation(item);
-    setOpenModal(true);
+    setSelectedItem(item);
+    setOpenEditModal(true);
+  };
+
+  const handleViewClick = (item) => {
+    setSelectedItem(item);
+    setOpenViewModal(true);
   };
 
   const handleModalClose = () => {
-    setOpenModal(false);
-    setSelectedNewGPInformation(null);
+    setOpenEditModal(false);
+    setOpenViewModal(false);
+    setSelectedItem(null);
   };
 
   return (
     <>
       <div className="right-content w-100">
-        {/* Header */}
         <div className="d-flex justify-content-between align-items-center gap-3 mb-3 card shadow border-0 w-100 flex-row p-4">
           <h5 className="mb-0">New G.P. Information List</h5>
-
           <div className="d-flex align-items-center">
+            <TextField
+              variant="outlined"
+              placeholder="Search Challan No..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              size="small"
+              sx={{
+                width: { xs: "100%", sm: "300px" },
+                "& .MuiOutlinedInput-root": {
+                  "& fieldset": { borderColor: "#ccc" },
+                  "&:hover fieldset": { borderColor: "#f0883d" },
+                  "&.Mui-focused fieldset": { borderColor: "#f0883d" },
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: "#f0883d" }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Button
+              className="btn-blue ms-2"
+              onClick={() => setOpenBulkUploadModal(true)}
+            >
+              Bulk Upload
+            </Button>
             <Link to={"/add-NewGPInformation"}>
-              <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
+              <Button className="btn-blue ms-2">Add</Button>
             </Link>
           </div>
         </div>
 
-        {/* Table */}
         <div className="card shadow border-0 p-3 mt-4">
           <div className="table-responsive">
-            <table className="table table-striped table-bordered align-middle text-nowrap">
+            <table className="table table-striped table-bordered align-middle">
               <thead className="table-primary text-white text-uppercase text-center">
                 <tr>
                   <th>Sr No</th>
                   <th>Challan Receipted Item No</th>
                   <th>Challan Receipted Date</th>
+                  <th>No. of Records</th>
                   <th>Actions</th>
                 </tr>
               </thead>
-
-              <tbody className="text-center align-middle">
+              <tbody className="text-center">
                 {isLoading ? (
                   <tr>
-                    <td colSpan="4">Loading...</td>
+                    <td colSpan="5">Loading...</td>
                   </tr>
                 ) : isError ? (
                   <tr>
-                    <td colSpan="4">Error fetching data</td>
+                    <td colSpan="5">Error fetching data</td>
                   </tr>
-                ) : newGPInformations.length > 0 ? (
-                  newGPInformations.map((item, index) => (
+                ) : newGPInfoData?.data.length > 0 ? (
+                  newGPInfoData.data.map((item, index) => (
                     <tr key={item.id}>
-                      {/* Sr No */}
-                      <td># {index + 1}</td>
-
-                      {/* Challan Receipted Item No */}
+                      <td>#{(currentPage - 1) * 10 + index + 1}</td>
                       <td>{item.challanReceiptedItemNo}</td>
-
-                      {/* Challan Receipted Date */}
                       <td>
-                        {format(
-                          new Date(item.challanReceiptedDate),
-                          "dd MMM yyyy"
-                        )}
+                        {dayjs(item.challanReceiptedDate).format("DD-MM-YYYY")}
                       </td>
-
-                      {/* Actions */}
+                      <td>{item.records?.length || 0}</td>
                       <td>
                         <div className="d-flex gap-2 align-items-center justify-content-center">
+                          {/* <button
+                            className="btn btn-sm btn-info"
+                            onClick={() => handleViewClick(item)}
+                          >
+                            <FaEye />
+                          </button> */}
                           <button
                             className="btn btn-sm btn-success"
                             onClick={() => handleEditClick(item)}
                           >
                             <FaPencilAlt />
                           </button>
-                          <button
+                          {/* <button
                             className="btn btn-sm btn-danger"
                             onClick={() => handleDelete(item.id)}
                           >
                             <FaTrash />
-                          </button>
+                          </button> */}
                         </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" className="text-center">
+                    <td colSpan="5" className="text-center">
                       No GP Information Found
                     </td>
                   </tr>
@@ -143,18 +188,36 @@ const NewGPInformationList = () => {
             </table>
           </div>
         </div>
+
+        {newGPInfoData?.totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={newGPInfoData.totalPages}
+            onPageChange={setCurrentPage}
+          />
+        )}
       </div>
 
-      {
-        <NewGPInformationModal
-          open={openModal}
+      {selectedItem && (
+        <EditNewGPInformationModal
+          open={openEditModal}
           handleClose={handleModalClose}
-          newGPInformation={selectedNewGPInformation}
+          newGPInformation={selectedItem}
         />
-      }
+      )}
+      {selectedItem && (
+        <ViewNewGPInformationModal
+          open={openViewModal}
+          handleClose={handleModalClose}
+          newGPInformation={selectedItem}
+        />
+      )}
+      <NewGPInformationBulkUploadModal
+        open={openBulkUploadModal}
+        handleClose={() => setOpenBulkUploadModal(false)}
+      />
     </>
   );
 };
 
 export default NewGPInformationList;
-

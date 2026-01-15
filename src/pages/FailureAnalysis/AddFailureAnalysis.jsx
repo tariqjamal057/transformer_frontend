@@ -11,12 +11,13 @@ import {
   Select,
   MenuItem,
   CircularProgress,
+  Alert,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import { MyContext } from "../../App";
-import { FaCloudUploadAlt } from "react-icons/fa";
+import dayjs from "dayjs";
 
 const AddFailureAnalysis = () => {
   const { setAlertBox } = useContext(MyContext);
@@ -40,28 +41,40 @@ const AddFailureAnalysis = () => {
     dateOfExpiry: "",
   });
 
-  const [selectedReceipt, setSelectedReceipt] = useState(null);
-  const [selectedFailure, setSelectedFailure] = useState(null);
+  const [selectedNewGPReceiptRecord, setSelectedNewGPReceiptRecord] =
+    useState(null);
+  const [selectedGPFailure, setSelectedGPFailure] = useState(null);
 
-  const { data: gpReceiptNotes } = useQuery({
-    queryKey: ["gpReceiptNotes"],
-    queryFn: () => api.get("/gp-receipt-notes").then((res) => res.data),
-  });
+  const { data: newGPReceiptRecords, isLoading: isLoadingNewGPReceiptRecords } =
+    useQuery({
+      queryKey: ["newGPReceiptRecordsWithRelations"],
+      queryFn: () =>
+        api
+          .get("/new-gp-receipt-records?all=true&includeRelations=true")
+          .then((res) => res.data),
+    });
 
-  const { data: gpFailures } = useQuery({
-    queryKey: ["gpFailures"],
-    queryFn: () => api.get("/gp-failures").then((res) => res.data),
+  const { data: gpFailures, isLoading: isLoadingGPFailures } = useQuery({
+    queryKey: ["gpFailuresWithRelations"],
+    queryFn: () =>
+      api
+        .get("/gp-failures?all=true&includeRelations=true")
+        .then((res) => res.data),
   });
 
   const addFailureAnalysisMutation = useMutation({
     mutationFn: (newAnalysis) => api.post("/failure-analyses", newAnalysis),
     onSuccess: () => {
-      setAlertBox({open: true, msg: "Failure Analysis added successfully!", error: false});
+      setAlertBox({
+        open: true,
+        msg: "Failure Analysis added successfully!",
+        error: false,
+      });
       queryClient.invalidateQueries(["failureAnalyses"]);
       navigate("/failureAnalysis-list");
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.message, error: true});
+      setAlertBox({ open: true, msg: error.message, error: true });
     },
   });
 
@@ -79,76 +92,129 @@ const AddFailureAnalysis = () => {
         dateOfSupply: "",
         dateOfExpiry: "",
       });
-      setSelectedReceipt(null);
-      setSelectedFailure(null);
+      setSelectedNewGPReceiptRecord(null);
+      setSelectedGPFailure(null);
       return;
     }
 
-    let foundRecord = null;
-    let foundNote = null;
-
-    gpReceiptNotes?.forEach((note) => {
-      if (note.sinNo.toLowerCase() === sinNo.toLowerCase()) {
-        foundRecord = note;
-        foundNote = note;
-      }
-    });
-
-    if (foundRecord) {
-      const { trfsiNo, rating, deliveryChalan } = foundRecord;
-
-      const wound = deliveryChalan.finalInspectionDetail.deliverySchedule.wound;
-      const tnNumber = deliveryChalan.finalInspectionDetail.deliverySchedule.tnNumber;
-      const phase = deliveryChalan.materialDescription.phase;
-
-      setSelectedReceipt(foundRecord);
-
-      setFormData((prev) => ({
-        ...prev,
-        trfSiNo: trfsiNo,
-        rating,
-        tnNumber,
-        wound,
-        phase,
-        acosName: foundNote?.acosName || "",
-      }));
-
-      // Match in gpFailureData
-      const matchedFailure = gpFailures.find(
-        (f) =>
-          f.trfSiNo === trfsiNo &&
-          f.rating === rating &&
-          f.deliveryChalan.finalInspectionDetail.deliverySchedule.wound === wound &&
-          f.deliveryChalan.finalInspectionDetail.deliverySchedule.tnNumber === tnNumber
+    if (newGPReceiptRecords && gpFailures) {
+      const foundNewGPReceiptRecord = newGPReceiptRecords.find(
+        (rec) => String(rec.sinNo) === String(sinNo)
       );
 
-      if (matchedFailure) {
-        setSelectedFailure(matchedFailure);
+      setSelectedNewGPReceiptRecord(foundNewGPReceiptRecord || null);
+
+      if (foundNewGPReceiptRecord) {
+        const trfSiNo = foundNewGPReceiptRecord.trfsiNo;
+        const rating = foundNewGPReceiptRecord.rating;
+        const wound =
+          foundNewGPReceiptRecord.deliveryChallan?.finalInspection
+            ?.deliverySchedule?.wound || "";
+        const phase =
+          foundNewGPReceiptRecord.deliveryChallan?.materialDescription?.phase ||
+          "";
+        const tnNumber =
+          foundNewGPReceiptRecord.deliveryChallan?.finalInspection
+            ?.deliverySchedule?.tnNumber || "";
+        const acosName =
+          foundNewGPReceiptRecord.newGPInformation?.gpReceiptNote?.acosName ||
+          "";
 
         setFormData((prev) => ({
           ...prev,
-          subDivision: matchedFailure.subDivision,
-          locationOfFailure: matchedFailure.placeOfFailure || "",
-          dateOfSupply: matchedFailure.dateOfInformation || "",
-          dateOfExpiry: matchedFailure.dateOfFailure || "",
+          trfSiNo,
+          rating,
+          tnNumber,
+          wound,
+          phase,
+          acosName,
         }));
+
+        // Match in gpFailures
+        const matchedGPFailure = gpFailures.find(
+          (gf) =>
+            String(gf.trfsiNo) === String(trfSiNo) &&
+            String(gf.rating) === String(rating) &&
+            String(
+              gf.deliveryChallan?.finalInspection?.deliverySchedule?.wound
+            ) === String(wound) &&
+            String(
+              gf.deliveryChallan?.finalInspection?.deliverySchedule?.tnNumber
+            ) === String(tnNumber)
+        );
+
+        setSelectedGPFailure(matchedGPFailure || null);
+
+        if (matchedGPFailure) {
+          const failureDetails = matchedGPFailure.failureDetails?.[0]; // Assuming first detail
+          setFormData((prev) => ({
+            ...prev,
+            subDivision: matchedGPFailure.subDivision,
+            locationOfFailure: failureDetails?.place || "",
+            dateOfSupply: failureDetails?.informationDate
+              ? dayjs(failureDetails.informationDate).format("YYYY-MM-DD")
+              : "",
+            dateOfExpiry: failureDetails?.failureDate
+              ? dayjs(failureDetails.failureDate).format("YYYY-MM-DD")
+              : "",
+          }));
+        } else {
+          setFormData((prev) => ({
+            ...prev,
+            subDivision: "",
+            locationOfFailure: "",
+            dateOfSupply: "",
+            dateOfExpiry: "",
+          }));
+        }
+      } else {
+        setFormData({
+          trfSiNo: "",
+          rating: "",
+          wound: "",
+          phase: "",
+          tnNumber: "",
+          acosName: "",
+          subDivision: "",
+          locationOfFailure: "",
+          dateOfSupply: "",
+          dateOfExpiry: "",
+        });
       }
     }
-  }, [sinNo, gpReceiptNotes, gpFailures]);
+  }, [sinNo, newGPReceiptRecords, gpFailures]);
 
   // Handle Submit
   const handleSubmit = () => {
+    if (!selectedNewGPReceiptRecord || !selectedGPFailure) {
+      setAlertBox({
+        open: true,
+        msg: "Please ensure both GP Receipt Record and GP Failure are matched.",
+        error: true,
+      });
+      return;
+    }
+    if (!reason || (reason === "Other Reason" && !otherReason)) {
+      setAlertBox({
+        open: true,
+        msg: "Please select or specify a reason for failure.",
+        error: true,
+      });
+      return;
+    }
+
     const finalReason = reason === "Other Reason" ? otherReason : reason;
     const payload = {
-      sinNo,
       acosName: formData.acosName,
-      gpReceiptNoteId: selectedReceipt.id,
-      gpFailureId: selectedFailure.id,
       reasonOfFailure: finalReason,
+      newGPReceiptRecordId: selectedNewGPReceiptRecord.id,
+      gpFailureId: selectedGPFailure.id,
     };
 
     addFailureAnalysisMutation.mutate(payload);
   };
+
+  const isDataLoading = isLoadingNewGPReceiptRecords || isLoadingGPFailures;
 
   return (
     <div className="right-content w-100">
@@ -162,81 +228,129 @@ const AddFailureAnalysis = () => {
           Add Failure Analysis
         </Typography>
 
+        {isDataLoading && (
+          <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
+            <CircularProgress />
+            <Typography ml={2}>Loading necessary data...</Typography>
+          </Box>
+        )}
+        {!isDataLoading && (!newGPReceiptRecords || !gpFailures) && (
+          <Alert severity="error" sx={{ my: 2 }}>
+            Failed to load required data. Please try again.
+          </Alert>
+        )}
+
         {/* Input Section */}
         <Grid container spacing={2} columns={{ xs: 1, sm: 2 }} sx={{ mb: 3 }}>
           {/* SIN No */}
-          <Grid item size={1}>
+          <Grid item xs={1}>
             <TextField
               fullWidth
               label="SIN No"
               variant="outlined"
               value={sinNo}
               onChange={(e) => setSinNo(e.target.value)}
+              disabled={isDataLoading}
             />
           </Grid>
 
-          <Grid item size={1}>
-            <TextField fullWidth label="TRFSI No" variant="outlined" value={formData.trfSiNo} />
+          <Grid item xs={1}>
+            <TextField
+              fullWidth
+              label="TRFSI No"
+              variant="outlined"
+              value={formData.trfSiNo}
+              InputProps={{ readOnly: true }}
+            />
           </Grid>
 
-          <Grid item size={1}>
-            <TextField fullWidth label="Rating" variant="outlined" value={formData.rating} />
+          <Grid item xs={1}>
+            <TextField
+              fullWidth
+              label="Rating"
+              variant="outlined"
+              value={formData.rating}
+              InputProps={{ readOnly: true }}
+            />
           </Grid>
 
-          <Grid item size={1}>
-            <TextField fullWidth label="Wound" variant="outlined" value={formData.wound} />
+          <Grid item xs={1}>
+            <TextField
+              fullWidth
+              label="Wound"
+              variant="outlined"
+              value={formData.wound}
+              InputProps={{ readOnly: true }}
+            />
           </Grid>
 
-          <Grid item size={1}>
-            <TextField fullWidth label="Phase" variant="outlined" value={formData.phase} />
+          <Grid item xs={1}>
+            <TextField
+              fullWidth
+              label="Phase"
+              variant="outlined"
+              value={formData.phase}
+              InputProps={{ readOnly: true }}
+            />
           </Grid>
 
-          <Grid item size={1}>
-            <TextField fullWidth label="TN No." variant="outlined" value={formData.tnNumber} />
+          <Grid item xs={1}>
+            <TextField
+              fullWidth
+              label="TN No."
+              variant="outlined"
+              value={formData.tnNumber}
+              InputProps={{ readOnly: true }}
+            />
           </Grid>
 
-          <Grid item size={1}>
+          <Grid item xs={1}>
             <TextField
               fullWidth
               label="Received From Acos"
               variant="outlined"
               value={formData.acosName}
+              InputProps={{ readOnly: true }}
             />
           </Grid>
 
-          <Grid item size={1}>
+          <Grid item xs={1}>
             <TextField
               fullWidth
               label="Sub-Division"
               variant="outlined"
               value={formData.subDivision}
+              InputProps={{ readOnly: true }}
             />
           </Grid>
 
-          <Grid item size={1}>
+          <Grid item xs={1}>
             <TextField
               fullWidth
               label="Location Of Failure"
               variant="outlined"
               value={formData.locationOfFailure}
+              InputProps={{ readOnly: true }}
             />
           </Grid>
 
-          <Grid item size={1}>
+          <Grid item xs={1}>
             <TextField
               fullWidth
               label="Date Of Supply"
               variant="outlined"
               value={formData.dateOfSupply}
+              InputProps={{ readOnly: true }}
             />
           </Grid>
 
-          <Grid item size={1}>
+          <Grid item xs={1}>
             <TextField
               fullWidth
               label="Date Of Expiry Of GP"
               variant="outlined"
               value={formData.dateOfExpiry}
+              InputProps={{ readOnly: true }}
             />
           </Grid>
         </Grid>
@@ -246,9 +360,15 @@ const AddFailureAnalysis = () => {
           <FormControl fullWidth>
             <InputLabel id="reason-label">Reason of Failure</InputLabel>
             <Select
+              labelId="reason-label"
               label="Reason Of Failure"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
+              disabled={
+                !selectedNewGPReceiptRecord ||
+                !selectedGPFailure ||
+                isDataLoading
+              }
             >
               <MenuItem value="Oil theft">Oil theft</MenuItem>
               <MenuItem value="Oil leakage">Oil leakage</MenuItem>
@@ -268,6 +388,7 @@ const AddFailureAnalysis = () => {
               variant="outlined"
               value={otherReason}
               onChange={(e) => setOtherReason(e.target.value)}
+              disabled={isDataLoading}
             />
           )}
         </Box>
@@ -279,7 +400,12 @@ const AddFailureAnalysis = () => {
             color="success"
             onClick={handleSubmit}
             sx={{ px: 5, py: 1.5, borderRadius: 3 }}
-            disabled={addFailureAnalysisMutation.isLoading}
+            disabled={
+              addFailureAnalysisMutation.isLoading ||
+              isDataLoading ||
+              !selectedNewGPReceiptRecord ||
+              !selectedGPFailure
+            }
           >
             {addFailureAnalysisMutation.isLoading ? (
               <CircularProgress color="inherit" size={20} />

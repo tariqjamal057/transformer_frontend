@@ -1,42 +1,27 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { Button } from "@mui/material";
 import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import PdfTemplate from "../../components/PdfTemplate";
 import { createRoot } from "react-dom/client";
 import { MyContext } from "../../App";
 import GPReceiptTemplate from "../../components/GPReceiptTemplate";
 import { useQuery } from "@tanstack/react-query";
 import api from "../../services/api";
+import Pagination from "../../components/Pagination";
+import GPReceiptNoteBulkUploadModal from "../../components/GPReceiptNoteBulkUploadModal";
+import dayjs from "dayjs";
 
 const GPReceiptNote = () => {
-  const { setProgress, setAlertBox, setIsHideSidebarAndHeader } =
-    useContext(MyContext);
-
-  const [openModal, setOpenModal] = useState(false);
-  const [selectedGPReceiptRecord, setSelectedGPReceiptRecord] = useState(null);
+  const { setAlertBox } = useContext(MyContext);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [openBulkUploadModal, setOpenBulkUploadModal] = useState(false);
 
   const { data: gpReceiptNotes, isLoading } = useQuery({
-    queryKey: ["gpReceiptNotes"],
-    queryFn: () => api.get("/gp-receipt-notes").then((res) => res.data.data),
+    queryKey: ["gpReceiptNotes", currentPage],
+    queryFn: () =>
+      api.get(`/gp-receipt-notes?page=${currentPage}`).then((res) => res.data),
   });
-
-  useEffect(() => {
-    setIsHideSidebarAndHeader(false);
-    window.scrollTo(0, 0);
-    setProgress(100);
-  }, []);
-
-  const handleEditClick = (item) => {
-    setSelectedGPReceiptRecord(item);
-    setOpenModal(true);
-  };
-
-  const handleModalClose = () => {
-    setOpenModal(false);
-    setSelectedGPReceiptRecord(null);
-  };
 
   // Instant PDF Generator (Auto-fit to A4)
   const handleDownloadPDF = async (item) => {
@@ -71,7 +56,7 @@ const GPReceiptNote = () => {
       const newHeight = imgHeight * ratio;
 
       pdf.addImage(imgData, "PNG", 0, 0, newWidth, newHeight);
-      pdf.save(`GPReceipt-${item.id || "file"}.pdf`);
+      pdf.save(`GPReceipt.pdf`);
 
       root.unmount();
       document.body.removeChild(element);
@@ -85,6 +70,12 @@ const GPReceiptNote = () => {
         <div className="d-flex justify-content-between align-items-center gap-3 mb-3 card shadow border-0 w-100 flex-row p-4">
           <h5 className="mb-0">G.P. Receipt Notes</h5>
           <div className="ms-auto d-flex align-items-center">
+            <Button
+              className="btn-blue ms-3 ps-3 pe-3"
+              onClick={() => setOpenBulkUploadModal(true)}
+            >
+              Bulk Upload
+            </Button>
             <Link to={"/add-GPReceiptNote"}>
               <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
             </Link>
@@ -106,23 +97,24 @@ const GPReceiptNote = () => {
                   <th>Action</th>
                 </tr>
               </thead>
-
               <tbody className="text-center align-middle">
                 {isLoading ? (
                   <tr>
                     <td colSpan="7">Loading...</td>
                   </tr>
-                ) : gpReceiptNotes.length > 0 ? (
-                  gpReceiptNotes.map((note, index) => (
+                ) : gpReceiptNotes?.items?.length > 0 ? (
+                  gpReceiptNotes.items.map((note, index) => (
                     <tr key={note.id}>
                       {/* Sr No */}
-                      <td># {index + 1}</td>
+                      <td>#{(currentPage - 1) * 10 + index + 1}</td>
 
                       {/* Select Date Range */}
                       <td>
-                        <div>{note.selectDateFrom}</div>
+                        <div>
+                          {dayjs(note.selectDateFrom).format("DD-MM-YYYY")}
+                        </div>
                         <div className="text-muted small">
-                          to {note.selectDateTo}
+                          to {dayjs(note.selectDateTo).format("DD-MM-YYYY")}
                         </div>
                       </td>
 
@@ -133,7 +125,9 @@ const GPReceiptNote = () => {
                       <td>
                         <div>{note.accountReceiptNoteNo}</div>
                         <div className="text-muted small">
-                          {note.accountReceiptNoteDate}
+                          {dayjs(note.accountReceiptNoteDate).format(
+                            "DD-MM-YYYY"
+                          )}
                         </div>
                       </td>
 
@@ -144,7 +138,9 @@ const GPReceiptNote = () => {
                       <td>
                         <div>{note.discomReceiptNoteNo}</div>
                         <div className="text-muted small">
-                          {note.discomReceiptNoteDate}
+                          {dayjs(note.discomReceiptNoteDate).format(
+                            "DD-MM-YYYY"
+                          )}
                         </div>
                       </td>
 
@@ -172,7 +168,19 @@ const GPReceiptNote = () => {
             </table>
           </div>
         </div>
+
+        {gpReceiptNotes?.totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={gpReceiptNotes.totalPages}
+            onPageChange={setCurrentPage}
+          />
+        )}
       </div>
+      <GPReceiptNoteBulkUploadModal
+        open={openBulkUploadModal}
+        handleClose={() => setOpenBulkUploadModal(false)}
+      />
     </>
   );
 };

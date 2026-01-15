@@ -14,7 +14,7 @@ const GPReceiptTemplate = ({ item }) => {
         <div>
           <p className="mb-1">
             <strong>RECEIPTED CHALAN NO</strong>:{" "}
-            {item.gpReceiptRecords?.[0]?.selectedChalan || "-"}
+            {item.newGpReceiptRecords?.[0]?.deliveryChallan?.challanNo || "-"}
           </p>
           <p className="mb-1">
             Received following damaged distribution transformers from
@@ -79,7 +79,7 @@ const GPReceiptTemplate = ({ item }) => {
             </tr>
           </thead>
           <tbody>
-            {item.gpReceiptRecords?.map((rec, idx) => (
+            {item.newGpReceiptRecords?.map((rec, idx) => (
               <tr key={rec.id}>
                 <td>{idx + 1}</td>
                 <td>{rec.trfsiNo}</td>
@@ -87,10 +87,10 @@ const GPReceiptTemplate = ({ item }) => {
                 <td>AL</td>
                 <td>SP</td>
                 <td>
-                  {rec.deliveryChalanDetails?.finalInspectionDetail
-                    ?.deliverySchedule?.tnNumber || "-"}
+                  {rec.deliveryChallan?.finalInspection?.deliverySchedule
+                    ?.tnNumber || "-"}
                 </td>
-                <td>{rec.selectedChalan}</td>
+                <td>{rec.deliveryChallan?.challanNo}</td>
                 <td>{rec.oilLevel}</td>
                 <td>{rec.hvBushing}</td>
                 <td>{rec.lvBushing}</td>
@@ -122,7 +122,7 @@ const GPReceiptTemplate = ({ item }) => {
           <p className="mb-1">16 KVA SP - 01 NOS</p>
           <p className="mb-1">25 KVA SP - 01 NOS</p>
           <p className="mb-1 fw-bold">
-            TOTAL - {item.gpReceiptRecords?.length || 0} NOS
+            TOTAL - {item.newGpReceiptRecords?.length || 0} NOS
           </p>
         </div>
       </div>

@@ -1,35 +1,51 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { Button, InputAdornment, TextField } from "@mui/material";
 import { Link } from "react-router-dom";
 import { FaPencilAlt, FaTrash } from "react-icons/fa";
-import { format } from "date-fns";
 import SearchIcon from "@mui/icons-material/Search";
 import FailureAnalysisModal from "../../components/FailureAnalysisModal";
+import FailureAnalysisBulkUploadModal from "../../components/FailureAnalysisBulkUploadModal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api";
 import { MyContext } from "../../App";
 import Swal from "sweetalert2";
+import Pagination from "../../components/Pagination";
+import dayjs from "dayjs";
 
 const FailureAnalysisList = () => {
   const { setAlertBox } = useContext(MyContext);
   const queryClient = useQueryClient();
 
   const [openModal, setOpenModal] = useState(false);
+  const [openBulkUploadModal, setOpenBulkUploadModal] = useState(false);
   const [selectedFailureAnalysis, setSelectedFailureAnalysis] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: failureAnalyses, isLoading, isError } = useQuery({
-    queryKey: ["failureAnalyses"],
-    queryFn: () => api.get("/failure-analyses").then((res) => res.data),
+  const {
+    data: failureAnalysesData,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["failureAnalyses", currentPage, searchQuery],
+    queryFn: () =>
+      api
+        .get(`/failure-analyses?page=${currentPage}&search=${searchQuery}`)
+        .then((res) => res.data),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/failure-analyses/${id}`),
     onSuccess: () => {
-      setAlertBox({open: true, msg: "Failure Analysis deleted successfully!", error: false});
+      setAlertBox({
+        open: true,
+        msg: "Failure Analysis deleted successfully!",
+        error: false,
+      });
       queryClient.invalidateQueries(["failureAnalyses"]);
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.message, error: true});
+      setAlertBox({ open: true, msg: error.message, error: true });
     },
   });
 
@@ -65,8 +81,45 @@ const FailureAnalysisList = () => {
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center gap-3 mb-3 card shadow border-0 w-100 flex-row p-4">
           <h5 className="mb-0">Failure Analysis List</h5>
-
+          {/* Search Bar */}
+          <TextField
+            variant="outlined"
+            placeholder="Search...."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            size="small"
+            sx={{
+              width: { xs: "100%", sm: "300px" },
+              marginLeft: "auto",
+              backgroundColor: "#fff",
+              borderRadius: 2,
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": {
+                  borderColor: "#ccc",
+                },
+                "&:hover fieldset": {
+                  borderColor: "#f0883d",
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "#f0883d",
+                },
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: "#f0883d" }} />
+                </InputAdornment>
+              ),
+            }}
+          />
           <div className="d-flex align-items-center">
+            <Button
+              className="btn-blue ms-3 ps-3 pe-3"
+              onClick={() => setOpenBulkUploadModal(true)}
+            >
+              Bulk Upload
+            </Button>
             <Link to={"/add-FailureAnalysis"}>
               <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
             </Link>
@@ -79,6 +132,7 @@ const FailureAnalysisList = () => {
             <table className="table table-striped table-bordered align-middle text-nowrap">
               <thead className="table-primary text-white text-uppercase text-center">
                 <tr>
+                  <th>Sr No</th>
                   <th>Sin No</th>
                   <th>Tfr. Sr. No</th>
                   <th>Rating</th>
@@ -93,74 +147,53 @@ const FailureAnalysisList = () => {
                   <th>Action</th>
                 </tr>
               </thead>
-
               <tbody className="text-center align-middle">
                 {isLoading ? (
                   <tr>
-                    <td colSpan="12">Loading...</td>
+                    <td colSpan="13">Loading...</td>
                   </tr>
                 ) : isError ? (
                   <tr>
-                    <td colSpan="12">Error fetching data</td>
+                    <td colSpan="13">Error fetching data</td>
                   </tr>
-                ) : failureAnalyses.length > 0 ? (
-                  failureAnalyses.map((item, index) => {
-                    const receipt = item.gpReceiptNote || {};
-                    const failure = item.gpFailure || {};
-                    const delivery =
-                      receipt.deliveryChalan?.finalInspectionDetail
+                ) : failureAnalysesData?.data.length > 0 ? (
+                  failureAnalysesData.data.map((item, index) => {
+                    const newGPReceiptRecord = item.newGPReceiptRecord || {};
+                    const gpFailure = item.gpFailure || {};
+                    const deliverySchedule =
+                      newGPReceiptRecord.deliveryChallan?.finalInspection
                         ?.deliverySchedule || {};
-                    const material =
-                      receipt.deliveryChalan?.materialDescription || {};
+                    const materialDescription =
+                      newGPReceiptRecord.deliveryChallan?.materialDescription ||
+                      {};
+                    const failureDetails = gpFailure.failureDetails?.[0] || {};
 
                     return (
-                      <tr key={index}>
-                        {/* Sin No */}
-                        <td>{item.sinNo}</td>
-
-                        {/* Tfr. Sr. No */}
-                        <td>{receipt.trfSiNo || failure.trfSiNo}</td>
-
-                        {/* Rating */}
-                        <td>{receipt.rating || failure.rating}</td>
-
-                        {/* Wound */}
-                        <td>{delivery.wound}</td>
-
-                        {/* Phase */}
-                        <td>{material.phase || "N/A"}</td>
-
-                        {/* Tn No */}
-                        <td>{delivery.tnNumber}</td>
-
-                        {/* Acos Name */}
+                      <tr key={item.id}>
+                        <td>#{(currentPage - 1) * 10 + index + 1}</td>
+                        <td>{newGPReceiptRecord.sinNo}</td>
+                        <td>{newGPReceiptRecord.trfsiNo}</td>
+                        <td>{newGPReceiptRecord.rating}</td>
+                        <td>{deliverySchedule.wound}</td>
+                        <td>{materialDescription.phase}</td>
+                        <td>{deliverySchedule.tnNumber}</td>
                         <td>{item.acosName}</td>
-
-                        {/* Sub Division */}
-                        <td>{failure.subDivision}</td>
-
-                        {/* Location of Failure → take first entry of array */}
-                        <td>{failure.placeOfFailure || "N/A"}</td>
-
-                        {/* Date of Supply (informationDate from failureData[0]) */}
+                        <td>{gpFailure.subDivision}</td>
+                        <td>{failureDetails.place}</td>
                         <td>
-                          {format(
-                            new Date(
-                              failure.dateOfInformation
-                            ),
-                            "dd MMM yyyy"
-                          ) || "N/A"}
+                          {failureDetails.informationDate
+                            ? dayjs(failureDetails.informationDate).format(
+                                "DD-MM-YYYY"
+                              )
+                            : "N/A"}
                         </td>
-
-                        {/* Date of Expiry (failureDate from failureData[0]) */}
                         <td>
-                          {format(
-                            new Date(failure.dateOfFailure),
-                            "dd MMM yyyy"
-                          ) || "N/A"}
+                          {failureDetails.failureDate
+                            ? dayjs(failureDetails.failureDate).format(
+                                "DD-MM-YYYY"
+                              )
+                            : "N/A"}
                         </td>
-
-                        {/* Action */}
                         <td>
                           <div className="d-flex gap-2 align-items-center justify-content-center">
                             <button
@@ -182,7 +215,7 @@ const FailureAnalysisList = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={12} className="text-center">
+                    <td colSpan="13" className="text-center">
                       No Failure Analysis Records Found
                     </td>
                   </tr>
@@ -191,18 +224,29 @@ const FailureAnalysisList = () => {
             </table>
           </div>
         </div>
+
+        {failureAnalysesData?.totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={failureAnalysesData.totalPages}
+            onPageChange={setCurrentPage}
+          />
+        )}
       </div>
 
-      {
+      {selectedFailureAnalysis && (
         <FailureAnalysisModal
           open={openModal}
           handleClose={handleModalClose}
           failureAnalysisData={selectedFailureAnalysis}
         />
-      }
+      )}
+      <FailureAnalysisBulkUploadModal
+        open={openBulkUploadModal}
+        handleClose={() => setOpenBulkUploadModal(false)}
+      />
     </>
   );
 };
 
 export default FailureAnalysisList;
-
