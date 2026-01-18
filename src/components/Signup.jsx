@@ -17,7 +17,7 @@ const Signup = () => {
   const [pages, setPages] = useState([]);
   const navigate = useNavigate();
 
-  const roles = ["Owner", "Manager", "Data Feeder", "Supervisor"];
+  const roles = ["OWNER", "MANAGER", "DATA_FEEDER", "SUPERVISOR"];
   const dummyPages = [
     { name: "Transformer Numbers", url: "/dashboard" },
     { name: "Reports", url: "/reports" },

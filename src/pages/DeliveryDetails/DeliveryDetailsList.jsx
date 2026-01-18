@@ -35,23 +35,29 @@ const DeliveryDetailsList = () => {
         .then((res) => res.data),
   });
 
+  const { data: finalInspections } = useQuery({
+    queryKey: ["finalInspections"],
+    queryFn: () =>
+      api.get("/final-inspections?all=true").then((res) => res.data),
+  });
+
   const tnNumbers = [
     ...new Set(
-      deliveryDetails?.items?.map(
-        (item) => item.deliveryChallan.finalInspection.deliverySchedule.tnNumber
-      )
+      finalInspections?.map((item) => item.deliverySchedule?.tnNumber),
     ),
-  ];
+  ].filter(Boolean);
   const ratings = [
     ...new Set(
       deliveryDetails?.items?.map(
-        (item) => item.deliveryChallan.finalInspection.deliverySchedule.rating
-      )
+        (item) => item.deliveryChallan.finalInspection.deliverySchedule.rating,
+      ),
     ),
   ];
   const consignees = [
     ...new Set(
-      deliveryDetails?.items?.map((item) => item.deliveryChallan.consignee.name)
+      deliveryDetails?.items?.map(
+        (item) => item.deliveryChallan.consignee.name,
+      ),
     ),
   ];
 
@@ -261,7 +267,7 @@ const DeliveryDetailsList = () => {
                             </div>
                             <div className="text-muted small">
                               {new Date(
-                                dc.finalInspection.deliverySchedule.poDate
+                                dc.finalInspection.deliverySchedule.poDate,
                               ).toLocaleDateString()}
                             </div>
                           </td>
@@ -278,7 +284,7 @@ const DeliveryDetailsList = () => {
                           {/* Receipted Challan Date */}
                           <td>
                             {new Date(
-                              item.receiptedChallanDate
+                              item.receiptedChallanDate,
                             ).toLocaleDateString()}
                           </td>
 
@@ -289,12 +295,12 @@ const DeliveryDetailsList = () => {
                           <td>
                             {dayjs(
                               dc.finalInspection.deliverySchedule
-                                .deliveryScheduleDate
+                                .deliveryScheduleDate,
                             )
                               .add(
                                 dc.finalInspection.deliverySchedule
                                   .guaranteePeriodMonths,
-                                "month"
+                                "month",
                               )
                               .format("YYYY-MM-DD")}
                           </td>
@@ -316,7 +322,7 @@ const DeliveryDetailsList = () => {
                             <div>
                               <strong>DI Date:</strong>{" "}
                               {new Date(
-                                dc.finalInspection.diDate
+                                dc.finalInspection.diDate,
                               ).toLocaleDateString()}
                             </div>
                           </td>
@@ -336,7 +342,7 @@ const DeliveryDetailsList = () => {
                                   >
                                     {officer}
                                   </span>
-                                )
+                                ),
                               )}
                             </div>
                           </td>
@@ -344,7 +350,7 @@ const DeliveryDetailsList = () => {
                           {/* Inspection Date */}
                           <td>
                             {new Date(
-                              dc.finalInspection.inspectionDate
+                              dc.finalInspection.inspectionDate,
                             ).toLocaleDateString()}
                           </td>
 

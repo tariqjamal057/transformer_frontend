@@ -14,6 +14,8 @@ import {
   InputLabel,
   Select,
   OutlinedInput,
+  Checkbox,
+  ListItemText,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
@@ -85,10 +87,27 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
       setDiDate(dayjs(record.diDate));
       setInspectionDate(dayjs(record.inspectionDate));
       setInspectionOfficers(record.inspectionOfficers.join(", "));
-      setPoNo(record.deliverySchedule.poDetails);
+      setPoNo(record.deliverySchedule.po);
       setPoDate(dayjs(record.deliverySchedule.poDate));
-      setSerialNumber(record.snNumber);
+      setSerialNumber(
+        record.snNumber ||
+          `${record.serialNumberFrom} TO ${record.serialNumberTo}`
+      );
       setChalanDescription(record.deliverySchedule.description);
+
+      let subSerialNumbers = [];
+      if (record.transformers && record.transformers.length > 0) {
+        subSerialNumbers = record.transformers.map((t) => ({
+          id: t.transformer.id,
+          serialNo: t.transformer.serialNo,
+        }));
+      } else if (record.serialNumberFrom && record.serialNumberTo) {
+        for (let i = record.serialNumberFrom; i <= record.serialNumberTo; i++) {
+          subSerialNumbers.push({ id: i, serialNo: i });
+        }
+      }
+      setAvailableSubSerialNumbers(subSerialNumbers);
+      setSelectedTransformers([]);
     }
   };
 
@@ -169,15 +188,15 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
 
     const subSerialNumberFrom =
       selectedSerialNumbers.length > 0
-        ? Math.min(...selectedSerialNumbers)
+        ? String(Math.min(...selectedSerialNumbers))
         : null;
     const subSerialNumberTo =
       selectedSerialNumbers.length > 0
-        ? Math.max(...selectedSerialNumbers)
+        ? String(Math.max(...selectedSerialNumbers))
         : null;
 
     const data = {
-      finalInspectionId: deliveryChalanData.finalInspection.id,
+      finalInspectionId: selectedRecord?.id || deliveryChalanData.finalInspection.id,
       challanNo,
       subSerialNumberFrom,
       subSerialNumberTo,
@@ -186,10 +205,14 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
       consignorPhone: consignorPhoneNo,
       consignorGST: consignorGSTNo,
       consignorEmail,
-      consigneeId: deliveryChalanData.consignee.id,
+      consigneeId: selectedConsigneeRecord?.id || deliveryChalanData.consignee.id,
       lorryNo,
       truckDriverName: driverName,
       materialDescriptionId: selectedMaterialCode,
+      challanDescription: chalanDescription,
+      supplyTenderId:
+        selectedRecord?.deliverySchedule?.supplyTenderId ||
+        deliveryChalanData.finalInspection.deliverySchedule.supplyTenderId,
     };
 
     updateChallan(data);
@@ -203,17 +226,23 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
 
       // 🔹 TN & Serial Numbers
       setSelectedTN(ds?.tnNumber || "");
-      setSerialNumber(fi.snNumber || "");
+      setSerialNumber(
+        fi.snNumber || `${fi.serialNumberFrom} TO ${fi.serialNumberTo}`
+      );
 
-      const subSerialNumbers = fi.transformers.map((t) => ({
-        id: t.transformer.id,
-        serialNo: t.transformer.serialNo,
-      }));
+      let subSerialNumbers = [];
+      if (fi.transformers && fi.transformers.length > 0) {
+        subSerialNumbers = fi.transformers.map((t) => ({
+          id: t.transformer.id,
+          serialNo: t.transformer.serialNo,
+        }));
+      } else if (fi.serialNumberFrom && fi.serialNumberTo) {
+        for (let i = fi.serialNumberFrom; i <= fi.serialNumberTo; i++) {
+          subSerialNumbers.push({ id: i, serialNo: i });
+        }
+      }
       setAvailableSubSerialNumbers(subSerialNumbers);
-      
-      const selectedIds = fi.transformers.map((t) => t.transformer.id);
-      setSelectedTransformers(selectedIds);
-
+      setSelectedTransformers([]); // Reset or set based on existing data if needed
 
       // 🔹 DI Details
       setDiNo(fi.diNo || "");
@@ -224,12 +253,12 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
       setInspectionOfficers(fi.inspectionOfficers || []);
 
       // 🔹 PO Details
-      setPoNo(ds.poDetails || "");
+      setPoNo(ds.po || "");
       setPoDate(ds.poDate ? dayjs(ds.poDate) : null);
 
       // 🔹 Challan
       setChallanNo(deliveryChalanData.challanNo || "");
-      setChalanDescription(ds.description || "");
+      setChalanDescription(ds.chalanDescription || "");
       setMaterialDescription(
         deliveryChalanData.materialDescription?.description || ""
       );

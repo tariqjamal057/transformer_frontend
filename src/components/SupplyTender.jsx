@@ -73,6 +73,7 @@ const SupplyTenders = () => {
     try {
       const response = await api.post("/auth/select-supply-tender", { supplyTenderId: selectedSupplyTender });
       localStorage.setItem("token", response.data.token);
+      localStorage.setItem("selectedSupplyTenderId", selectedSupplyTender);
       navigate("/");
     } catch (error) {
       setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});

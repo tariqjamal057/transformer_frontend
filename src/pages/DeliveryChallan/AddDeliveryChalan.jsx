@@ -46,7 +46,8 @@ const AddDeliveryChalan = () => {
 
   const { data: finalInspections } = useQuery({
     queryKey: ["finalInspections"],
-    queryFn: () => api.get("/final-inspections?all=true").then((res) => res.data),
+    queryFn: () =>
+      api.get("/final-inspections?all=true").then((res) => res.data),
   });
 
   const { data: consignees } = useQuery({
@@ -56,14 +57,14 @@ const AddDeliveryChalan = () => {
 
   const { data: materialDescriptions } = useQuery({
     queryKey: ["material-descriptions"],
-    queryFn: () => api.get("/material-descriptions?all=true").then((res) => res.data),
+    queryFn: () =>
+      api.get("/material-descriptions?all=true").then((res) => res.data),
   });
-
 
   const handleTNChange = (tnNumber) => {
     setSelectedTN(tnNumber);
     const record = finalInspections.find(
-      (item) => item.deliverySchedule.tnNumber === tnNumber
+      (item) => item.deliverySchedule.tnNumber === tnNumber,
     );
 
     if (record) {
@@ -74,12 +75,25 @@ const AddDeliveryChalan = () => {
       setDiDate(dayjs(record.diDate));
       setInspectionDate(dayjs(record.inspectionDate));
       setInspectionOfficers(record.inspectionOfficers.join(", "));
-      setPoNo(record.deliverySchedule.poDetails);
+      setPoNo(record.deliverySchedule.po);
       setPoDate(dayjs(record.deliverySchedule.poDate));
-      setSerialNumber(record.snNumber);
-      setChalanDescription(record.deliverySchedule.description);
+      setSerialNumber(
+        record.snNumber ||
+          `${record.serialNumberFrom} TO ${record.serialNumberTo}`,
+      );
+      setChalanDescription(record.deliverySchedule.chalanDescription);
 
-      const subSerialNumbers = record.transformers.map(t => ({ id: t.transformer.id, serialNo: t.transformer.serialNo }));
+      let subSerialNumbers = [];
+      if (record.transformers && record.transformers.length > 0) {
+        subSerialNumbers = record.transformers.map((t) => ({
+          id: t.transformer.id,
+          serialNo: t.transformer.serialNo,
+        }));
+      } else if (record.serialNumberFrom && record.serialNumberTo) {
+        for (let i = record.serialNumberFrom; i <= record.serialNumberTo; i++) {
+          subSerialNumbers.push({ id: i, serialNo: i });
+        }
+      }
       setAvailableSubSerialNumbers(subSerialNumbers);
       setSelectedTransformers([]); // reset on TN change
     }
@@ -87,7 +101,9 @@ const AddDeliveryChalan = () => {
 
   const [challanNo, setChallanNo] = useState("");
   const [selectedTransformers, setSelectedTransformers] = useState([]);
-  const [availableSubSerialNumbers, setAvailableSubSerialNumbers] = useState([]);
+  const [availableSubSerialNumbers, setAvailableSubSerialNumbers] = useState(
+    [],
+  );
 
   const [consignorName, setConsignorName] = useState("");
   const [consignorAddress, setConsignorAddress] = useState("");
@@ -145,19 +161,22 @@ const AddDeliveryChalan = () => {
       setMaterialDescription("");
     }
   };
-  
+
   const addDeliveryChallanMutation = useMutation({
     mutationFn: (newChallan) => api.post("/delivery-challans", newChallan),
     onSuccess: () => {
-      setAlertBox({open: true, msg: "Delivery Challan added successfully!", error: false});
+      setAlertBox({
+        open: true,
+        msg: "Delivery Challan added successfully!",
+        error: false,
+      });
       queryClient.invalidateQueries(["deliveryChallans"]);
       navigate("/deliveryChalan-list");
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.message, error: true});
+      setAlertBox({ open: true, msg: error.message, error: true });
     },
   });
-
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -173,12 +192,16 @@ const AddDeliveryChalan = () => {
       .map((s) => s.serialNo);
 
     const subSerialNumberFrom =
-      selectedSerialNumbers.length > 0 ? Math.min(...selectedSerialNumbers) : null;
+      selectedSerialNumbers.length > 0
+        ? Math.min(...selectedSerialNumbers)
+        : null;
     const subSerialNumberTo =
-      selectedSerialNumbers.length > 0 ? Math.max(...selectedSerialNumbers) : null;
+      selectedSerialNumbers.length > 0
+        ? Math.max(...selectedSerialNumbers)
+        : null;
 
     const data = {
-      finalInspectionDetailId: selectedRecord.id,
+      finalInspectionId: selectedRecord.id,
       challanNo,
       subSerialNumberFrom,
       subSerialNumberTo,
@@ -191,6 +214,7 @@ const AddDeliveryChalan = () => {
       lorryNo,
       truckDriverName: driverName,
       materialDescriptionId,
+      challanDescription: chalanDescription,
     };
 
     addDeliveryChallanMutation.mutate(data);
@@ -250,7 +274,7 @@ const AddDeliveryChalan = () => {
                         .map(
                           (id) =>
                             availableSubSerialNumbers.find((s) => s.id === id)
-                              ?.serialNo || ""
+                              ?.serialNo || "",
                         )
                         .join(", ")
                     }

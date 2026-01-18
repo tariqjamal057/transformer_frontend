@@ -28,6 +28,7 @@ import { MyContext } from "../App";
 import { Cancel } from "@mui/icons-material";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../services/api";
+import * as XLSX from "xlsx";
 
 const style = {
   position: "absolute",
@@ -53,7 +54,8 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
 
   const { data: deliverySchedules } = useQuery({
     queryKey: ["allDeliverySchedules"],
-    queryFn: () => api.get("/delivery-schedules?all=true").then((res) => res.data),
+    queryFn: () =>
+      api.get("/delivery-schedules?all=true").then((res) => res.data),
     placeholderData: [],
   });
 
@@ -75,7 +77,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
   const [offeredQuantity, setOfferedQuantity] = useState("");
   const [inspectionOfficer, setInspectionOfficer] = useState("");
   const [selectedInspectionOfficer, setSelectedInspectionOfficer] = useState(
-    []
+    [],
   );
   const [total, setTotal] = useState("");
   const [diNo, setDiNo] = useState("");
@@ -87,10 +89,12 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
   const [selectedConsignee, setSelectedConsignee] = useState("");
   const [consigneeQuantity, setConsigneeQuantity] = useState("");
 
-  const [shellingDetails, setShellingDetails] = useState("");
+  const [sealingDetails, setSealingDetails] = useState([]);
+  const [fileName, setFileName] = useState("");
 
   useEffect(() => {
     if (inspectionData) {
+      console.log("inspectionData", inspectionData);
       setTnDetail(inspectionData?.deliverySchedule);
       setSerialNumberFrom(inspectionData?.serialNumberFrom);
       setSerialNumberTo(inspectionData?.serialNumberTo);
@@ -98,17 +102,17 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       setInspectionDate(
         inspectionData.inspectionDate
           ? dayjs(inspectionData.inspectionDate)
-          : null
+          : null,
       );
       setInspectedQuantity(inspectionData?.inspectedQuantity);
       setNominationLetterNo(inspectionData.nominationLetterNo || "");
       setNominationDate(
         inspectionData.nominationDate
           ? dayjs(inspectionData.nominationDate)
-          : null
+          : null,
       );
       setOfferDate(
-        inspectionData.offerDate ? dayjs(inspectionData.offerDate) : null
+        inspectionData.offerDate ? dayjs(inspectionData.offerDate) : null,
       );
       setOfferedQuantity(inspectionData.offeredQuantity);
       setSelectedInspectionOfficer(inspectionData.inspectionOfficers || []);
@@ -117,9 +121,9 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       setDiNo(inspectionData.diNo || "");
       setDiDate(inspectionData.diDate ? dayjs(inspectionData.diDate) : null);
       setWarranty(
-        inspectionData?.deliverySchedule?.guaranteePeriodMonths || ""
+        inspectionData?.deliverySchedule?.guaranteePeriodMonths || "",
       );
-      setShellingDetails(inspectionData.shellingDetails || "");
+      setSealingDetails(inspectionData.sealingDetails || []);
 
       // ✅ Load existing consignee list
       setConsigneeList(inspectionData.consignees || []);
@@ -136,7 +140,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
 
   const handleRemove = (officer) => {
     setSelectedInspectionOfficer(
-      selectedInspectionOfficer.filter((o) => o !== officer)
+      selectedInspectionOfficer.filter((o) => o !== officer),
     );
   };
 
@@ -175,7 +179,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     const totalAvailable = to - from + 1;
     const totalDistributed = consigneeList.reduce(
       (sum, c) => sum + c.quantity,
-      0
+      0,
     );
     const newTotal = totalDistributed + parseInt(consigneeQuantity);
 
@@ -193,8 +197,13 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     const endSn = startSn + parseInt(consigneeQuantity) - 1;
     const subSnNumber = `${startSn} TO ${endSn}`;
 
+    const selectedConsigneeObj = consignees.find(
+      (c) => c.id === selectedConsignee,
+    );
+
     const newConsignee = {
-      consignee: consignees.find((c) => c.id === selectedConsignee),
+      consigneeId: selectedConsignee,
+      consigneeName: selectedConsigneeObj?.name,
       quantity: parseInt(consigneeQuantity),
       subSnNumber,
     };
@@ -209,6 +218,30 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     const updated = [...consigneeList];
     updated.splice(idx, 1);
     setConsigneeList(updated);
+  };
+
+  const handleExcelUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setFileName(file.name); // show file name
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const data = new Uint8Array(evt.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+      const filteredData = jsonData.map((row) => ({
+        trfSiNo: row["TRF SL No."],
+        polySealNo: row["Poly Carbonate Seal No."],
+      }));
+
+      setSealingDetails(filteredData);
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   const { mutate: updateFinalInspection, isLoading } = useMutation({
@@ -233,21 +266,31 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
   });
 
   const handleSubmit = () => {
+    console.log("condif ", consigneeList);
     const updatedData = {
       deliveryScheduleId: tnDetail?.id,
       serialNumberFrom: parseInt(serialNumberFrom, 10),
       serialNumberTo: parseInt(serialNumberTo, 10),
-      offerDate: dayjs(offerDate).format("YYYY-MM-DD"),
+      offerDate: dayjs(offerDate).toISOString(),
       offeredQuantity: parseInt(offeredQuantity, 10),
-      inspectionDate: dayjs(inspectionDate).format("YYYY-MM-DD"),
+      inspectionDate: dayjs(inspectionDate).toISOString(),
       inspectedQuantity: parseInt(inspectedQuantity, 10),
       inspectionOfficers: selectedInspectionOfficer,
       nominationLetterNo: nominationLetterNo,
-      nominationDate: nominationDate ? dayjs(nominationDate).format("YYYY-MM-DD") : null,
+      nominationDate: nominationDate
+        ? dayjs(nominationDate).toISOString()
+        : null,
       diNo,
-      diDate: dayjs(diDate).format("YYYY-MM-DD"),
-      warranty,
-      consignees: consigneeList.map(c => ({...c, consigneeId: c.consignee.id})), // Ensure consigneeId is sent
+      diDate: dayjs(diDate).toISOString(),
+      warranty: String(warranty),
+      consignees: consigneeList.map((c) => ({
+        consigneeId: c.consigneeId || c.consignee?.id,
+        consigneeName: c.consigneeName,
+        quantity: c.quantity,
+        subSnNumber: c.subSnNumber,
+        repairedTransformerIds: c.repairedTransformerIds || [],
+      })),
+      sealingDetails,
     };
     updateFinalInspection(updatedData);
   };
@@ -430,13 +473,13 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
           />
 
           <Grid container spacing={3} columns={{ xs: 1, sm: 2 }}>
-            <Grid item xs={2}>
+            <Grid item size={2}>
               <Typography variant="h6" sx={{ mt: 2 }}>
                 Consignee Details
               </Typography>
             </Grid>
 
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <FormControl fullWidth>
                 <InputLabel>Consignee</InputLabel>
                 <Select
@@ -453,7 +496,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={1}>
+            <Grid item size={1}>
               <Box display="flex" gap={1}>
                 <TextField
                   label="Quantity"
@@ -473,7 +516,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
             </Grid>
 
             {/* Table */}
-            <Grid item xs={2}>
+            <Grid item size={2}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -486,7 +529,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
                 <TableBody>
                   {consigneeList.map((c, idx) => (
                     <TableRow key={idx}>
-                      <TableCell>{c.consignee.name}</TableCell>
+                      <TableCell>{c.consigneeName}</TableCell>
                       <TableCell>{c.quantity}</TableCell>
                       <TableCell>{c.subSnNumber}</TableCell>
                       <TableCell>
@@ -511,9 +554,31 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
             </Grid>
           </Grid>
 
+          <Box mt={2}>
+            <Button variant="outlined" component="label" fullWidth>
+              Upload Sealing Details
+              <input
+                type="file"
+                accept=".xls,.xlsx"
+                hidden
+                onChange={handleExcelUpload}
+              />
+            </Button>
+            {fileName && (
+              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                📄 {fileName}
+              </Typography>
+            )}
+          </Box>
+
           <Box mt={4} textAlign="center">
-            <Button variant="contained" size="large" onClick={handleSubmit} disabled={isLoading}>
-              {isLoading? 'Saving...' : 'Save Changes'}
+            <Button
+              variant="contained"
+              size="large"
+              onClick={handleSubmit}
+              disabled={isLoading}
+            >
+              {isLoading ? "Saving..." : "Save Changes"}
             </Button>
           </Box>
         </Box>

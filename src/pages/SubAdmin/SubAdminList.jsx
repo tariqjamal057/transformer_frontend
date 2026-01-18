@@ -349,12 +349,12 @@ const SubAdminList = () => {
                           >
                             <FaPencilAlt />
                           </button>
-                          <button
+                          {/* <button
                             className="btn btn-sm btn-danger"
                             onClick={() => handleDeleteClick(item.id)}
                           >
                             <FaTrash />
-                          </button>
+                          </button> */}
                         </div>
                       </td>
                     </tr>

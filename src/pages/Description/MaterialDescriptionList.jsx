@@ -324,12 +324,12 @@ const MaterialDescriptionList = () => {
                             >
                               <FaPencilAlt />
                             </button>
-                            <button
+                            {/* <button
                               className="btn btn-sm btn-danger"
                               onClick={() => handleDelete(item.id)}
                             >
                               <MdDelete />
-                            </button>
+                            </button> */}
                           </div>
                         </td>
                       </tr>

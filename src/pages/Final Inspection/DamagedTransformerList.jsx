@@ -337,12 +337,12 @@ const DamagedTransformerList = () => {
                         >
                           <FaPencilAlt />
                         </button>
-                        <button
+                        {/* <button
                           className="btn btn-sm btn-danger"
                           onClick={() => handleDelete(row.id)}
                         >
                           <FaTrash />
-                        </button>
+                        </button> */}
                       </div>
                     </td>
                   </tr>

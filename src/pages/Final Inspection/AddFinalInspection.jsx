@@ -54,7 +54,7 @@ const AddFinalInspection = () => {
   const [offeredQuantity, setOfferedQuantity] = useState("");
   const [inspectionOfficer, setInspectionOfficer] = useState("");
   const [selectedInspectionOfficer, setSelectedInspectionOfficer] = useState(
-    []
+    [],
   );
   const [total, setTotal] = useState("");
   const [diNo, setDiNo] = useState("");
@@ -130,7 +130,7 @@ const AddFinalInspection = () => {
 
   const handleRemove = (officer) => {
     setSelectedInspectionOfficer(
-      selectedInspectionOfficer.filter((o) => o !== officer)
+      selectedInspectionOfficer.filter((o) => o !== officer),
     );
   };
 
@@ -192,7 +192,7 @@ const AddFinalInspection = () => {
     const totalAvailable = to - from + 1;
     const totalDistributed = consigneeList.reduce(
       (sum, c) => sum + c.quantity,
-      0
+      0,
     );
 
     const newTotal = totalDistributed + parseInt(consigneeQuantity);
@@ -210,15 +210,20 @@ const AddFinalInspection = () => {
     const endSn = startSn + parseInt(consigneeQuantity) - 1;
     const subSnNumber = `${startSn} TO ${endSn}`;
 
+    const selectedConsigneeObj = consignees.find(
+      (c) => c.id === selectedConsignee,
+    );
+
     const newConsignee = {
       consigneeId: selectedConsignee,
+      consigneeName: selectedConsigneeObj?.name,
       quantity: parseInt(consigneeQuantity),
       subSnNumber,
       repairedTransformerIds: selectedTransformers,
     };
 
     const updatedAvailable = availableTransformers?.filter(
-      (t) => !selectedTransformers.includes(t.id)
+      (t) => !selectedTransformers.includes(t.id),
     );
 
     setAvailableTransformers(updatedAvailable);
@@ -234,7 +239,7 @@ const AddFinalInspection = () => {
       setAvailableTransformers((prev) => [
         ...prev,
         ...damagedTransformers.filter((t) =>
-          removed.repairedTransformerIds.includes(t.id)
+          removed.repairedTransformerIds.includes(t.id),
         ),
       ]);
     }
@@ -245,28 +250,31 @@ const AddFinalInspection = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
+    console.log("sealing details", sealingDetails)
     const data = {
       deliveryScheduleId: tnDetail?.id,
       serialNumberFrom: parseInt(serialNumberFrom),
       serialNumberTo: parseInt(serialNumberTo),
-      offerDate: dayjs(offerDate).format("YYYY-MM-DD"),
+      offerDate: dayjs(offerDate).toISOString(),
       offeredQuantity: parseInt(offeredQuantity),
-      inspectionDate: dayjs(inspectionDate).format("YYYY-MM-DD"),
+      inspectionDate: dayjs(inspectionDate).toISOString(),
       inspectedQuantity: parseInt(inspectedQuantity),
       inspectionOfficers: selectedInspectionOfficer,
       nominationLetterNo,
       nominationDate: nominationDate
-        ? dayjs(nominationDate).format("YYYY-MM-DD")
+        ? dayjs(nominationDate).toISOString()
         : null,
       diNo,
-      diDate: dayjs(diDate).format("YYYY-MM-DD"),
+      diDate: dayjs(diDate).toISOString(),
       consignees: consigneeList,
-      sealingDetails,
+      sealingDetails: sealingDetails.map((s) => ({
+        trfSiNo: s.trfSiNo,
+        polySealNo: s.polySealNo,
+      })),
       warranty,
     };
 
-    addFinalInspectionMutation.mutate(data);
+    // addFinalInspectionMutation.mutate(data);
   };
 
   return (
@@ -407,7 +415,7 @@ const AddFinalInspection = () => {
                         .map(
                           (id) =>
                             availableTransformers?.find((t) => t.id === id)
-                              ?.serialNo || ""
+                              ?.serialNo || "",
                         )
                         .join(", ")
                     }
@@ -464,8 +472,8 @@ const AddFinalInspection = () => {
                                 .map(
                                   (t_id) =>
                                     damagedTransformers.find(
-                                      (dt) => dt.id === t_id
-                                    )?.serialNo
+                                      (dt) => dt.id === t_id,
+                                    )?.serialNo,
                                 )
                                 .join(", ")
                             : "—"}

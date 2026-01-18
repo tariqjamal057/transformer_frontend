@@ -26,7 +26,7 @@ export default function DamagedTransformerPage() {
   const { data: finalInspectionList = [] } = useQuery({
     queryKey: ["allFinalInspections"],
     queryFn: () =>
-      api.get("/final-inspections?all=true").then((res) => res.data.items),
+      api.get("/final-inspections?all=true").then((res) => res.data),
     placeholderData: [],
   });
 

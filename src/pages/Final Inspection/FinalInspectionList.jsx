@@ -302,12 +302,12 @@ const FinalInspectionList = () => {
                           >
                             <FaPencilAlt />
                           </button>
-                          <button
+                          {/* <button
                             className="btn btn-sm btn-danger"
                             onClick={() => handleDelete(item.id)}
                           >
                             <FaTrash />
-                          </button>
+                          </button> */}
                         </div>
                       </td>
                     </tr>
