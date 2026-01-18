@@ -27,6 +27,7 @@ const FiltersComponent = ({
   sheetName = "FinalInspection",
   pdfTitle,
   dueDateofDeliveryIncluded = true,
+  exportMode = 'default',
 }) => {
   const [selectedCompany, setSelectedCompany] = useState("all");
   const [selectedDiscom, setSelectedDiscom] = useState("all");
@@ -169,9 +170,10 @@ const FiltersComponent = ({
         const c = consignees[cIdx] || {};
 
         const getDueDateForConsignee = (consignee) => {
-          if (!baseDate || !consignee?.consignee?.name) return "";
+          const cName = consignee?.consigneeName || consignee?.consignee?.name;
+          if (!baseDate || !cName) return "";
 
-          const name = consignee.consignee.name.toLowerCase();
+          const name = cName.toLowerCase();
 
           const days = name === "jhunjhunu" ? 7 : 12;
 
@@ -217,7 +219,7 @@ const FiltersComponent = ({
           ...(dueDateofDeliveryIncluded
             ? [normalize(getDueDateForConsignee(c))]
             : []),
-          normalize(c?.consignee?.name),
+          normalize(c?.consigneeName || c?.consignee?.name),
           normalize(c?.subSnNumber),
           normalize(c?.quantity),
           normalize(c?.dispatch),
@@ -289,7 +291,7 @@ const FiltersComponent = ({
 
       if (
         item.consignees?.some(
-          (c) => c.consignee?.name?.toLowerCase() === "jhunjhunu",
+          (c) => (c.consigneeName || c.consignee?.name)?.toLowerCase() === "jhunjhunu",
         )
       ) {
         dueJhunjhunu = baseDate
@@ -298,7 +300,7 @@ const FiltersComponent = ({
       }
       if (
         item.consignees?.some(
-          (c) => c.consignee?.name?.toLowerCase() !== "jhunjhunu",
+          (c) => (c.consigneeName || c.consignee?.name)?.toLowerCase() !== "jhunjhunu",
         )
       ) {
         dueOthers = baseDate
@@ -391,10 +393,10 @@ const FiltersComponent = ({
 
   // ✅ Click handler decides which function to run
   const handleExcelExport = () => {
-    if (onExportExcel) {
-      exportExcel(filteredData);
-    } else {
+    if (exportMode === 'di') {
       exportExcelForDI(filteredData);
+    } else {
+      exportExcel(filteredData);
     }
   };
 
@@ -590,9 +592,10 @@ const FiltersComponent = ({
         const c = consignees[cIdx] || {};
 
         const getDueDateForConsignee = (consignee) => {
-          if (!baseDate || !consignee?.consignee?.name) return "";
+          const cName = consignee?.consigneeName || consignee?.consignee?.name;
+          if (!baseDate || !cName) return "";
 
-          const name = consignee.consignee.name.toLowerCase();
+          const name = cName.toLowerCase();
 
           const days = name === "jhunjhunu" ? 7 : 12;
 
@@ -637,7 +640,7 @@ const FiltersComponent = ({
           ...(dueDateofDeliveryIncluded
             ? [normalize(getDueDateForConsignee(c))]
             : []),
-          normalize(c?.consignee?.name),
+          normalize(c?.consigneeName || c?.consignee?.name),
           normalize(c?.subSnNumber),
           normalize(c?.quantity),
           normalize(c?.dispatch),
@@ -791,10 +794,10 @@ const FiltersComponent = ({
 
   // ✅ Click handler decides which function to run
   const handleExport = () => {
-    if (onExportPDF) {
-      exportPDF(filteredData);
-    } else {
+    if (exportMode === 'di') {
       exportPDFForDiReceived(filteredData);
+    } else {
+      exportPDF(filteredData);
     }
   };
 
@@ -902,6 +905,7 @@ const FiltersComponent = ({
             color="success"
             fullWidth
             onClick={handleExcelExport}
+            disabled={!onExportExcel}
           >
             Export Excel
           </Button>
@@ -913,6 +917,7 @@ const FiltersComponent = ({
             color="error"
             fullWidth
             onClick={handleExport}
+            disabled={!onExportPDF}
           >
             Export PDF
           </Button>

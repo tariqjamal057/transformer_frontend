@@ -1,4 +1,3 @@
-// MaterialOfferedPage.jsx
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import {
   Container,
@@ -16,18 +15,27 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import dayjs from "dayjs";
 import FiltersComponent from "../../components/FinalInspectionFilter";
+import { MyContext } from "../../App";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import api from "../../services/api";
 
 const NominationDone = () => {
   const navigate = useNavigate("");
+  const { setIsHideSidebarAndHeader } = useContext(MyContext);
+
+  useEffect(() => {
+    setIsHideSidebarAndHeader(true);
+    window.scrollTo(0, 0);
+  }, [setIsHideSidebarAndHeader]);
 
   const [filteredData, setFilteredData] = useState([]);
-
   const { data: inspectionData, isLoading } = useQuery({
-    queryKey: ["finalInspections"],
-    queryFn: () => api.get("/final-inspections").then((res) => res.data),
+    queryKey: ["nominationDone"],
+    queryFn: () =>
+      api
+        .get("/final-inspections/nomination-done")
+        .then((res) => res.data || []),
   });
 
   return (
@@ -72,15 +80,15 @@ const NominationDone = () => {
 
       <FiltersComponent
         onFilteredData={setFilteredData}
-        data={inspectionData || []}
+        data={inspectionData}
         text="Awaiting Inspection"
-        onExportPDF={false}
-        onExportExcel={false}
+        onExportPDF={true}
+        onExportExcel={true}
         sheetName="Nomination Done But Inspection Pending "
         pdfTitle="Nomination Done But Inspection Pending"
         dueDateofDeliveryIncluded={false}
+        exportMode="di"
       />
-
       <Paper sx={{ p: 2, mt: 3 }}>
         <Typography variant="h6" mb={1}>
           Inspection Pending Details
@@ -106,7 +114,6 @@ const NominationDone = () => {
                 <TableCell>Qty</TableCell>
               </TableRow>
             </TableHead>
-
             <TableBody>
               {isLoading ? (
                 <TableRow>
@@ -136,10 +143,13 @@ const NominationDone = () => {
                                 {dayjs(row.offeredDate).format("DD MMM YYYY")}
                               </TableCell>
                               <TableCell rowSpan={row.consignees.length}>
-                                {row.companyName}
+                                {
+                                  row.deliverySchedule?.supplyTender?.company
+                                    ?.name
+                                }
                               </TableCell>
                               <TableCell rowSpan={row.consignees.length}>
-                                {row.discom}
+                                {row.deliverySchedule?.supplyTender?.name}
                               </TableCell>
                               <TableCell rowSpan={row.consignees.length}>
                                 {row.deliverySchedule.tnNumber}
@@ -180,9 +190,8 @@ const NominationDone = () => {
                               </TableCell>
                             </>
                           )}
-
                           {/* Consignee-specific details */}
-                          <TableCell>{c.consignee?.name}</TableCell>
+                          <TableCell>{c.consigneeName || c.consignee?.name}</TableCell>
                           <TableCell>{c.subSnNumber}</TableCell>
                           <TableCell>{c.quantity}</TableCell>
                         </TableRow>

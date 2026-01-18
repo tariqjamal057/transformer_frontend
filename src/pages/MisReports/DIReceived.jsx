@@ -137,9 +137,10 @@ const DIReceived = () => {
                               : row.diDate || row.inspectionDate;
 
                           let dueDate;
+                          const cName = c.consigneeName || c.consignee?.name;
 
                           if (
-                            c.consignee?.name?.toLowerCase() === "jhunjhunu"
+                            cName?.toLowerCase() === "jhunjhunu"
                           ) {
                             dueDate = dayjs(baseDate)
                               .add(7, "day")
@@ -225,7 +226,7 @@ const DIReceived = () => {
                               <TableCell>{dueDate}</TableCell>
 
                               {/* Consignee-specific details */}
-                              <TableCell>{c.consignee?.name}</TableCell>
+                              <TableCell>{cName}</TableCell>
                               <TableCell>{c.subSnNumber}</TableCell>
                               <TableCell>{c.quantity}</TableCell>
                               <TableCell>{c.dispatch}</TableCell>
