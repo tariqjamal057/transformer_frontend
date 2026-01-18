@@ -119,14 +119,14 @@ const GPReceiptNote = () => {
                       </td>
 
                       {/* Consignee Name */}
-                      <td>{note.consigneeName}</td>
+                      <td>{note.consignee?.name}</td>
 
                       {/* Account Receipt Note No / Date */}
                       <td>
                         <div>{note.accountReceiptNoteNo}</div>
                         <div className="text-muted small">
                           {dayjs(note.accountReceiptNoteDate).format(
-                            "DD-MM-YYYY"
+                            "DD-MM-YYYY",
                           )}
                         </div>
                       </td>
@@ -139,7 +139,7 @@ const GPReceiptNote = () => {
                         <div>{note.discomReceiptNoteNo}</div>
                         <div className="text-muted small">
                           {dayjs(note.discomReceiptNoteDate).format(
-                            "DD-MM-YYYY"
+                            "DD-MM-YYYY",
                           )}
                         </div>
                       </td>

@@ -82,21 +82,20 @@ const AddNewGPInformation = () => {
         const trfsiNo = String(row["TRFSI No"] || row.trfsiNo || "").trim();
         const rating = String(row.Rating || row.rating || "").trim();
         const polyCarbonateSealNo = String(
-          row["Polycarbonate Seal No"] || row.polyCarbonateSealNo || ""
+          row["Polycarbonate Seal No"] || row.polyCarbonateSealNo || "",
         ).trim();
         const receivedFromACOS = String(
-          row["Received From ACOS"] || row.receivedFromACOS || ""
+          row["Received From ACOS"] || row.receivedFromACOS || "",
         ).trim();
 
         const matchedChalan = deliveryChalans.find((ch) => {
           const challanRating = String(
-            ch.finalInspection.deliverySchedule.rating
+            ch.finalInspection.deliverySchedule.rating,
           ).trim();
-          const matchRating = challanRating === rating;
           const matchSealing = ch.finalInspection.sealingDetails?.some(
-            (s) => String(s.trfSiNo).trim() === trfsiNo
+            (s) => String(s.trfSiNo).trim() === trfsiNo,
           );
-          return matchRating && matchSealing;
+          return matchSealing;
         });
 
         if (matchedChalan) {
@@ -188,14 +187,14 @@ const AddNewGPInformation = () => {
               />
             </Grid>
           </Grid>
-          <Box textAlign="center" sx={{ mb: 3 }}>
-            {/* <Button
+          <Box textAlign="start" sx={{ mb: 3 }}>
+            <Button
               variant="outlined"
               onClick={handleDownloadSample}
               sx={{ mb: 2 }}
             >
               Download Sample File
-            </Button> */}
+            </Button>
             <input
               type="file"
               accept=".xlsx, .xls"

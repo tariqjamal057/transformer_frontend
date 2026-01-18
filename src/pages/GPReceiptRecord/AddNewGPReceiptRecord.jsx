@@ -86,7 +86,7 @@ const AddNewGPReceiptRecord = () => {
         console.log("---------------- trfsiNo ", trfsiNo);
         console.log(ch.finalInspection);
         const hasTrfsi = ch.finalInspection.sealingDetails.some(
-          (s) => String(s.trfSiNo) === String(trfsiNo)
+          (s) => String(s.trfSiNo) === String(trfsiNo),
         );
         if (hasTrfsi) {
           return ch;
@@ -100,7 +100,7 @@ const AddNewGPReceiptRecord = () => {
         setSelectedChalan(found);
 
         const seal = found.finalInspection.sealingDetails.find(
-          (s) => String(s.trfSiNo) === String(trfsiNo)
+          (s) => String(s.trfSiNo) === String(trfsiNo),
         );
         setPolySealNo(seal?.polySealNo || "");
       } else {
@@ -152,7 +152,7 @@ const AddNewGPReceiptRecord = () => {
       fuse,
       channel,
       core,
-      polySealNo,
+      polySealNo: String(polySealNo),
     };
     addNewGPReceiptRecordMutation.mutate(data);
   };

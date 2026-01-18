@@ -12,6 +12,10 @@ import {
   TableCell,
   TableBody,
   Checkbox,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -28,7 +32,7 @@ const AddGPReceiptNote = () => {
 
   const [selectDateFrom, setSelectDateFrom] = useState(null);
   const [selectDateTo, setSelectDateTo] = useState(null);
-  const [consigneeName, setConsigneeName] = useState("");
+  const [consigneeId, setConsigneeId] = useState("");
   const [accountReceiptNoteNo, setAccountReceiptNoteNo] = useState("");
   const [accountReceiptNoteDate, setAccountReceiptNoteDate] = useState(null);
   const [acos, setAcos] = useState("");
@@ -41,8 +45,14 @@ const AddGPReceiptNote = () => {
   const { data: newGpReceiptRecords, isLoading } = useQuery({
     queryKey: ["newGpReceiptRecords"],
     queryFn: () =>
-      api.get("/new-gp-receipt-records?all=true").then((res) => res.data.items),
+      api.get("/new-gp-receipt-records?all=true").then((res) => res.data),
   });
+
+  const { data: consignees } = useQuery({
+    queryKey: ["consignees"],
+    queryFn: () => api.get("/consignees?all=true").then((res) => res.data),
+  });
+
 
   const { mutate: addGPReceiptNote, isLoading: isAdding } = useMutation({
     mutationFn: (newNote) => api.post("/gp-receipt-notes", newNote),
@@ -53,7 +63,7 @@ const AddGPReceiptNote = () => {
         msg: "GP Receipt Note added successfully!",
         error: false,
       });
-      navigate("GPReceiptNote-list");
+      navigate("/GPReceiptNote-list");
     },
     onError: (error) => {
       setAlertBox({
@@ -65,21 +75,31 @@ const AddGPReceiptNote = () => {
   });
 
   useEffect(() => {
-    if (consigneeName.trim() === "") {
+    console.log("consigneeId", consigneeId);
+    console.log("newGpReceiptRecords", newGpReceiptRecords);
+    console.log("consignees", consignees);
+
+    if (!consigneeId) {
       setFilteredRecords([]);
       return;
     }
+
+    const selectedConsignee = consignees.find((c) => c.id === consigneeId);
+    const selectedName = selectedConsignee?.name || "";
+    console.log("selectedName", selectedName);
+
 
     if (newGpReceiptRecords) {
       const matches = newGpReceiptRecords.filter(
         (record) =>
           record.consigneeName
             .toLowerCase()
-            .includes(consigneeName.toLowerCase()) && !record.gpReceiptNoteId
+            .includes(selectedName.toLowerCase())
       );
+      console.log("matches", matches);
       setFilteredRecords(matches);
     }
-  }, [consigneeName, newGpReceiptRecords]);
+  }, [consigneeId, newGpReceiptRecords, consignees]);
 
   const handleSelectRecord = (id) => {
     setSelectedRecordIds((prev) =>
@@ -90,12 +110,14 @@ const AddGPReceiptNote = () => {
   };
 
   const handleSubmit = () => {
+    const supplyTenderId = localStorage.getItem("selectedSupplyTenderId");
+
     const gpReceiptNoteData = {
       selectDateFrom: selectDateFrom
         ? dayjs(selectDateFrom).toISOString()
         : null,
       selectDateTo: selectDateTo ? dayjs(selectDateTo).toISOString() : null,
-      consigneeName,
+      consigneeId,
       accountReceiptNoteNo,
       accountReceiptNoteDate: accountReceiptNoteDate
         ? dayjs(accountReceiptNoteDate).toISOString()
@@ -105,6 +127,7 @@ const AddGPReceiptNote = () => {
       discomReceiptNoteDate: discomReceiptNoteDate
         ? dayjs(discomReceiptNoteDate).toISOString()
         : null,
+      supplyTenderId,
     };
     addGPReceiptNote({
       gpReceiptNoteData,
@@ -146,13 +169,18 @@ const AddGPReceiptNote = () => {
             </Grid>
 
             <Grid item size={2}>
-              <TextField
-                fullWidth
-                label="Consignee Name"
-                variant="outlined"
-                value={consigneeName}
-                onChange={(e) => setConsigneeName(e.target.value)}
-              />
+              <FormControl fullWidth>
+                <InputLabel>Consignee Name</InputLabel>
+                <Select
+                  value={consigneeId}
+                  label="Consignee Name"
+                  onChange={(e) => setConsigneeId(e.target.value)}
+                >
+                  {consignees && consignees.map((consignee) => (
+                    <MenuItem key={consignee.id} value={consignee.id}>{consignee.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
 
             <Grid item size={1}>
@@ -245,7 +273,7 @@ const AddGPReceiptNote = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredRecords.map((rec) => (
+                    {filteredRecords && filteredRecords?.map((rec) => (
                       <TableRow key={rec.id} hover>
                         <TableCell padding="checkbox">
                           <Checkbox

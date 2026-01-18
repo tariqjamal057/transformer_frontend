@@ -21,7 +21,7 @@ const sampleHeaders = [
   {
     selectDateFrom: "2024-01-01",
     selectDateTo: "2024-01-31",
-    consigneeName: "Consignee Name",
+    consigneeId: "consignee-id",
     accountReceiptNoteNo: "ACC-123",
     accountReceiptNoteDate: "2024-01-15",
     acos: "ACOS-Name",

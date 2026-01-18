@@ -82,7 +82,7 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
     if (trfsiNo) {
       const found = deliveryChallans?.find((ch) => {
         const hasTrfsi = ch.finalInspection.sealingDetails.some(
-          (s) => String(s.trfSiNo) === String(trfsiNo)
+          (s) => String(s.trfSiNo) === String(trfsiNo),
         );
         if (hasTrfsi) {
           return ch;
@@ -93,7 +93,7 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
         setSelectedChalan(found);
 
         const seal = found.finalInspection.sealingDetails.find(
-          (s) => String(s.trfSiNo) === String(trfsiNo)
+          (s) => String(s.trfSiNo) === String(trfsiNo),
         );
         setPolySealNo(seal?.polySealNo || "");
       } else {
@@ -155,7 +155,7 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
       fuse,
       channel,
       core,
-      polySealNo,
+      polySealNo: String(polySealNo),
     };
     updateGPReceipt(data);
   };
@@ -167,7 +167,7 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
       setAccountReceiptNoteDate(
         gpReceiptData.accountReceiptNoteDate
           ? dayjs(gpReceiptData.accountReceiptNoteDate)
-          : null
+          : null,
       );
       setSinNo(gpReceiptData.sinNo);
       setConsigneeName(gpReceiptData.consigneeName);
@@ -175,7 +175,7 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
       setDiscomReceiptNoteDate(
         gpReceiptData.discomReceiptNoteDate
           ? dayjs(gpReceiptData.discomReceiptNoteDate)
-          : null
+          : null,
       );
       setRemarks(gpReceiptData.remarks);
       setTrfsiNo(gpReceiptData.trfsiNo || "");

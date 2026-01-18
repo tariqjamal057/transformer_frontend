@@ -62,6 +62,14 @@ const AddFailureAnalysis = () => {
         .then((res) => res.data),
   });
 
+  const { data: gpReceiptNotes, isLoading: isLoadingGPReceiptNotes } = useQuery(
+    {
+      queryKey: ["gpReceiptNotes"],
+      queryFn: () =>
+        api.get("/gp-receipt-notes?all=true").then((res) => res.data),
+    },
+  );
+
   const addFailureAnalysisMutation = useMutation({
     mutationFn: (newAnalysis) => api.post("/failure-analyses", newAnalysis),
     onSuccess: () => {
@@ -97,9 +105,9 @@ const AddFailureAnalysis = () => {
       return;
     }
 
-    if (newGPReceiptRecords && gpFailures) {
+    if (newGPReceiptRecords && gpFailures && gpReceiptNotes) {
       const foundNewGPReceiptRecord = newGPReceiptRecords.find(
-        (rec) => String(rec.sinNo) === String(sinNo)
+        (rec) => String(rec.sinNo) === String(sinNo),
       );
 
       setSelectedNewGPReceiptRecord(foundNewGPReceiptRecord || null);
@@ -116,9 +124,12 @@ const AddFailureAnalysis = () => {
         const tnNumber =
           foundNewGPReceiptRecord.deliveryChallan?.finalInspection
             ?.deliverySchedule?.tnNumber || "";
-        const acosName =
-          foundNewGPReceiptRecord.newGPInformation?.gpReceiptNote?.acosName ||
-          "";
+
+        const gpReceiptNoteId = foundNewGPReceiptRecord.gpReceiptNoteId;
+        const relatedNote = gpReceiptNotes.find(
+          (n) => n.id === gpReceiptNoteId,
+        );
+        const acosName = relatedNote?.acos || "";
 
         setFormData((prev) => ({
           ...prev,
@@ -133,14 +144,14 @@ const AddFailureAnalysis = () => {
         // Match in gpFailures
         const matchedGPFailure = gpFailures.find(
           (gf) =>
-            String(gf.trfsiNo) === String(trfSiNo) &&
-            String(gf.rating) === String(rating) &&
+            String(gf.trfsiNo) === String(trfSiNo) ||
+            String(gf.rating) === String(rating) ||
             String(
-              gf.deliveryChallan?.finalInspection?.deliverySchedule?.wound
-            ) === String(wound) &&
+              gf.deliveryChallan?.finalInspection?.deliverySchedule?.wound,
+            ) === String(wound) ||
             String(
-              gf.deliveryChallan?.finalInspection?.deliverySchedule?.tnNumber
-            ) === String(tnNumber)
+              gf.deliveryChallan?.finalInspection?.deliverySchedule?.tnNumber,
+            ) === String(tnNumber),
         );
 
         setSelectedGPFailure(matchedGPFailure || null);
@@ -182,7 +193,7 @@ const AddFailureAnalysis = () => {
         });
       }
     }
-  }, [sinNo, newGPReceiptRecords, gpFailures]);
+  }, [sinNo, newGPReceiptRecords, gpFailures, gpReceiptNotes]);
 
   // Handle Submit
   const handleSubmit = () => {
@@ -214,7 +225,10 @@ const AddFailureAnalysis = () => {
     addFailureAnalysisMutation.mutate(payload);
   };
 
-  const isDataLoading = isLoadingNewGPReceiptRecords || isLoadingGPFailures;
+  const isDataLoading =
+    isLoadingNewGPReceiptRecords ||
+    isLoadingGPFailures ||
+    isLoadingGPReceiptNotes;
 
   return (
     <div className="right-content w-100">
@@ -234,11 +248,12 @@ const AddFailureAnalysis = () => {
             <Typography ml={2}>Loading necessary data...</Typography>
           </Box>
         )}
-        {!isDataLoading && (!newGPReceiptRecords || !gpFailures) && (
-          <Alert severity="error" sx={{ my: 2 }}>
-            Failed to load required data. Please try again.
-          </Alert>
-        )}
+        {!isDataLoading &&
+          (!newGPReceiptRecords || !gpFailures || !gpReceiptNotes) && (
+            <Alert severity="error" sx={{ my: 2 }}>
+              Failed to load required data. Please try again.
+            </Alert>
+          )}
 
         {/* Input Section */}
         <Grid container spacing={2} columns={{ xs: 1, sm: 2 }} sx={{ mb: 3 }}>

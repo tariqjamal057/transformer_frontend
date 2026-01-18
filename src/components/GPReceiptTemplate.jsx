@@ -5,9 +5,9 @@ const GPReceiptTemplate = ({ item }) => {
     <div className="my-3 p-2" style={{ fontSize: "12px", width: "100%" }}>
       {/* Header */}
       <div className="text-center">
-        <h5 className="fw-bold">YASH GRANITES</h5>
-        <p className="mb-0">F-18 INDUSTRIAL AREA</p>
-        <p className="mb-0">JHUNJHUNU</p>
+        <h5 className="fw-bold">{item.consignee?.name}</h5>
+        <p className="mb-0">{item.consignee?.address}</p>
+        <p className="mb-0">{item.consignee?.email}</p>
       </div>
 
       <div className="d-flex justify-content-between mt-3">
@@ -21,7 +21,7 @@ const GPReceiptTemplate = ({ item }) => {
           </p>
           <p className="mb-1">The Assistant Controller Of Stores</p>
           <p className="mb-1">Jaipur Vidyut Vitran Nigam Limited</p>
-          <p className="mb-1">{item.consigneeName}</p>
+          <p className="mb-1">{item.consignee?.name}</p>
         </div>
         <div className="text-end">
           <p>
@@ -129,7 +129,7 @@ const GPReceiptTemplate = ({ item }) => {
 
       {/* Signature */}
       <div className="text-end mt-4">
-        <p>FOR YASH GRANITES</p>
+        <p>FOR {item.consignee?.name}</p>
         <p className="fw-bold">[Signature]</p>
       </div>
     </div>
