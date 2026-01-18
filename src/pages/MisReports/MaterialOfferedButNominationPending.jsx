@@ -118,9 +118,17 @@ const MaterialOfferedButNominationPending = () => {
 
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={8} align="center"><CircularProgress /></TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={8} align="center">
+                    <CircularProgress />
+                  </TableCell>
+                </TableRow>
               ) : isError ? (
-                <TableRow><TableCell colSpan={8} align="center"><Alert severity="error">Error fetching data</Alert></TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={8} align="center">
+                    <Alert severity="error">Error fetching data</Alert>
+                  </TableCell>
+                </TableRow>
               ) : paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} align="center">
@@ -130,18 +138,26 @@ const MaterialOfferedButNominationPending = () => {
               ) : (
                 paginatedData.map((row, idx) => (
                   <TableRow key={row.id}>
-                    <TableCell>{(currentPage - 1) * PAGE_SIZE + idx + 1}</TableCell>
+                    <TableCell>
+                      {(currentPage - 1) * PAGE_SIZE + idx + 1}
+                    </TableCell>
                     <TableCell>
                       {dayjs(row.offeredDate).format("DD MMM YYYY")}
                     </TableCell>
-                    <TableCell>{row.deliverySchedule?.supplyTender?.company?.name}</TableCell>
-                    <TableCell>{row.deliverySchedule?.tn?.discom}</TableCell>
-                    <TableCell>{row.deliverySchedule?.tn?.tnNumber}</TableCell>
+                    <TableCell>
+                      {row.deliverySchedule?.supplyTender?.company?.name}
+                    </TableCell>
+                    <TableCell>
+                      {row.deliverySchedule?.supplyTender?.name}
+                    </TableCell>
+                    <TableCell>{row.deliverySchedule?.tnNumber}</TableCell>
                     <TableCell>
                       {row.deliverySchedule?.rating} KVA{" "}
                       {row.deliverySchedule?.phase}
                     </TableCell>
-                    <TableCell>{row.snNumber}</TableCell>
+                    <TableCell>
+                      {row.serialNumberFrom} to {row.serialNumberTo}
+                    </TableCell>
                     <TableCell>{row.offeredQuantity}</TableCell>
                   </TableRow>
                 ))

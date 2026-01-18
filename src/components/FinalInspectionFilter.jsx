@@ -1,5 +1,5 @@
 // FiltersComponent.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Grid,
@@ -37,66 +37,60 @@ const FiltersComponent = ({
 
   const [filteredData, setFilteredData] = useState(data);
 
-  const { data: companies } = useQuery({
-    queryKey: ["companies"],
-    queryFn: () => api.get("/companies?all=true").then((res) => res.data || []),
-  });
-
-  const { data: deliverySchedules } = useQuery({
-    queryKey: ["deliverySchedules"],
-    queryFn: () =>
-      api.get("/delivery-schedules").then((res) => res.data.data || []),
-  });
-
-  const { data: supplyTenders } = useQuery({
-    queryKey: ["supplyTenders", selectedCompany],
-    queryFn: () =>
-      api
-        .get(
-          selectedCompany === "all" ? "/supply-tenders?all=true" : `/supply-tenders?all=true&companyId=${selectedCompany}`
-        )
-        .then((res) => res.data || []),
-  });
-
-
   // 🔹 Filtering logic
   useEffect(() => {
     let result = Array.isArray(data) ? [...data] : []; // Defensive check
 
     if (selectedCompany !== "all") {
-      result = result.filter((item) => item.companyName === selectedCompany);
+      result = result.filter((item) => {
+        const company =
+          item.companyName ||
+          item.deliverySchedule?.supplyTender?.company?.name;
+        return company === selectedCompany;
+      });
     }
 
     if (selectedDiscom !== "all") {
-      result = result.filter((item) => item.discom === selectedDiscom);
+      result = result.filter((item) => {
+        const discom =
+          item.discom ||
+          item.deliverySchedule?.supplyTender?.discom ||
+          item.deliverySchedule?.supplyTender?.name;
+        return discom === selectedDiscom;
+      });
     }
 
     if (selectedRating !== "all") {
       result = result.filter(
-        (item) => item.deliverySchedule.rating === selectedRating
+        (item) => item.deliverySchedule?.rating === selectedRating,
       );
     }
 
     if (selectedPhase !== "all") {
       result = result.filter(
-        (item) => item.deliverySchedule.phase === selectedPhase
+        (item) =>
+          item.deliverySchedule?.phase?.toLowerCase() ===
+          selectedPhase.toLowerCase(),
       );
     }
 
     if (selectedDate) {
       const dateStr = selectedDate.format("YYYY-MM-DD");
-      result = result.filter((item) => item.offeredDate === dateStr);
+      result = result.filter(
+        (item) =>
+          item.offerDate &&
+          dayjs(item.offerDate).format("YYYY-MM-DD") === dateStr,
+      );
     }
 
     if (searchQuery.trim() !== "") {
+      const query = searchQuery.toLowerCase();
       result = result.filter(
         (item) =>
-          item.deliverySchedule.tnNumber
-            ?.toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
+          item.deliverySchedule?.tnNumber?.toLowerCase()?.includes(query) ||
           item.inspectionOfficers?.some((officer) =>
-            officer.toLowerCase().includes(searchQuery.toLowerCase())
-          )
+            officer.toLowerCase().includes(query),
+          ),
       );
     }
 
@@ -113,14 +107,42 @@ const FiltersComponent = ({
   ]);
 
   // 🔹 Unique dropdown values from ALL data
-  // const uniqueCompanies = companies
-  //   ? [...new Set(companies.map((item) => item.name))]
-  //   : [];
-  // const uniqueDiscoms = supplyTenders
-  //   ? [...new Set(supplyTenders.map((item) => item.discom))]
-  //   : [];
-  const uniqueRatings = [10, 25, 16, 5];
-  const uniquePhases = ["single phase", "three phase", "power"];
+  const uniqueCompanies = useMemo(() => {
+    const companies = data
+      ?.map(
+        (item) =>
+          item.companyName ||
+          item.deliverySchedule?.supplyTender?.company?.name,
+      )
+      .filter((c) => c !== undefined && c !== null && c !== "");
+    return [...new Set(companies)];
+  }, [data]);
+
+  const uniqueDiscoms = useMemo(() => {
+    const discoms = data
+      ?.map(
+        (item) =>
+          item.discom ||
+          item.deliverySchedule?.supplyTender?.discom ||
+          item.deliverySchedule?.supplyTender?.name,
+      )
+      .filter((d) => d !== undefined && d !== null && d !== "");
+    return [...new Set(discoms)];
+  }, [data]);
+
+  const uniqueRatings = useMemo(() => {
+    const ratings = data
+      ?.map((item) => item.deliverySchedule?.rating)
+      .filter((r) => r !== undefined && r !== null);
+    return [...new Set(ratings)];
+  }, [data]);
+
+  const uniquePhases = useMemo(() => {
+    const phases = data
+      ?.map((item) => item.deliverySchedule?.phase)
+      .filter((p) => p !== undefined && p !== null && p !== "");
+    return [...new Set(phases)];
+  }, [data]);
 
   // ✅ Export Excel (row-wise expansion like uploaded sample)
   const exportExcelForDI = () => {
@@ -161,7 +183,7 @@ const FiltersComponent = ({
           normalize(
             cIdx === 0 && item.offeredDate
               ? dayjs(item.offeredDate).format("DD MMM YYYY")
-              : ""
+              : "",
           ),
           normalize(cIdx === 0 ? item.companyName : ""),
           normalize(cIdx === 0 ? item.discom : ""),
@@ -171,7 +193,7 @@ const FiltersComponent = ({
               ? `${item.deliverySchedule?.rating || ""} KVA ${
                   item.deliverySchedule?.phase || ""
                 }`
-              : ""
+              : "",
           ),
           normalize(cIdx === 0 ? item.snNumber : ""),
           normalize(cIdx === 0 ? item.offeredQuantity : ""),
@@ -182,14 +204,14 @@ const FiltersComponent = ({
           normalize(
             cIdx === 0 && item.inspectionDate
               ? dayjs(item.inspectionDate).format("DD MMM YYYY")
-              : ""
+              : "",
           ),
           normalize(cIdx === 0 ? item.inspectedQuantity : ""),
           normalize(cIdx === 0 ? item.diNo : ""),
           normalize(
             cIdx === 0 && item.diDate
               ? dayjs(item.diDate).format("DD MMM YYYY")
-              : ""
+              : "",
           ),
           // ✅ CONDITIONAL COLUMN
           ...(dueDateofDeliveryIncluded
@@ -241,7 +263,7 @@ const FiltersComponent = ({
     });
 
     const filteredRows = excelRows.map((row) =>
-      visibleIndexes.map((i) => row[i])
+      visibleIndexes.map((i) => row[i]),
     );
 
     // ✅ Export to Excel
@@ -267,7 +289,7 @@ const FiltersComponent = ({
 
       if (
         item.consignees?.some(
-          (c) => c.consignee?.name?.toLowerCase() === "jhunjhunu"
+          (c) => c.consignee?.name?.toLowerCase() === "jhunjhunu",
         )
       ) {
         dueJhunjhunu = baseDate
@@ -276,7 +298,7 @@ const FiltersComponent = ({
       }
       if (
         item.consignees?.some(
-          (c) => c.consignee?.name?.toLowerCase() !== "jhunjhunu"
+          (c) => c.consignee?.name?.toLowerCase() !== "jhunjhunu",
         )
       ) {
         dueOthers = baseDate
@@ -288,14 +310,21 @@ const FiltersComponent = ({
         dueJhunjhunu && dueOthers
           ? `${dueJhunjhunu}, ${dueOthers}`
           : dueJhunjhunu
-          ? `${dueJhunjhunu}`
-          : dueOthers
-          ? `${dueOthers}`
-          : "";
+            ? `${dueJhunjhunu}`
+            : dueOthers
+              ? `${dueOthers}`
+              : "";
 
       // 👉 Merge consignee details into one row
       const consigneeNames =
-        item.consignees?.map((c) => c.consignee?.name).join(", ") || "";
+        item.consignees
+          ?.map(
+            (c) =>
+              c.consignee?.consigneeName ||
+              c.consignee?.name ||
+              c?.consigneeName,
+          )
+          .join(", ") || "";
       const srNumbers =
         item.consignees?.map((c) => c.subSnNumber).join(", ") || "";
       const qtys = item.consignees?.map((c) => c.quantity).join(", ") || "";
@@ -339,7 +368,7 @@ const FiltersComponent = ({
     // Step 2: Find non-empty columns
     const allKeys = Object.keys(excelData[0] || {});
     const nonEmptyKeys = allKeys.filter((key) =>
-      excelData.some((row) => row[key] && row[key].toString().trim() !== "")
+      excelData.some((row) => row[key] && row[key].toString().trim() !== ""),
     );
 
     // Step 3: Keep only non-empty columns
@@ -438,7 +467,7 @@ const FiltersComponent = ({
     });
 
     const filteredBody = pdfData.map((row) =>
-      filteredColumnIndices.map((index) => row[index])
+      filteredColumnIndices.map((index) => row[index]),
     );
 
     // Custom column widths
@@ -518,7 +547,7 @@ const FiltersComponent = ({
           } of ${pageCount}`,
           pageWidth / 2,
           pageHeight - 12,
-          { align: "center" }
+          { align: "center" },
         );
       },
     });
@@ -575,7 +604,7 @@ const FiltersComponent = ({
           normalize(
             cIdx === 0 && item.offeredDate
               ? dayjs(item.offeredDate).format("DD MMM YYYY")
-              : ""
+              : "",
           ),
           normalize(cIdx === 0 ? item.companyName : ""),
           normalize(cIdx === 0 ? item.discom : ""),
@@ -585,7 +614,7 @@ const FiltersComponent = ({
               ? `${item.deliverySchedule?.rating || ""} KVA ${
                   item.deliverySchedule?.phase || ""
                 }`
-              : ""
+              : "",
           ),
           normalize(cIdx === 0 ? item.snNumber : ""),
           normalize(cIdx === 0 ? item.offeredQuantity : ""),
@@ -596,14 +625,14 @@ const FiltersComponent = ({
           normalize(
             cIdx === 0 && item.inspectionDate
               ? dayjs(item.inspectionDate).format("DD MMM YYYY")
-              : ""
+              : "",
           ),
           normalize(cIdx === 0 ? item.inspectedQuantity : ""),
           normalize(cIdx === 0 ? item.diNo : ""),
           normalize(
             cIdx === 0 && item.diDate
               ? dayjs(item.diDate).format("DD MMM YYYY")
-              : ""
+              : "",
           ),
           ...(dueDateofDeliveryIncluded
             ? [normalize(getDueDateForConsignee(c))]
@@ -655,7 +684,7 @@ const FiltersComponent = ({
     });
 
     const filteredBody = pdfData.map((row) =>
-      filteredColumnIndices.map((index) => row[index])
+      filteredColumnIndices.map((index) => row[index]),
     );
 
     // Custom column widths - reduced to fit all 18 columns properly
@@ -752,7 +781,7 @@ const FiltersComponent = ({
           } of ${pageCount}`,
           pageWidth / 2,
           pageHeight - 12,
-          { align: "center" }
+          { align: "center" },
         );
       },
     });
@@ -782,9 +811,9 @@ const FiltersComponent = ({
             onChange={(e) => setSelectedCompany(e.target.value)}
           >
             <MenuItem value="all">All Companies</MenuItem>
-            {companies && companies.map((c, idx) => (
-              <MenuItem key={idx} value={c.id}>
-                {c.name}
+            {uniqueCompanies.map((c, idx) => (
+              <MenuItem key={idx} value={c}>
+                {c}
               </MenuItem>
             ))}
           </TextField>
@@ -800,9 +829,9 @@ const FiltersComponent = ({
             onChange={(e) => setSelectedDiscom(e.target.value)}
           >
             <MenuItem value="all">All Discoms</MenuItem>
-            {supplyTenders && supplyTenders.map((d, idx) => (
-              <MenuItem key={idx} value={d.id}>
-                {d.name}
+            {uniqueDiscoms.map((d, idx) => (
+              <MenuItem key={idx} value={d}>
+                {d}
               </MenuItem>
             ))}
           </TextField>
