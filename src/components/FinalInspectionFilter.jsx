@@ -39,19 +39,25 @@ const FiltersComponent = ({
 
   const { data: companies } = useQuery({
     queryKey: ["companies"],
-    queryFn: () => api.get("/companies").then((res) => res.data.data || []),
+    queryFn: () => api.get("/companies?all=true").then((res) => res.data || []),
   });
 
   const { data: deliverySchedules } = useQuery({
     queryKey: ["deliverySchedules"],
-    queryFn: () => api.get("/delivery-schedules").then((res) => res.data.data || []),
+    queryFn: () =>
+      api.get("/delivery-schedules").then((res) => res.data.data || []),
   });
 
-  const discoms = [
-    { name: "Ajmer" },
-    { name: "Jaipur" },
-    { name: "Jodhpur" },
-  ];
+  const { data: supplyTenders } = useQuery({
+    queryKey: ["supplyTenders", selectedCompany],
+    queryFn: () =>
+      api
+        .get(
+          selectedCompany === "all" ? "/supply-tenders?all=true" : `/supply-tenders?all=true&companyId=${selectedCompany}`
+        )
+        .then((res) => res.data || []),
+  });
+
 
   // 🔹 Filtering logic
   useEffect(() => {
@@ -107,10 +113,14 @@ const FiltersComponent = ({
   ]);
 
   // 🔹 Unique dropdown values from ALL data
-  const uniqueCompanies = companies ? [...new Set(companies.map((item) => item.name))] : [];
-  const uniqueDiscoms = [...new Set(discoms.map((item) => item.name))];
-  const uniqueRatings = deliverySchedules ? [...new Set(deliverySchedules.map((item) => item.rating))] : [];
-  const uniquePhases = deliverySchedules ? [...new Set(deliverySchedules.map((item) => item.phase))] : [];
+  // const uniqueCompanies = companies
+  //   ? [...new Set(companies.map((item) => item.name))]
+  //   : [];
+  // const uniqueDiscoms = supplyTenders
+  //   ? [...new Set(supplyTenders.map((item) => item.discom))]
+  //   : [];
+  const uniqueRatings = [10, 25, 16, 5];
+  const uniquePhases = ["single phase", "three phase", "power"];
 
   // ✅ Export Excel (row-wise expansion like uploaded sample)
   const exportExcelForDI = () => {
@@ -772,9 +782,9 @@ const FiltersComponent = ({
             onChange={(e) => setSelectedCompany(e.target.value)}
           >
             <MenuItem value="all">All Companies</MenuItem>
-            {uniqueCompanies.map((c, idx) => (
-              <MenuItem key={idx} value={c}>
-                {c}
+            {companies && companies.map((c, idx) => (
+              <MenuItem key={idx} value={c.id}>
+                {c.name}
               </MenuItem>
             ))}
           </TextField>
@@ -790,9 +800,9 @@ const FiltersComponent = ({
             onChange={(e) => setSelectedDiscom(e.target.value)}
           >
             <MenuItem value="all">All Discoms</MenuItem>
-            {uniqueDiscoms.map((d, idx) => (
-              <MenuItem key={idx} value={d}>
-                {d}
+            {supplyTenders && supplyTenders.map((d, idx) => (
+              <MenuItem key={idx} value={d.id}>
+                {d.name}
               </MenuItem>
             ))}
           </TextField>
