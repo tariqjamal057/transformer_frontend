@@ -3,5 +3,20 @@ export const permissionMapping = {
     ConsigneeList: "/consignee-list",
     MaterialDescription: "/materialDescription-list",
     SubAdmin: "/subadmin-list",
-    
+    FinalInspection: "/finalInspection-list",
+    CTLOrDamageTransformer: "/damageTransformer-list",
+    DeliveryChallan: "/deliveryChalan-list",
+    DeliveryDetails: "/deliveryDetails-list",
+    GPFailureInformation: "/GPFailureInformation-list",
+    GPReceiptRecord: "/GPReceiptRecord-list",
+    GPReceiptNote: "/GPReceiptNote-list",
+    newGPInformation: "/newGPInformation-list",
+    FailureAnalysis: "/failureAnalysis-list",
+    OfferAndSealingStatement: "/add-OfferLetter&SealingStatement",
+    MaterialOfferedButNominationPendingReport: "/materialOfferedButNominationPending-list",
+    NominationDoneReport: "/nomination-done",
+    InspectionReport: "/inspection-done",
+    DIReceivedReport: "/di-received",
+    ProductionPlanningReport: "/production-planning",
+    GPTransformerReport: "/new-gp-transformers"
 }

@@ -5,6 +5,7 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useMutation } from "@tanstack/react-query";
 import api from "../services/api";
 import { MyContext } from "../App";
+import { permissionMapping } from "../data/permission";
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,12 +19,7 @@ const Signup = () => {
   const navigate = useNavigate();
 
   const roles = ["OWNER", "MANAGER", "DATA_FEEDER", "SUPERVISOR"];
-  const dummyPages = [
-    { name: "Transformer Numbers", url: "/dashboard" },
-    { name: "Reports", url: "/reports" },
-    { name: "Delivery", url: "/add-deliverySchedule" },
-    { name: "LOA & PA Details", url: "/loa-list"},
-  ];
+  const permissionKeys = Object.keys(permissionMapping);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -145,9 +141,9 @@ const Signup = () => {
                     }
                     required
                   >
-                    {dummyPages.map((page) => (
-                      <option key={page.url} value={page.url}>
-                        {page.name}
+                    {permissionKeys.map((key) => (
+                      <option key={key} value={key}>
+                        {key}
                       </option>
                     ))}
                   </select>
@@ -197,4 +193,3 @@ const Signup = () => {
 };
 
 export default Signup;
-

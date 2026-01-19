@@ -219,7 +219,7 @@ const Companies = () => {
             </div>
 
             {/* 🌟 MIS Reports Button */}
-            <button
+            {/* <button
               className="btn px-4 py-3 mt-4"
               style={{
                 background: "linear-gradient(45deg, #1976d2, #42a5f5)",
@@ -241,7 +241,7 @@ const Companies = () => {
             >
               <AssessmentIcon />
               Go to MIS Reports
-            </button>
+            </button> */}
           </div>
         </div>
 

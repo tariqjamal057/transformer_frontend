@@ -65,6 +65,7 @@ import SupplyGPExpiredStatement from "./pages/MisReports/SupplyGPExpiredStatemen
 import GPExtendedWarrantyInformation from "./pages/MisReports/GPExtendedWarrantyInformation";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
+import { permissionMapping } from "./data/permission";
 
 export const MyContext = createContext();
 
@@ -219,7 +220,7 @@ const AppContent = () => {
             />
             <Route
               exact
-              path="/deliverySchedule-list"
+              path={permissionMapping.DeliverySchedule}
               element={<PrivateRoute element={<DeliveryScheduleList />} />}
             />
             <Route
@@ -234,7 +235,7 @@ const AppContent = () => {
             />
             <Route
               exact
-              path="/subadmin-list"
+              path={permissionMapping.SubAdmin}
               element={<PrivateRoute element={<SubAdminList />} />}
             />
             <Route
@@ -244,7 +245,7 @@ const AppContent = () => {
             />
             <Route
               exact
-              path="/finalInspection-list"
+              path={permissionMapping.FinalInspection}
               element={<PrivateRoute element={<FinalInspectionList />} />}
             />
             <Route
@@ -254,7 +255,7 @@ const AppContent = () => {
             />
             <Route
               exact
-              path="/deliveryChalan-list"
+              path={permissionMapping.DeliveryChallan}
               element={<PrivateRoute element={<DeliveryChalanList />} />}
             />
             <Route
@@ -264,7 +265,7 @@ const AppContent = () => {
             />
             <Route
               exact
-              path="/deliveryDetails-list"
+              path={permissionMapping.DeliveryDetails}
               element={<PrivateRoute element={<DeliveryDetailsList />} />}
             />
             <Route
@@ -274,7 +275,7 @@ const AppContent = () => {
             />
             <Route
               exact
-              path="/consignee-list"
+              path={permissionMapping.ConsigneeList}
               element={<PrivateRoute element={<ConsigneeList />} />}
             />
             <Route
@@ -284,7 +285,7 @@ const AppContent = () => {
             />
             <Route
               exact
-              path="/materialDescription-list"
+              path={permissionMapping.MaterialDescription}
               element={<PrivateRoute element={<MaterialDescriptionList />} />}
             />
             <Route
@@ -309,7 +310,7 @@ const AppContent = () => {
             />
             <Route
               exact
-              path="/GPFailureInformation-list"
+              path={permissionMapping.GPFailureInformation}
               element={<PrivateRoute element={<GPFailureInformationList />} />}
             />
             <Route
@@ -319,7 +320,7 @@ const AppContent = () => {
             />
             <Route
               exact
-              path="/GPReceiptRecord-list"
+              path={permissionMapping.GPReceiptRecord}
               element={<PrivateRoute element={<NewGPReceiptRecordList />} />}
             />
             <Route
@@ -329,7 +330,7 @@ const AppContent = () => {
             />
             <Route
               exact
-              path="/GPReceiptNote-list"
+              path={permissionMapping.GPReceiptNote}
               element={<PrivateRoute element={<GPReceiptNote />} />}
             />
             <Route
@@ -339,7 +340,7 @@ const AppContent = () => {
             />
             <Route
               exact
-              path="/failureAnalysis-list"
+              path={permissionMapping.FailureAnalysis}
               element={<PrivateRoute element={<FailureAnalysisList />} />}
             />
             <Route
@@ -349,12 +350,12 @@ const AppContent = () => {
             />
             <Route
               exact
-              path="/damageTransformer-list"
+              path={permissionMapping.CTLOrDamageTransformer}
               element={<PrivateRoute element={<DamagedTransformerList />} />}
             />
             <Route
               exact
-              path="/materialOfferedButNominationPending-list"
+              path={permissionMapping.MaterialOfferedButNominationPendingReport}
               element={
                 <PrivateRoute
                   element={<MaterialOfferedButNominationPending />}
@@ -363,27 +364,27 @@ const AppContent = () => {
             />
             <Route
               exact
-              path="/nomination-done"
+              path={permissionMapping.NominationDoneReport}
               element={<PrivateRoute element={<NominationDone />} />}
             />
             <Route
               exact
-              path="/inspection-done"
+              path={permissionMapping.InspectionReport}
               element={<PrivateRoute element={<InspectionDone />} />}
             />
             <Route
               exact
-              path="/di-received"
+              path={permissionMapping.DIReceivedReport}
               element={<PrivateRoute element={<DIReceived />} />}
             />
             <Route
               exact
-              path="/production-planning"
+              path={permissionMapping.ProductionPlanningReport}
               element={<PrivateRoute element={<ProductionPlanning />} />}
             />
             <Route
               exact
-              path="/add-OfferLetter&SealingStatement"
+              path={permissionMapping.OfferAndSealingStatement}
               element={
                 <PrivateRoute element={<AddOfferLetterAndSealingStatement />} />
               }
@@ -395,12 +396,12 @@ const AppContent = () => {
             />
             <Route
               exact
-              path="/newGPInformation-list"
+              path={permissionMapping.newGPInformation}
               element={<PrivateRoute element={<NewGPInformationList />} />}
             />
             <Route
               exact
-              path="/new-gp-transformers"
+              path={permissionMapping.GPTransformerReport}
               element={<PrivateRoute element={<NewGPTranformers />} />}
             />
             <Route

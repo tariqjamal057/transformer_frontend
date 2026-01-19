@@ -27,6 +27,7 @@ import "react-responsive-pagination/themes/classic.css";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { useDropzone } from "react-dropzone";
+import { permissionMapping } from "../../data/permission";
 
 const SubAdminList = () => {
   const { setAlertBox } = useContext(MyContext);
@@ -45,25 +46,7 @@ const SubAdminList = () => {
   const [bulkUploadModalOpen, setBulkUploadModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
 
-  const allAccessPages = [
-    "Dashboard",
-    "Orders",
-    "Products",
-    "Users",
-    "Reports",
-    "Settings",
-    "Consignee",
-    "Delivery Challan",
-    "Description",
-    "Failure Analysis",
-    "Final Inspection",
-    "GP Failure",
-    "GP Receipt Record",
-    "MIS Reports",
-    "New GP Information",
-    "New Supply Tender",
-    "Offer Letter",
-  ];
+  const allAccessPages = Object.keys(permissionMapping);
   const subAdminRoles = ["OWNER", "MANAGER", "DATA_FEEDER", "SUPERVISOR"];
 
   const {
@@ -87,7 +70,7 @@ const SubAdminList = () => {
         number: "1234567890",
         password: "password123",
         role: "MANAGER",
-        pages: JSON.stringify(["Dashboard", "Orders"]),
+        pages: JSON.stringify([allAccessPages[0], allAccessPages[1]]),
       },
     ];
     const worksheet = XLSX.utils.json_to_sheet(sampleData);
