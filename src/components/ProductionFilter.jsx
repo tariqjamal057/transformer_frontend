@@ -1,5 +1,5 @@
 // FiltersComponent.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Grid,
@@ -16,23 +16,64 @@ import { DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
-import { useQuery } from "@tanstack/react-query";
-import api from "../services/api";
 
-const ProductionFilter = ({ onFilteredData, data }) => {
+const ProductionFilter = ({
+  data = [],
+  onFilteredData,
+  selectedDate,
+  setSelectedDate,
+}) => {
+  // ✅ State for Modal & Summary Input
+  const [openSummaryModal, setOpenSummaryModal] = useState(false);
+  const [pdfSummary, setPdfSummary] = useState("");
+  const [exportType, setExportType] = useState(null); // 'pdf' or 'excel'
+
   const [selectedCompany, setSelectedCompany] = useState("all");
   const [selectedDiscom, setSelectedDiscom] = useState("all");
   const [selectedRating, setSelectedRating] = useState("all");
   const [selectedPhase, setSelectedPhase] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDate, setSelectedDate] = useState(null);
 
-  const [filteredData, setFilteredData] = useState(data || []);
+  const [filteredData, setFilteredData] = useState(data);
 
-  // ✅ State for Modal & Summary Input
-  const [openSummaryModal, setOpenSummaryModal] = useState(false);
-  const [pdfSummary, setPdfSummary] = useState("");
-  const [exportType, setExportType] = useState(null); // 'pdf' or 'excel'
+  // 🔹 Filtering logic
+  useEffect(() => {
+    let result = Array.isArray(data) ? [...data] : [];
+
+    if (selectedCompany !== "all") {
+      result = result.filter((item) => item.companyName === selectedCompany);
+    }
+    if (selectedDiscom !== "all") {
+      result = result.filter((item) => item.discom === selectedDiscom);
+    }
+    if (selectedRating !== "all") {
+      result = result.filter(
+        (item) => item.deliverySchedule?.rating === selectedRating,
+      );
+    }
+    if (selectedPhase !== "all") {
+      result = result.filter(
+        (item) => item.deliverySchedule?.phase === selectedPhase,
+      );
+    }
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((item) =>
+        item.deliverySchedule?.tnNumber?.toLowerCase().includes(query),
+      );
+    }
+
+    setFilteredData(result);
+    if (onFilteredData) onFilteredData(result);
+  }, [
+    data,
+    selectedCompany,
+    selectedDiscom,
+    selectedRating,
+    selectedPhase,
+    searchQuery,
+    onFilteredData,
+  ]);
 
   const handleGenerateExport = (type, withSummary = false) => {
     setExportType(type);
@@ -43,68 +84,31 @@ const ProductionFilter = ({ onFilteredData, data }) => {
     }
   };
 
-  // 🔹 Filtering logic
-  useEffect(() => {
-    let result = [...data];
-
-    if (selectedCompany !== "all") {
-      result = result.filter((item) => item.companyName === selectedCompany);
-    }
-
-    if (selectedDiscom !== "all") {
-      result = result.filter((item) => item.discom === selectedDiscom);
-    }
-
-    if (selectedRating !== "all") {
-      result = result.filter(
-        (item) => item.deliverySchedule.rating === selectedRating
-      );
-    }
-
-    if (selectedPhase !== "all") {
-      result = result.filter(
-        (item) => item.deliverySchedule.phase === selectedPhase
-      );
-    }
-
-    if (selectedDate) {
-      const dateStr = selectedDate.format("YYYY-MM-DD");
-      result = result.filter((item) => item.offeredDate === dateStr);
-    }
-
-    if (searchQuery.trim() !== "") {
-      result = result.filter(
-        (item) =>
-          item.deliverySchedule.tnNumber
-            ?.toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          item.inspectionOfficers?.some((officer) =>
-            officer.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-      );
-    }
-
-    setFilteredData(result);
-    onFilteredData(result);
-  }, [
-    data,
-    selectedCompany,
-    selectedDiscom,
-    selectedRating,
-    selectedPhase,
-    searchQuery,
-    selectedDate,
-  ]);
-
   // 🔹 Unique dropdown values from ALL data
-  const uniqueCompanies = [...new Set((companies || []).map((item) => item.name))];
-  const uniqueDiscoms = [...new Set(discoms.map((item) => item.name))];
-  const uniqueRatings = [
-    ...new Set((deliverySchedules || []).map((item) => item.rating)),
-  ];
-  const uniquePhases = [
-    ...new Set((deliverySchedules || []).map((item) => item.phase)),
-  ];
+  const uniqueCompanies = useMemo(
+    () => [...new Set(data.map((item) => item.companyName).filter(Boolean))],
+    [data],
+  );
+  const uniqueDiscoms = useMemo(
+    () => [...new Set(data.map((item) => item.discom).filter(Boolean))],
+    [data],
+  );
+  const uniqueRatings = useMemo(
+    () => [
+      ...new Set(
+        data.map((item) => item.deliverySchedule?.rating).filter(Boolean),
+      ),
+    ],
+    [data],
+  );
+  const uniquePhases = useMemo(
+    () => [
+      ...new Set(
+        data.map((item) => item.deliverySchedule?.phase).filter(Boolean),
+      ),
+    ],
+    [data],
+  );
 
   // ✅ Export Excel (merged consignees in one row)
   const exportExcel = (withSummary = false) => {
@@ -149,7 +153,7 @@ const ProductionFilter = ({ onFilteredData, data }) => {
     // Step 2: Find non-empty columns
     const allKeys = Object.keys(excelData[0] || {});
     const nonEmptyKeys = allKeys.filter((key) =>
-      excelData.some((row) => row[key] && row[key].toString().trim() !== "")
+      excelData.some((row) => row[key] && row[key].toString().trim() !== ""),
     );
 
     // Step 3: Keep only non-empty columns
@@ -320,7 +324,7 @@ const ProductionFilter = ({ onFilteredData, data }) => {
           } of ${pageCount}`,
           pageWidth / 2,
           pageHeight - 15,
-          { align: "center" }
+          { align: "center" },
         );
       },
     });

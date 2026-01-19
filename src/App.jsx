@@ -94,9 +94,11 @@ const AppContent = () => {
       "/inspection-done",
       "/di-received",
       "materialOfferedButNominationPending-list",
+      "/production-planning",
+      "/new-gp-transformers"
     ];
     setIsHideSidebarAndHeader(
-      noSidebarAndHeaderPages.includes(location.pathname)
+      noSidebarAndHeaderPages.includes(location.pathname),
     );
   }, [location.pathname]);
 

@@ -12,14 +12,11 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable"; // ⬅️ import as a function
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import dayjs from "dayjs";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 
 dayjs.extend(isSameOrBefore);
-
-import { useQuery } from "@tanstack/react-query";
-import api from "../../services/api";
 
 export const gpFailureDatas = [
   {
@@ -316,136 +313,45 @@ export const finalInspectionDetails = [
   },
 ];
 
-const NewGPTransformersFilter = ({ onFilteredData, data }) => {
+const NewGPTransformersFilter = ({ data = [], onFilteredData, cards = [] }) => {
   const [selectedCompany, setSelectedCompany] = useState("all");
   const [selectedDiscom, setSelectedDiscom] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [filteredData, setFilteredData] = useState(data);
 
-  const [filteredData, setFilteredData] = useState(data || []);
+  // 🔹 Unique dropdown values from ALL data
+  const uniqueCompanies = useMemo(
+    () => [...new Set(data.map((item) => item.companyName).filter(Boolean))],
+    [data],
+  );
+  const uniqueDiscoms = useMemo(
+    () => [...new Set(data.map((item) => item.discom).filter(Boolean))],
+    [data],
+  );
 
-  const { data: companies } = useQuery({
-    queryKey: ["companies"],
-    queryFn: () => api.get("/companies").then((res) => res.data.data),
-  });
-
-  const { data: deliverySchedules } = useQuery({
-    queryKey: ["deliverySchedules"],
-    queryFn: () => api.get("/delivery-schedules").then((res) => res.data.data),
-  });
-
-  const discoms = [
-    { name: "Ajmer" },
-    { name: "Jaipur" },
-    { name: "Jodhpur" },
-  ];
-
-  // 🔹 Filtering logic
   useEffect(() => {
-    let result = [...data];
+    let result = Array.isArray(data) ? [...data] : [];
 
     if (selectedCompany !== "all") {
       result = result.filter((item) => item.companyName === selectedCompany);
     }
-
     if (selectedDiscom !== "all") {
       result = result.filter((item) => item.discom === selectedDiscom);
     }
-
-    if (searchQuery.trim() !== "") {
-      const lowercasedQuery = searchQuery.toLowerCase();
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
       result = result.filter(
         (item) =>
-          item.companyName?.toLowerCase().includes(lowercasedQuery) ||
-          item.discom?.toLowerCase().includes(lowercasedQuery) ||
-          item.deliverySchedule?.rating?.toLowerCase().includes(lowercasedQuery)
+          item.deliverySchedule?.tnNumber?.toLowerCase().includes(query) ||
+          item.companyName?.toLowerCase().includes(query) ||
+          item.discom?.toLowerCase().includes(query) ||
+          String(item.deliverySchedule?.rating).toLowerCase().includes(query),
       );
     }
 
     setFilteredData(result);
-    onFilteredData(result);
-  }, [data, selectedCompany, selectedDiscom, searchQuery]);
-
-  // 🔹 Unique dropdown values from ALL data
-  const uniqueCompanies = [...new Set(companies.map((item) => item.name))];
-  const uniqueDiscoms = [...new Set(discoms.map((item) => item.name))];
-
-  // ---- 🔹 MIS COUNTERS ----
-  // 1️⃣ Total Supplied (sum of offeredQuantity in filtered inspectionDetails)
-  const totalSupplied = deliverySchedules
-    .filter((item) => {
-      return (
-        (selectedCompany === "all" || item.companyName === selectedCompany) &&
-        (selectedDiscom === "all" || item.discom === selectedDiscom)
-      );
-    })
-    .reduce((sum, item) => sum + (parseInt(item.totalQuantity) || 0), 0);
-
-  // 2️⃣ Total Received under G.P. (length of gpFailureDatas)
-  const totalReceived = gpFailureDatas.filter((item) => {
-    return (
-      (selectedCompany === "all" || item.companyName === selectedCompany) &&
-      (selectedDiscom === "all" || item.discom === selectedDiscom)
-    );
-  }).length;
-
-  // 3️⃣ Total Inspected as on Date (repaired + has inspectionDate)
-  const totalInspected = finalInspectionDetails
-    .filter(
-      (item) =>
-        (selectedCompany === "all" || item.companyName === selectedCompany) &&
-        (selectedDiscom === "all" || item.discom === selectedDiscom)
-    )
-    .reduce((sum, item) => {
-      let count = 0;
-      if (item.inspectionDate) {
-        item.consignees?.forEach((c) => {
-          c.subSealingStatements?.forEach((s) => {
-            if (s.status === "repaired") count++;
-          });
-        });
-      }
-      return sum + count;
-    }, 0);
-
-  // 4️⃣ Total Dispatch as on Date (repaired + redispatched true)
-  const totalDispatch = finalInspectionDetails
-    .filter(
-      (item) =>
-        (selectedCompany === "all" || item.companyName === selectedCompany) &&
-        (selectedDiscom === "all" || item.discom === selectedDiscom)
-    )
-    .reduce((sum, item) => {
-      let count = 0;
-      item.consignees?.forEach((c) => {
-        c.subSealingStatements?.forEach((s) => {
-          if (s.status === "repaired" && s.redispatched) count++;
-        });
-      });
-      return sum + count;
-    }, 0);
-
-  // 5️⃣ Pending = Total Received - Total Dispatch
-  const totalPending = totalReceived - totalDispatch;
-
-  const cards = [
-    { title: "Total Qty Supplied", value: totalSupplied, color: "#3498db" },
-    {
-      title: "Total Qty Received Under G.P.",
-      value: totalReceived,
-      color: "#27ae60",
-    },
-    {
-      title: "Total Inspected As On Date",
-      value: totalInspected,
-      color: "#8e44ad",
-    },
-    {
-      title: "Total Dispatch As On Date",
-      value: totalDispatch,
-      color: "#e67e22",
-    },
-    { title: "Total Pending", value: totalPending, color: "#c0392b" },
-  ];
+    if (onFilteredData) onFilteredData(result);
+  }, [data, selectedCompany, selectedDiscom, searchQuery, onFilteredData]);
 
   const exportExcel = () => {
     if (!filteredData || filteredData.length === 0) {
@@ -484,7 +390,7 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
     // Step 2: Find non-empty columns
     const allKeys = Object.keys(excelData[0] || {});
     const nonEmptyKeys = allKeys.filter((key) =>
-      excelData.some((row) => row[key] && row[key].toString().trim() !== "")
+      excelData.some((row) => row[key] && row[key].toString().trim() !== ""),
     );
 
     // Step 3: Filter data to only include non-empty columns
@@ -587,7 +493,7 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
     });
 
     const filteredBody = pdfData.map((row) =>
-      filteredColumnIndices.map((index) => row[index])
+      filteredColumnIndices.map((index) => row[index]),
     );
 
     // Custom column widths - adjusted for 13 columns in landscape
@@ -670,7 +576,7 @@ const NewGPTransformersFilter = ({ onFilteredData, data }) => {
           } of ${pageCount}`,
           pageWidth / 2,
           pageHeight - 12,
-          { align: "center" }
+          { align: "center" },
         );
       },
     });

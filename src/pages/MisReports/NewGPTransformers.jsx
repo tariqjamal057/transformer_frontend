@@ -1,5 +1,5 @@
 // MaterialOfferedPage.jsx
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import {
   Container,
   Paper,
@@ -19,15 +19,18 @@ import NewGPTransformersFilter from "../../components/MisGP/NewGPTransformersFil
 import { useQuery } from "@tanstack/react-query";
 import api from "../../services/api";
 
-const NewGPTranformers = () => {
+const NewGPTransformers = () => {
   const navigate = useNavigate("");
 
   const [filteredData, setFilteredData] = useState([]);
 
-  const { data: inspectionData, isLoading } = useQuery({
-    queryKey: ["newGpTransformers"],
-    queryFn: () => api.get("/mis-reports/new-gp-transformers").then((res) => res.data),
+  const { data: apiData, isLoading } = useQuery({
+    queryKey: ["newGPTransformers"],
+    queryFn: () =>
+      api.get(`/mis-reports/new-gp-transformers`).then((res) => res.data),
   });
+
+  const { tableData = [], cards = [] } = apiData || {};
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -70,8 +73,9 @@ const NewGPTranformers = () => {
       </Box>
 
       <NewGPTransformersFilter
+        data={tableData}
         onFilteredData={setFilteredData}
-        data={inspectionData || []}
+        cards={cards}
       />
 
       <Paper sx={{ p: 2, mt: 3 }}>
@@ -135,4 +139,4 @@ const NewGPTranformers = () => {
   );
 };
 
-export default NewGPTranformers;
+export default NewGPTransformers;

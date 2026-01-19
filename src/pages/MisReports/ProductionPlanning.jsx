@@ -23,7 +23,7 @@ import api from "../../services/api";
 
 const SinglePhaseTable = ({ data }) => {
   const singlePhaseData = data.filter(
-    (item) => item.deliverySchedule.phase === "Single Phase"
+    (item) => item.deliverySchedule.phase === "Single Phase",
   );
 
   const summary = singlePhaseData.reduce((acc, item) => {
@@ -86,7 +86,7 @@ const SinglePhaseTable = ({ data }) => {
 
 const PowerTransformerTable = ({ data }) => {
   const powerData = data.filter(
-    (item) => item.deliverySchedule.phase === "Power"
+    (item) => item.deliverySchedule.phase === "Power",
   );
 
   const summary = powerData.reduce((acc, item) => {
@@ -149,7 +149,7 @@ const PowerTransformerTable = ({ data }) => {
 
 const ThreePhaseTable = ({ data }) => {
   const threePhaseData = data.filter(
-    (item) => item.deliverySchedule.phase === "Three Phase"
+    (item) => item.deliverySchedule.phase === "Three Phase",
   );
 
   const summary = threePhaseData.reduce((acc, item) => {
@@ -261,12 +261,22 @@ const InverterDutyTable = ({ data }) => {
 
 const ProductionPlanning = () => {
   const navigate = useNavigate("");
-
+  const [selectedDate, setSelectedDate] = useState(null);
   const [filteredData, setFilteredData] = useState([]);
 
   const { data: inspectionData, isLoading } = useQuery({
-    queryKey: ["productionPlanning"],
-    queryFn: () => api.get("/mis-reports/production-planning").then((res) => res.data),
+    queryKey: ["productionPlanning", selectedDate],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (selectedDate) {
+        params.append("month", selectedDate.month() + 1);
+        params.append("year", selectedDate.year());
+      }
+      // Add other filters as needed by the backend
+      return api
+        .get(`/mis-reports/production-planning?${params.toString()}`)
+        .then((res) => res.data);
+    },
   });
 
   return (
@@ -310,8 +320,10 @@ const ProductionPlanning = () => {
       </Box>
 
       <ProductionFilter
-        onFilteredData={setFilteredData}
         data={inspectionData || []}
+        onFilteredData={setFilteredData}
+        selectedDate={selectedDate}
+        setSelectedDate={setSelectedDate}
       />
 
       <Grid container spacing={3} columns={{ xs: 1, sm: 2 }} sx={{ mt: 3 }}>
@@ -389,7 +401,7 @@ const ProductionPlanning = () => {
                     <TableCell>
                       {row.deliverySchedule?.scheduleDate
                         ? dayjs(row.deliverySchedule.scheduleDate).format(
-                            "DD MMM YYYY"
+                            "DD MMM YYYY",
                           )
                         : "-"}
                     </TableCell>

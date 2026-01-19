@@ -27,7 +27,7 @@ const FiltersComponent = ({
   sheetName = "FinalInspection",
   pdfTitle,
   dueDateofDeliveryIncluded = true,
-  exportMode = 'default',
+  exportMode = "default",
 }) => {
   const [selectedCompany, setSelectedCompany] = useState("all");
   const [selectedDiscom, setSelectedDiscom] = useState("all");
@@ -46,7 +46,8 @@ const FiltersComponent = ({
       result = result.filter((item) => {
         const company =
           item.companyName ||
-          item.deliverySchedule?.supplyTender?.company?.name;
+          item.deliverySchedule?.supplyTender?.company?.name ||
+          item.supplyTender?.company?.name;
         return company === selectedCompany;
       });
     }
@@ -56,7 +57,8 @@ const FiltersComponent = ({
         const discom =
           item.discom ||
           item.deliverySchedule?.supplyTender?.discom ||
-          item.deliverySchedule?.supplyTender?.name;
+          item.deliverySchedule?.supplyTender?.name ||
+          item.supplyTender?.name;
         return discom === selectedDiscom;
       });
     }
@@ -113,7 +115,8 @@ const FiltersComponent = ({
       ?.map(
         (item) =>
           item.companyName ||
-          item.deliverySchedule?.supplyTender?.company?.name,
+          item.deliverySchedule?.supplyTender?.company?.name ||
+          item.supplyTender?.company?.name,
       )
       .filter((c) => c !== undefined && c !== null && c !== "");
     return [...new Set(companies)];
@@ -124,7 +127,7 @@ const FiltersComponent = ({
       ?.map(
         (item) =>
           item.discom ||
-          item.deliverySchedule?.supplyTender?.discom ||
+          item.supplyTender?.name ||
           item.deliverySchedule?.supplyTender?.name,
       )
       .filter((d) => d !== undefined && d !== null && d !== "");
@@ -291,7 +294,9 @@ const FiltersComponent = ({
 
       if (
         item.consignees?.some(
-          (c) => (c.consigneeName || c.consignee?.name)?.toLowerCase() === "jhunjhunu",
+          (c) =>
+            (c.consigneeName || c.consignee?.name)?.toLowerCase() ===
+            "jhunjhunu",
         )
       ) {
         dueJhunjhunu = baseDate
@@ -300,7 +305,9 @@ const FiltersComponent = ({
       }
       if (
         item.consignees?.some(
-          (c) => (c.consigneeName || c.consignee?.name)?.toLowerCase() !== "jhunjhunu",
+          (c) =>
+            (c.consigneeName || c.consignee?.name)?.toLowerCase() !==
+            "jhunjhunu",
         )
       ) {
         dueOthers = baseDate
@@ -393,7 +400,7 @@ const FiltersComponent = ({
 
   // ✅ Click handler decides which function to run
   const handleExcelExport = () => {
-    if (exportMode === 'di') {
+    if (exportMode === "di") {
       exportExcelForDI(filteredData);
     } else {
       exportExcel(filteredData);
@@ -794,7 +801,7 @@ const FiltersComponent = ({
 
   // ✅ Click handler decides which function to run
   const handleExport = () => {
-    if (exportMode === 'di') {
+    if (exportMode === "di") {
       exportPDFForDiReceived(filteredData);
     } else {
       exportPDF(filteredData);

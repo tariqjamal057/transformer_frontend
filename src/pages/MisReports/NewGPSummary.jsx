@@ -1,5 +1,4 @@
-// MaterialOfferedPage.jsx
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
   Container,
   Paper,
@@ -12,22 +11,65 @@ import {
   TableContainer,
   Box,
   Button,
+  CircularProgress,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { MyContext } from "../../App";
 import { useNavigate } from "react-router-dom";
 import NewGPSummaryFilter from "../../components/MisGP/NewGPSummaryFilter";
-import { useQuery } from "@tanstack/react-query";
 import api from "../../services/api";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 
 const NewGPSummary = () => {
   const navigate = useNavigate("");
+  const { setIsHideSidebarAndHeader } = useContext(MyContext);
 
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filteredData, setFilteredData] = useState([]);
 
-  const { data: inspectionData, isLoading } = useQuery({
-    queryKey: ["newGpSummary"],
-    queryFn: () => api.get("/mis-reports/new-gp-summary").then((res) => res.data),
-  });
+  useEffect(() => {
+    setIsHideSidebarAndHeader(true);
+    window.scrollTo(0, 0);
+    fetchData();
+  }, [setIsHideSidebarAndHeader]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get("/mis-reports/new-gp-summary");
+      setData(response.data);
+      setFilteredData(response.data);
+      setLoading(false);
+    } catch (error) {
+      setError(error);
+      setLoading(false);
+    }
+  };
+
+  const handleExport = async (format) => {
+    try {
+      const response = await api.get(
+        `/mis-reports/new-gp-summary?export=${format}`,
+        {
+          responseType: "blob",
+        },
+      );
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `new-gp-summary.${format === "excel" ? "xlsx" : "pdf"}`,
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error(`Error exporting to ${format}`, error);
+    }
+  };
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -40,7 +82,6 @@ const NewGPSummary = () => {
           mb: 3,
         }}
       >
-        {/* Back Button (left corner) */}
         <Button
           variant="outlined"
           startIcon={<ArrowBackIcon />}
@@ -59,8 +100,6 @@ const NewGPSummary = () => {
         >
           Back
         </Button>
-
-        {/* Center Title */}
         <Typography
           variant="h4"
           sx={{ fontWeight: "bold", textAlign: "center" }}
@@ -69,16 +108,31 @@ const NewGPSummary = () => {
         </Typography>
       </Box>
 
-      <NewGPSummaryFilter
-        onFilteredData={setFilteredData}
-        data={inspectionData || []}
-      />
+      <NewGPSummaryFilter onFilteredData={setFilteredData} data={data} />
 
       <Paper sx={{ p: 2, mt: 3 }}>
-        <Typography variant="h6" mb={1}>
-          New GP Summary
-        </Typography>
-
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+          <Typography variant="h6">New GP Summary</Typography>
+          <Box>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<FileDownloadIcon />}
+              onClick={() => handleExport("excel")}
+              sx={{ mr: 1 }}
+            >
+              Excel
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={<FileDownloadIcon />}
+              onClick={() => handleExport("pdf")}
+            >
+              PDF
+            </Button>
+          </Box>
+        </Box>
         <TableContainer sx={{ maxHeight: 520 }}>
           <Table stickyHeader size="small" aria-label="final-inspection-table">
             <TableHead>
@@ -100,12 +154,17 @@ const NewGPSummary = () => {
                 <TableCell>GP Inspected In Month</TableCell>
               </TableRow>
             </TableHead>
-
             <TableBody>
-              {isLoading ? (
+              {loading ? (
                 <TableRow>
                   <TableCell colSpan={15} align="center">
-                    Loading...
+                    <CircularProgress />
+                  </TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={15} align="center">
+                    Error: {error.message}
                   </TableCell>
                 </TableRow>
               ) : filteredData.length === 0 ? (

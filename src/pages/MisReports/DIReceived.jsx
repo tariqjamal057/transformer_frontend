@@ -1,5 +1,4 @@
-// MaterialOfferedPage.jsx
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   Container,
   Paper,
@@ -12,23 +11,46 @@ import {
   TableContainer,
   Box,
   Button,
+  CircularProgress,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import dayjs from "dayjs";
 import FiltersComponent from "../../components/FinalInspectionFilter";
+import { MyContext } from "../../App";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import api from "../../services/api";
 
 const DIReceived = () => {
   const navigate = useNavigate("");
-
+  const { setIsHideSidebarAndHeader } = useContext(MyContext);
   const [filteredData, setFilteredData] = useState([]);
 
-  const { data: inspectionData, isLoading } = useQuery({
-    queryKey: ["finalInspections"],
-    queryFn: () => api.get("/final-inspections").then((res) => res.data),
+  const {
+    data: inspectionData = [],
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["diReceivedDispatchPending"],
+    queryFn: () =>
+      api
+        .get("/mis-reports/di-received-dispatch-pending")
+        .then((res) => res.data),
   });
+
+  useEffect(() => {
+    setIsHideSidebarAndHeader(true);
+    window.scrollTo(0, 0);
+    return () => {
+      setIsHideSidebarAndHeader(false);
+    };
+  }, [setIsHideSidebarAndHeader]);
+
+  useEffect(() => {
+    if (inspectionData) {
+      setFilteredData(inspectionData);
+    }
+  }, [inspectionData]);
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -41,7 +63,6 @@ const DIReceived = () => {
           mb: 3,
         }}
       >
-        {/* Back Button (left corner) */}
         <Button
           variant="outlined"
           startIcon={<ArrowBackIcon />}
@@ -60,8 +81,6 @@ const DIReceived = () => {
         >
           Back
         </Button>
-
-        {/* Center Title */}
         <Typography
           variant="h4"
           sx={{ fontWeight: "bold", textAlign: "center" }}
@@ -69,22 +88,19 @@ const DIReceived = () => {
           Material Inspected, D.I. Received But Dispatch Pending
         </Typography>
       </Box>
-
       <FiltersComponent
         onFilteredData={setFilteredData}
-        data={inspectionData || []}
+        data={inspectionData}
         text="Dispatch Pending"
-        onExportPDF={false}
-        onExportExcel={false}
+        onExportPDF={true}
+        onExportExcel={true}
         sheetName="Material inspected DI received but dispatch pending"
         pdfTitle="Material Inspected DI Received But Dispatch Pending"
       />
-
       <Paper sx={{ p: 2, mt: 3 }}>
         <Typography variant="h6" mb={1}>
           Dispatch Pending Details
         </Typography>
-
         <TableContainer sx={{ maxHeight: 520 }}>
           <Table stickyHeader size="small" aria-label="final-inspection-table">
             <TableHead>
@@ -110,12 +126,17 @@ const DIReceived = () => {
                 <TableCell>Pending</TableCell>
               </TableRow>
             </TableHead>
-
             <TableBody>
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={19} align="center">
-                    Loading...
+                    <CircularProgress />
+                  </TableCell>
+                </TableRow>
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={19} align="center">
+                    Error fetching data
                   </TableCell>
                 </TableRow>
               ) : filteredData.length === 0 ? (
@@ -130,17 +151,13 @@ const DIReceived = () => {
                     <React.Fragment key={row.id}>
                       {row.consignees && row.consignees.length > 0 ? (
                         row.consignees.map((c, cIdx) => {
-                          // 👉 Logic for due date
                           const baseDate =
                             row.specialCase === "yes"
                               ? row.inspectionDate
                               : row.diDate || row.inspectionDate;
-
                           let dueDate;
-                          const cName = c.consigneeName || c.consignee?.name;
-
                           if (
-                            cName?.toLowerCase() === "jhunjhunu"
+                            c.consignee?.name?.toLowerCase() === "jhunjhunu"
                           ) {
                             dueDate = dayjs(baseDate)
                               .add(7, "day")
@@ -150,19 +167,15 @@ const DIReceived = () => {
                               .add(12, "day")
                               .format("DD MMM YYYY");
                           }
-
                           return (
                             <TableRow key={`${row.id}-${cIdx}`}>
-                              {/* Main details only once per row */}
                               {cIdx === 0 && (
                                 <>
                                   <TableCell rowSpan={row.consignees.length}>
                                     {idx + 1}
                                   </TableCell>
                                   <TableCell rowSpan={row.consignees.length}>
-                                    {dayjs(row.offeredDate).format(
-                                      "DD MMM YYYY"
-                                    )}
+                                    {dayjs(row.offerDate).format("DD MMM YYYY")}
                                   </TableCell>
                                   <TableCell rowSpan={row.consignees.length}>
                                     {row.companyName}
@@ -185,26 +198,27 @@ const DIReceived = () => {
                                   </TableCell>
                                   <TableCell rowSpan={row.consignees.length}>
                                     <div className="d-flex flex-wrap gap-1">
-                                      {row.inspectionOfficers.map(
-                                        (officer, i) => (
-                                          <span
-                                            key={i}
-                                            className="badge bg-info text-white px-2 py-1"
-                                            style={{
-                                              fontSize: "0.75rem",
-                                              borderRadius: "10px",
-                                            }}
-                                          >
-                                            {officer}
-                                          </span>
-                                        )
-                                      )}
+                                      {row.inspectionOfficers &&
+                                        row.inspectionOfficers.map(
+                                          (officer, i) => (
+                                            <span
+                                              key={i}
+                                              className="badge bg-info text-white px-2 py-1"
+                                              style={{
+                                                fontSize: "0.75rem",
+                                                borderRadius: "10px",
+                                              }}
+                                            >
+                                              {officer}
+                                            </span>
+                                          ),
+                                        )}
                                     </div>
                                   </TableCell>
                                   <TableCell rowSpan={row.consignees.length}>
                                     {row.inspectionDate
                                       ? dayjs(row.inspectionDate).format(
-                                          "DD MMM YYYY"
+                                          "DD MMM YYYY",
                                         )
                                       : "-"}
                                   </TableCell>
@@ -221,12 +235,8 @@ const DIReceived = () => {
                                   </TableCell>
                                 </>
                               )}
-
-                              {/* Due Date (per consignee) */}
                               <TableCell>{dueDate}</TableCell>
-
-                              {/* Consignee-specific details */}
-                              <TableCell>{cName}</TableCell>
+                              <TableCell>{c.consignee?.name}</TableCell>
                               <TableCell>{c.subSnNumber}</TableCell>
                               <TableCell>{c.quantity}</TableCell>
                               <TableCell>{c.dispatch}</TableCell>
@@ -238,7 +248,7 @@ const DIReceived = () => {
                         <TableRow>
                           <TableCell>{idx + 1}</TableCell>
                           <TableCell>
-                            {dayjs(row.offeredDate).format("DD MMM YYYY")}
+                            {dayjs(row.offerDate).format("DD MMM YYYY")}
                           </TableCell>
                           <TableCell>{row.companyName}</TableCell>
                           <TableCell>{row.discom}</TableCell>
@@ -251,18 +261,19 @@ const DIReceived = () => {
                           <TableCell>{row.offeredQuantity}</TableCell>
                           <TableCell>
                             <div className="d-flex flex-wrap gap-1">
-                              {row.inspectionOfficers.map((officer, i) => (
-                                <span
-                                  key={i}
-                                  className="badge bg-info text-white px-2 py-1"
-                                  style={{
-                                    fontSize: "0.75rem",
-                                    borderRadius: "10px",
-                                  }}
-                                >
-                                  {officer}
-                                </span>
-                              ))}
+                              {row.inspectionOfficers &&
+                                row.inspectionOfficers.map((officer, i) => (
+                                  <span
+                                    key={i}
+                                    className="badge bg-info text-white px-2 py-1"
+                                    style={{
+                                      fontSize: "0.75rem",
+                                      borderRadius: "10px",
+                                    }}
+                                  >
+                                    {officer}
+                                  </span>
+                                ))}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -270,13 +281,14 @@ const DIReceived = () => {
                               ? dayjs(row.inspectionDate).format("DD MMM YYYY")
                               : "-"}
                           </TableCell>
+                          <TableCell>{row.inspectedQuantity || ""}</TableCell>
                           <TableCell>{row.diNo || "-"}</TableCell>
                           <TableCell>
                             {row.diDate
                               ? dayjs(row.diDate).format("DD MMM YYYY")
                               : "-"}
                           </TableCell>
-                          <TableCell colSpan={3} align="center">
+                          <TableCell colSpan={6} align="center">
                             No Consignees
                           </TableCell>
                         </TableRow>
