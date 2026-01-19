@@ -274,7 +274,7 @@ const AddFinalInspection = () => {
       warranty,
     };
 
-    // addFinalInspectionMutation.mutate(data);
+    addFinalInspectionMutation.mutate(data);
   };
 
   return (
