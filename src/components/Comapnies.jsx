@@ -93,7 +93,7 @@ const Companies = () => {
     setNewCompanyPhoneNo(company.phone);
     setNewCompanyGST(company.gstNo);
     setNewCompanyEmail(company.email);
-    setPreviewLogo(company.logo ? `http://localhost:5000/${company.logo.replace(/\\/g, '/')}` : null);
+    v (company.logo ? `${import.meta.env.VITE_IMAGE_BASE_URL}${company.logo.replace(/\\/g, '/')}` : null);
     setShowModal(true);
   };
 
@@ -170,7 +170,7 @@ const Companies = () => {
                   >
                     <span className="fw-bold">{company.name}</span>
                     <img
-                      src={company.logo ? `http://localhost:5000/${company.logo.replace(/\\/g, '/')}` : companyLogo}
+                      src={company.logo ? `${import.meta.env.VITE_IMAGE_BASE_URL}${company.logo.replace(/\\/g, '/')}` : companyLogo}
                       alt="logo"
                       style={{ width: 130, height: 80 }}
                     />
