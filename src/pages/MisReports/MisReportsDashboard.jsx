@@ -13,7 +13,7 @@ import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import FeedbackIcon from '@mui/icons-material/Feedback';
+import FeedbackIcon from "@mui/icons-material/Feedback";
 import { MyContext } from "../../App";
 import { Inventory } from "@mui/icons-material";
 
@@ -23,6 +23,9 @@ const MisReportsDashboard = () => {
   useEffect(() => {
     setIsHideSidebarAndHeader(true);
     window.scrollTo(0, 0);
+    return () => {
+      setIsHideSidebarAndHeader(false);
+    };
   }, [setIsHideSidebarAndHeader]);
 
   const navigate = useNavigate();

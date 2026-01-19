@@ -81,27 +81,6 @@ const AppContent = () => {
   });
 
   const [isHideSidebarAndHeader, setIsHideSidebarAndHeader] = useState(false);
-  const location = useLocation();
-
-  useEffect(() => {
-    const noSidebarAndHeaderPages = [
-      "/login",
-      "/signup",
-      "/select-company",
-      "/select-supply-tender",
-      "/companies",
-      "/supply-tender",
-      "/nomination-done",
-      "/inspection-done",
-      "/di-received",
-      "materialOfferedButNominationPending-list",
-      "/production-planning",
-      "/new-gp-transformers"
-    ];
-    setIsHideSidebarAndHeader(
-      noSidebarAndHeaderPages.includes(location.pathname),
-    );
-  }, [location.pathname]);
 
   useEffect(() => {
     const handleResize = () => {

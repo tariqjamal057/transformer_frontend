@@ -250,28 +250,28 @@ const AddFinalInspection = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("sealing details", sealingDetails)
     const data = {
-      deliveryScheduleId: tnDetail?.id,
-      serialNumberFrom: parseInt(serialNumberFrom),
-      serialNumberTo: parseInt(serialNumberTo),
-      offerDate: dayjs(offerDate).toISOString(),
-      offeredQuantity: parseInt(offeredQuantity),
-      inspectionDate: dayjs(inspectionDate).toISOString(),
-      inspectedQuantity: parseInt(inspectedQuantity),
+      deliveryScheduleId: tnDetail?.id || null,
+      serialNumberFrom: serialNumberFrom ? parseInt(serialNumberFrom) : null,
+      serialNumberTo: serialNumberTo ? parseInt(serialNumberTo) : null,
+      offerDate: offerDate ? dayjs(offerDate).toISOString() : null,
+      offeredQuantity: offeredQuantity ? parseInt(offeredQuantity) : null,
+      inspectionDate: inspectionDate ? dayjs(inspectionDate).toISOString() : null,
+      inspectedQuantity: inspectedQuantity ? parseInt(inspectedQuantity) : null,
       inspectionOfficers: selectedInspectionOfficer,
-      nominationLetterNo,
+      nominationLetterNo: nominationLetterNo || null,
       nominationDate: nominationDate
         ? dayjs(nominationDate).toISOString()
         : null,
-      diNo,
-      diDate: dayjs(diDate).toISOString(),
+      diNo: diNo || null,
+      diDate: diDate ? dayjs(diDate).toISOString() : null,
       consignees: consigneeList,
       sealingDetails: sealingDetails.map((s) => ({
         trfSiNo: s.trfSiNo,
         polySealNo: s.polySealNo,
       })),
-      warranty,
+      warranty: warranty || null,
+      status: "Active",
     };
 
     addFinalInspectionMutation.mutate(data);

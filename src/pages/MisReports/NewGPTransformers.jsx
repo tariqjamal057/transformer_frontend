@@ -1,5 +1,5 @@
 // MaterialOfferedPage.jsx
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
   Container,
   Paper,
@@ -18,9 +18,19 @@ import { useNavigate } from "react-router-dom";
 import NewGPTransformersFilter from "../../components/MisGP/NewGPTransformersFilter";
 import { useQuery } from "@tanstack/react-query";
 import api from "../../services/api";
+import { MyContext } from "../../App";
 
 const NewGPTransformers = () => {
   const navigate = useNavigate("");
+  const { setIsHideSidebarAndHeader } = useContext(MyContext);
+
+  useEffect(() => {
+    setIsHideSidebarAndHeader(true);
+    window.scrollTo(0, 0);
+    return () => {
+      setIsHideSidebarAndHeader(false);
+    };
+  }, [setIsHideSidebarAndHeader]);
 
   const [filteredData, setFilteredData] = useState([]);
 

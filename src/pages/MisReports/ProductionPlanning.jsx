@@ -20,10 +20,15 @@ import { useNavigate } from "react-router-dom";
 import ProductionFilter from "../../components/ProductionFilter";
 import { useQuery } from "@tanstack/react-query";
 import api from "../../services/api";
+import { MyContext } from "../../App";
 
 const SinglePhaseTable = ({ data }) => {
   const singlePhaseData = data.filter(
-    (item) => item.deliverySchedule.phase === "Single Phase",
+    (item) =>
+      item.deliverySchedule.phase === "Single Phase" ||
+      item.deliverySchedule.phase === "Single" ||
+      item.deliverySchedule.phase === "SINGLE" ||
+      item.deliverySchedule.phase === 1,
   );
 
   const summary = singlePhaseData.reduce((acc, item) => {
@@ -38,8 +43,6 @@ const SinglePhaseTable = ({ data }) => {
   }, {});
 
   const rows = Object.values(summary);
-
-  if (rows.length === 0) return null;
 
   return (
     <Paper elevation={4} sx={{ borderRadius: 2, overflow: "hidden" }}>
@@ -69,14 +72,22 @@ const SinglePhaseTable = ({ data }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row, i) => (
-              <TableRow key={i}>
-                <TableCell>{row.rating}</TableCell>
-                <TableCell>{row.total}</TableCell>
-                <TableCell>{row.supplyDue}</TableCell>
-                <TableCell>{row.planning}</TableCell>
+            {rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} align="center">
+                  No Data
+                </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              rows.map((row, i) => (
+                <TableRow key={i}>
+                  <TableCell>{row.rating}</TableCell>
+                  <TableCell>{row.total}</TableCell>
+                  <TableCell>{row.supplyDue?.toFixed(2)}</TableCell>
+                  <TableCell>{row.planning}</TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
@@ -86,7 +97,11 @@ const SinglePhaseTable = ({ data }) => {
 
 const PowerTransformerTable = ({ data }) => {
   const powerData = data.filter(
-    (item) => item.deliverySchedule.phase === "Power",
+    (item) =>
+      item.deliverySchedule.phase === "Power" ||
+      item.deliverySchedule.phase === "Invertor" ||
+      item.deliverySchedule.phase === "INVERTOR" ||
+      item.deliverySchedule.phase === "POWER",
   );
 
   const summary = powerData.reduce((acc, item) => {
@@ -101,8 +116,6 @@ const PowerTransformerTable = ({ data }) => {
   }, {});
 
   const rows = Object.values(summary);
-
-  if (rows.length === 0) return null;
 
   return (
     <Paper elevation={4} sx={{ borderRadius: 2, overflow: "hidden" }}>
@@ -132,14 +145,22 @@ const PowerTransformerTable = ({ data }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row, i) => (
-              <TableRow key={i}>
-                <TableCell>{row.rating}</TableCell>
-                <TableCell>{row.total}</TableCell>
-                <TableCell>{row.supplyDue}</TableCell>
-                <TableCell>{row.planning}</TableCell>
+            {rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} align="center">
+                  No Data
+                </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              rows.map((row, i) => (
+                <TableRow key={i}>
+                  <TableCell>{row.rating}</TableCell>
+                  <TableCell>{row.total}</TableCell>
+                  <TableCell>{row.supplyDue?.toFixed(2)}</TableCell>
+                  <TableCell>{row.planning}</TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
@@ -149,7 +170,11 @@ const PowerTransformerTable = ({ data }) => {
 
 const ThreePhaseTable = ({ data }) => {
   const threePhaseData = data.filter(
-    (item) => item.deliverySchedule.phase === "Three Phase",
+    (item) =>
+      item.deliverySchedule.phase === "Three Phase" ||
+      item.deliverySchedule.phase === "Three" ||
+      item.deliverySchedule.phase === "THREE" ||
+      item.deliverySchedule.phase === 3,
   );
 
   const summary = threePhaseData.reduce((acc, item) => {
@@ -164,8 +189,6 @@ const ThreePhaseTable = ({ data }) => {
   }, {});
 
   const rows = Object.values(summary);
-
-  if (rows.length === 0) return null;
 
   return (
     <Paper elevation={4} sx={{ borderRadius: 2, overflow: "hidden" }}>
@@ -195,14 +218,22 @@ const ThreePhaseTable = ({ data }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row, i) => (
-              <TableRow key={i}>
-                <TableCell>{row.rating}</TableCell>
-                <TableCell>{row.total}</TableCell>
-                <TableCell>{row.supplyDue}</TableCell>
-                <TableCell>{row.planning}</TableCell>
+            {rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} align="center">
+                  No Data
+                </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              rows.map((row, i) => (
+                <TableRow key={i}>
+                  <TableCell>{row.rating}</TableCell>
+                  <TableCell>{row.total}</TableCell>
+                  <TableCell>{row.supplyDue?.toFixed(2)}</TableCell>
+                  <TableCell>{row.planning}</TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
@@ -211,10 +242,25 @@ const ThreePhaseTable = ({ data }) => {
 };
 
 const InverterDutyTable = ({ data }) => {
-  const rows = [
-    { rating: "12.5 MVA", total: 15, supplyDue: 1, planning: 2 },
-    { rating: "17.6 MVA", total: 10, supplyDue: 1, planning: 2 },
-  ];
+  const inverterData = data.filter(
+    (item) =>
+      item.deliverySchedule.phase === "Inverter Duty" ||
+      item.deliverySchedule.phase === "Inverter" ||
+      item.deliverySchedule.phase === "INVERTER",
+  );
+
+  const summary = inverterData.reduce((acc, item) => {
+    const rating = `${item.deliverySchedule.rating} MVA`;
+    if (!acc[rating]) {
+      acc[rating] = { rating, total: 0, supplyDue: 0, planning: 0 };
+    }
+    acc[rating].total += item.deliverySchedule.totalOrderQuantity || 0;
+    acc[rating].supplyDue += item.totalSupplyDueInCurrentMonth || 0;
+    acc[rating].planning += item.plannedForMonth || 0;
+    return acc;
+  }, {});
+
+  const rows = Object.values(summary);
 
   return (
     <Paper elevation={4} sx={{ borderRadius: 2, overflow: "hidden" }}>
@@ -244,14 +290,22 @@ const InverterDutyTable = ({ data }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row, i) => (
-              <TableRow key={i}>
-                <TableCell>{row.rating}</TableCell>
-                <TableCell>{row.total}</TableCell>
-                <TableCell>{row.supplyDue}</TableCell>
-                <TableCell>{row.planning}</TableCell>
+            {rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} align="center">
+                  No Data
+                </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              rows.map((row, i) => (
+                <TableRow key={i}>
+                  <TableCell>{row.rating}</TableCell>
+                  <TableCell>{row.total}</TableCell>
+                  <TableCell>{row.supplyDue?.toFixed(2)}</TableCell>
+                  <TableCell>{row.planning}</TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
@@ -263,6 +317,15 @@ const ProductionPlanning = () => {
   const navigate = useNavigate("");
   const [selectedDate, setSelectedDate] = useState(null);
   const [filteredData, setFilteredData] = useState([]);
+  const { setIsHideSidebarAndHeader } = useContext(MyContext);
+
+  useEffect(() => {
+    setIsHideSidebarAndHeader(true);
+    window.scrollTo(0, 0);
+    return () => {
+      setIsHideSidebarAndHeader(false);
+    };
+  }, [setIsHideSidebarAndHeader]);
 
   const { data: inspectionData, isLoading } = useQuery({
     queryKey: ["productionPlanning", selectedDate],
@@ -327,16 +390,16 @@ const ProductionPlanning = () => {
       />
 
       <Grid container spacing={3} columns={{ xs: 1, sm: 2 }} sx={{ mt: 3 }}>
-        <Grid item xs={1}>
+        <Grid item size={1}>
           <SinglePhaseTable data={filteredData} />
         </Grid>
-        <Grid item xs={1}>
+        <Grid item size={1}>
           <PowerTransformerTable data={filteredData} />
         </Grid>
-        <Grid item xs={1}>
+        <Grid item size={1}>
           <ThreePhaseTable data={filteredData} />
         </Grid>
-        <Grid item xs={1}>
+        <Grid item size={1}>
           <InverterDutyTable data={filteredData} />
         </Grid>
       </Grid>
@@ -408,13 +471,13 @@ const ProductionPlanning = () => {
                     <TableCell>
                       {row.deliverySchedule?.totalOrderQuantity}
                     </TableCell>
-                    <TableCell>{row.quantityPerMonthInSchedule}</TableCell>
-                    <TableCell>{row.totalSupplyDueInCurrentMonth}</TableCell>
+                    <TableCell>{row.quantityPerMonthInSchedule?.toFixed(2)}</TableCell>
+                    <TableCell>{row.totalSupplyDueInCurrentMonth?.toFixed(2)}</TableCell>
                     <TableCell>{row.offeredForInspectionTotal}</TableCell>
                     <TableCell>{row.finalInspectionTotal}</TableCell>
                     <TableCell>{row.actualSuppliedTotal}</TableCell>
                     <TableCell>
-                      {row.balanceDueToBeInspectedInCurrentMonth}
+                      {row.balanceDueToBeInspectedInCurrentMonth?.toFixed(2)}
                     </TableCell>
                     <TableCell>{row.balancePending}</TableCell>
                     <TableCell>{row.snNumber}</TableCell>

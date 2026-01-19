@@ -268,21 +268,27 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
   const handleSubmit = () => {
     console.log("condif ", consigneeList);
     const updatedData = {
-      deliveryScheduleId: tnDetail?.id,
-      serialNumberFrom: parseInt(serialNumberFrom, 10),
-      serialNumberTo: parseInt(serialNumberTo, 10),
-      offerDate: dayjs(offerDate).toISOString(),
-      offeredQuantity: parseInt(offeredQuantity, 10),
-      inspectionDate: dayjs(inspectionDate).toISOString(),
-      inspectedQuantity: parseInt(inspectedQuantity, 10),
+      deliveryScheduleId: tnDetail?.id || null,
+      serialNumberFrom: serialNumberFrom
+        ? parseInt(serialNumberFrom, 10)
+        : null,
+      serialNumberTo: serialNumberTo ? parseInt(serialNumberTo, 10) : null,
+      offerDate: offerDate ? dayjs(offerDate).toISOString() : null,
+      offeredQuantity: offeredQuantity ? parseInt(offeredQuantity, 10) : null,
+      inspectionDate: inspectionDate
+        ? dayjs(inspectionDate).toISOString()
+        : null,
+      inspectedQuantity: inspectedQuantity
+        ? parseInt(inspectedQuantity, 10)
+        : null,
       inspectionOfficers: selectedInspectionOfficer,
-      nominationLetterNo: nominationLetterNo,
+      nominationLetterNo: nominationLetterNo || null,
       nominationDate: nominationDate
         ? dayjs(nominationDate).toISOString()
         : null,
-      diNo,
-      diDate: dayjs(diDate).toISOString(),
-      warranty: String(warranty),
+      diNo: diNo || null,
+      diDate: diDate ? dayjs(diDate).toISOString() : null,
+      warranty: warranty ? String(warranty) : null,
       consignees: consigneeList.map((c) => ({
         consigneeId: c.consigneeId || c.consignee?.id,
         consigneeName: c.consigneeName,

@@ -26,20 +26,28 @@ import Pagination from "../../components/Pagination";
 const MaterialOfferedButNominationPending = () => {
   const { setIsHideSidebarAndHeader } = useContext(MyContext);
   const PAGE_SIZE = 10;
-  
-    useEffect(() => {
-      setIsHideSidebarAndHeader(true);
-      window.scrollTo(0, 0);
-      return () => setIsHideSidebarAndHeader(false);
-    }, [setIsHideSidebarAndHeader]);
+
+  useEffect(() => {
+    setIsHideSidebarAndHeader(true);
+    window.scrollTo(0, 0);
+    return () => setIsHideSidebarAndHeader(false);
+  }, [setIsHideSidebarAndHeader]);
+
   const navigate = useNavigate("");
 
   const [filteredData, setFilteredData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: inspectionData, isLoading, isError } = useQuery({
+  const {
+    data: inspectionData,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["nominationPendingInspections"],
-    queryFn: () => api.get("/final-inspections/nomination-pending").then((res) => res.data || []),
+    queryFn: () =>
+      api
+        .get("/final-inspections/nomination-pending")
+        .then((res) => res.data || []),
   });
 
   useEffect(() => {
@@ -47,7 +55,10 @@ const MaterialOfferedButNominationPending = () => {
   }, [filteredData]);
 
   const totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
-  const paginatedData = filteredData.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const paginatedData = filteredData.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -178,4 +189,3 @@ const MaterialOfferedButNominationPending = () => {
 };
 
 export default MaterialOfferedButNominationPending;
-
