@@ -229,6 +229,7 @@ const NewGPSummaryFilter = ({ onFilteredData, data }) => {
   return (
     <Box sx={{ p: 2, background: "#f5f5f5", borderRadius: "12px" }}>
       <Grid
+        container
         spacing={2}
         columns={{ xs: 1, sm: 1, lg: 3, md: 3 }}
         sx={{ mb: 3, mt: 3 }}
