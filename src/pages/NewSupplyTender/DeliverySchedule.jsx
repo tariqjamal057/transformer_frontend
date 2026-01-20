@@ -21,6 +21,7 @@ import {
   InputAdornment,
 } from "@mui/material";
 import { IoCloseSharp } from "react-icons/io5";
+import CancelIcon from "@mui/icons-material/Cancel";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
@@ -69,12 +70,14 @@ const DeliverySchedule = () => {
   const [commencementDate, setCommencementDate] = useState(null);
   const [createdDate, setCreatedDate] = useState(null); // fixed backend date
   const [deliveryScheduleDate, setDeliveryScheduleDate] = useState(null);
-  const [imposedLetterList, setImposedLetterList] = useState([]);
-  const [imposedLetter, setImposedLetter] = useState("");
-  const [imposedDate, setImposedDate] = useState(null);
-  const [liftingLetterList, setLiftingLetterList] = useState([]);
-  const [liftingLetter, setLiftingLetter] = useState("");
-  const [liftingDate, setLiftingDate] = useState(null);
+
+  // New State for Paired Logic
+  const [imposedLiftingPairs, setImposedLiftingPairs] = useState([]);
+  const [currentImposedLetter, setCurrentImposedLetter] = useState("");
+  const [currentImposedDate, setCurrentImposedDate] = useState(null);
+  const [currentLiftingLetter, setCurrentLiftingLetter] = useState("");
+  const [currentLiftingDate, setCurrentLiftingDate] = useState(null);
+
   const [guranteeInMonth, setGuranteeInMonth] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
   const [chalanDescription, setChalanDescription] = useState("");
@@ -194,7 +197,7 @@ const DeliverySchedule = () => {
   useEffect(() => {
     if (deliverySchedules && deliverySchedules.items) {
       const results = deliverySchedules.items.filter((user) =>
-        user.tnNumber.toLowerCase().includes(searchQuery.toLowerCase())
+        user.tnNumber.toLowerCase().includes(searchQuery.toLowerCase()),
       );
       setFilteredSchedules(results);
     }
@@ -202,40 +205,42 @@ const DeliverySchedule = () => {
 
   // Add imposed letter to array
   const handleAddImposedLetter = () => {
-    if (!imposedLetter || !imposedDate) return; // simple validation
+    if (!currentImposedLetter || !currentImposedDate) return; // simple validation
 
     const newItem = {
-      imposedLetterNo: imposedLetter,
-      date: dayjs(imposedDate).format("YYYY-MM-DD"),
+      imposedLetterNo: currentImposedLetter,
+      imposedDate: currentImposedDate,
+      liftingLetterNo: null,
+      liftingDate: null,
     };
 
-    setImposedLetterList((prev) => [...prev, newItem]);
-    setImposedLetter(""); // clear input
-    setImposedDate(null); // clear date
+    setImposedLiftingPairs((prev) => [...prev, newItem]);
+    setCurrentImposedLetter(""); // clear input
+    setCurrentImposedDate(null); // clear date
   };
 
-  // Remove imposed letter from array
-  const handleRemoveImposedLetter = (index) => {
-    setImposedLetterList((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  // Add imposed letter to array
+  // Add lifting letter to array
   const handleAddLiftingLetter = () => {
-    if (!liftingLetter || !liftingDate) return; // simple validation
+    if (!currentLiftingLetter || !currentLiftingDate) return; // simple validation
 
-    const newItem = {
-      liftingLetterNo: liftingLetter,
-      date: dayjs(liftingDate).format("YYYY-MM-DD"),
-    };
+    const updatedPairs = [...imposedLiftingPairs];
+    const lastIndex = updatedPairs.length - 1;
 
-    setLiftingLetterList((prev) => [...prev, newItem]);
-    setLiftingLetter(""); // clear input
-    setLiftingDate(null); // clear date
+    if (lastIndex >= 0) {
+      updatedPairs[lastIndex] = {
+        ...updatedPairs[lastIndex],
+        liftingLetterNo: currentLiftingLetter,
+        liftingDate: currentLiftingDate,
+      };
+      setImposedLiftingPairs(updatedPairs);
+      setCurrentLiftingLetter(""); // clear input
+      setCurrentLiftingDate(null); // clear date
+    }
   };
 
-  // Remove imposed letter from array
-  const handleRemoveLiftingLetter = (index) => {
-    setLiftingLetterList((prev) => prev.filter((_, i) => i !== index));
+  // Remove pair
+  const handleRemovePair = (index) => {
+    setImposedLiftingPairs((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Calculate segmented delivery quantities
@@ -312,26 +317,27 @@ const DeliverySchedule = () => {
     setCreatedDate(item.createdAt ? dayjs(item.createdAt) : null);
     setCommencementDays(item.commencementDays);
     setCommencementDate(
-      item.commencementDate ? dayjs(item.commencementDate) : null
+      item.commencementDate ? dayjs(item.commencementDate) : null,
     );
     setDeliveryScheduleDate(
-      item.deliveryScheduleDate ? dayjs(item.deliveryScheduleDate) : null
+      item.deliveryScheduleDate ? dayjs(item.deliveryScheduleDate) : null,
     );
 
-    // Convert imposedLetterList dates to dayjs
-    const imposedList = (item.imposedLetters || []).map((letter) => ({
-      imposedLetterNo: letter.imposedLetterNo,
-      date: letter.date ? dayjs(letter.date) : null,
-    }));
+    // Reconstruct pairs from separate lists
+    const pairs = [];
+    const imposed = item.imposedLetters || [];
+    const lifting = item.liftingLetters || [];
+    const maxLen = Math.max(imposed.length, lifting.length);
 
-    // Convert liftingLetterList dates to dayjs
-    const liftingList = (item.liftingLetters || []).map((letter) => ({
-      liftingLetterNo: letter.liftingLetterNo,
-      date: letter.date ? dayjs(letter.date) : null,
-    }));
-
-    setImposedLetterList(imposedList);
-    setLiftingLetterList(liftingList);
+    for (let i = 0; i < maxLen; i++) {
+      pairs.push({
+        imposedLetterNo: imposed[i]?.imposedLetterNo || null,
+        imposedDate: imposed[i]?.date ? dayjs(imposed[i].date) : null,
+        liftingLetterNo: lifting[i]?.liftingLetterNo || null,
+        liftingDate: lifting[i]?.date ? dayjs(lifting[i].date) : null,
+      });
+    }
+    setImposedLiftingPairs(pairs);
 
     setGuranteeInMonth(item.guaranteePeriodMonths);
     setChalanDescription(item.chalanDescription);
@@ -354,10 +360,13 @@ const DeliverySchedule = () => {
     setCommencementDays("");
     setDeliveryScheduleDate(null);
     setCommencementDate(null);
-    setImposedLetter("");
-    setLiftingLetter("");
-    setImposedDate(null);
-    setLiftingDate(null);
+
+    setImposedLiftingPairs([]);
+    setCurrentImposedLetter("");
+    setCurrentImposedDate(null);
+    setCurrentLiftingLetter("");
+    setCurrentLiftingDate(null);
+
     setGuranteeInMonth("");
     setChalanDescription("");
     setTotalQuantity("");
@@ -406,31 +415,69 @@ const DeliverySchedule = () => {
   const handleSaveChanges = () => {
     const dataToUpdate = {
       tnNumber: tnDetail,
-      rating: parseInt(rating),
+      rating: rating ? parseInt(rating) : null,
       po: po,
       poDate: poDate ? dayjs(poDate).toISOString() : null,
       loa: loa,
       loaDate: loaDate ? dayjs(loaDate).toISOString() : null,
-      commencementDays: parseInt(commencementDays),
+      commencementDays: commencementDays ? parseInt(commencementDays) : null,
       deliveryScheduleDate: deliveryScheduleDate
         ? dayjs(deliveryScheduleDate).toISOString()
         : null,
-      imposedLetters: imposedLetterList.map((l) => ({
-        ...l,
-        date: dayjs(l.date).format("YYYY-MM-DD"),
-      })),
-      liftingLetters: liftingLetterList.map((l) => ({
-        ...l,
-        date: dayjs(l.date).format("YYYY-MM-DD"),
-      })),
-      guaranteePeriodMonths: parseInt(guranteeInMonth),
-      totalQuantity: parseInt(totalQuantity),
+      imposedLetters: imposedLiftingPairs
+        .filter((p) => p.imposedLetterNo)
+        .map((p) => ({
+          imposedLetterNo: p.imposedLetterNo,
+          date: p.imposedDate
+            ? dayjs(p.imposedDate).format("YYYY-MM-DD")
+            : null,
+        })),
+      liftingLetters: imposedLiftingPairs
+        .filter((p) => p.liftingLetterNo)
+        .map((p) => ({
+          liftingLetterNo: p.liftingLetterNo,
+          date: p.liftingDate
+            ? dayjs(p.liftingDate).format("YYYY-MM-DD")
+            : null,
+        })),
+      guaranteePeriodMonths: guranteeInMonth ? parseInt(guranteeInMonth) : null,
+      totalQuantity: totalQuantity ? parseInt(totalQuantity) : null,
       chalanDescription: chalanDescription,
       wound: wound,
       phase: phase,
     };
     updateDeliverySchedule(dataToUpdate);
   };
+
+  // Logic for Min Dates
+  const getLastLiftingDate = () => {
+    if (imposedLiftingPairs.length === 0) return null;
+    const lastPair = imposedLiftingPairs[imposedLiftingPairs.length - 1];
+    return lastPair.liftingDate;
+  };
+
+  const getLastImposedDate = () => {
+    if (imposedLiftingPairs.length === 0) return null;
+    const lastPair = imposedLiftingPairs[imposedLiftingPairs.length - 1];
+    return lastPair.imposedDate;
+  };
+
+  const minImposedDate =
+    imposedLiftingPairs.length > 0 && getLastLiftingDate()
+      ? dayjs(getLastLiftingDate()).add(1, "day")
+      : dayjs(); // Today if no previous pairs
+
+  const minLiftingDate = getLastImposedDate()
+    ? dayjs(getLastImposedDate())
+    : dayjs();
+
+  const showAddImposed =
+    imposedLiftingPairs.length === 0 ||
+    imposedLiftingPairs[imposedLiftingPairs.length - 1].liftingLetterNo;
+  const showAddLifting =
+    imposedLiftingPairs.length > 0 &&
+    !imposedLiftingPairs[imposedLiftingPairs.length - 1].liftingLetterNo;
+
   return (
     <>
       <div className="right-content w-100">
@@ -571,7 +618,7 @@ const DeliverySchedule = () => {
                     const segments = calculateSegments(
                       item.commencementDate,
                       item.deliveryScheduleDate,
-                      item.totalQuantity
+                      item.totalQuantity,
                     );
 
                     return (
@@ -601,7 +648,7 @@ const DeliverySchedule = () => {
                             {item.commencementDate
                               ? format(
                                   new Date(item.commencementDate),
-                                  "dd MMM yyyy"
+                                  "dd MMM yyyy",
                                 )
                               : ""}
                           </strong>
@@ -610,7 +657,7 @@ const DeliverySchedule = () => {
                           {item.deliveryScheduleDate
                             ? format(
                                 new Date(item.deliveryScheduleDate),
-                                "dd MMM yyyy"
+                                "dd MMM yyyy",
                               )
                             : ""}
                         </td>
@@ -636,7 +683,7 @@ const DeliverySchedule = () => {
                                   {letter.date
                                     ? format(
                                         new Date(letter.date),
-                                        "dd MMM yyyy"
+                                        "dd MMM yyyy",
                                       )
                                     : ""}
                                 </li>
@@ -664,7 +711,7 @@ const DeliverySchedule = () => {
                                   {letter.date
                                     ? format(
                                         new Date(letter.date),
-                                        "dd MMM yyyy"
+                                        "dd MMM yyyy",
                                       )
                                     : ""}
                                 </li>
@@ -861,89 +908,112 @@ const DeliverySchedule = () => {
             />
           </LocalizationProvider>
 
-          {/* Imposed Letters */}
+          {/* Imposed/Lifting Pairs List */}
           <Box mt={2}>
-            <Typography variant="subtitle1">Imposed Letters</Typography>
-            {imposedLetterList.map((letter, i) => (
-              <li key={i}>
-                {letter.imposedLetterNo} -{" "}
-                {letter.date ? dayjs(letter.date).format("YYYY-MM-DD") : ""}
+            <Typography variant="subtitle1" fontWeight="bold">
+              Defferment Details
+            </Typography>
+            {imposedLiftingPairs.map((pair, index) => (
+              <div
+                key={index}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "8px",
+                  border: "1px solid #e0e0e0",
+                  borderRadius: "4px",
+                  marginBottom: "8px",
+                  backgroundColor: pair.liftingLetterNo ? "#f1f8e9" : "#fff3e0",
+                }}
+              >
+                <Box>
+                  <Typography variant="body2">
+                    <strong>Imposed:</strong> {pair.imposedLetterNo} (
+                    {pair.imposedDate
+                      ? dayjs(pair.imposedDate).format("DD MMM YYYY")
+                      : ""}
+                    )
+                  </Typography>
+                  {pair.liftingLetterNo && (
+                    <Typography variant="body2">
+                      <strong>Lifting:</strong> {pair.liftingLetterNo} (
+                      {pair.liftingDate
+                        ? dayjs(pair.liftingDate).format("DD MMM YYYY")
+                        : ""}
+                      )
+                    </Typography>
+                  )}
+                </Box>
                 <IconButton
                   size="small"
-                  onClick={() => handleRemoveImposedLetter(i)}
+                  color="error"
+                  onClick={() => handleRemovePair(index)}
                 >
-                  ❌
+                  <CancelIcon />
                 </IconButton>
-              </li>
+              </div>
             ))}
           </Box>
 
-          {/* Add new imposed letter */}
-          <TextField
-            label="Imposed Letter No"
-            value={imposedLetter}
-            onChange={(e) => setImposedLetter(e.target.value)}
-            sx={{ mt: 1 }}
-            fullWidth
-          />
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker
-              label="Imposed Date"
-              value={imposedDate}
-              onChange={(date) => setImposedDate(date)}
-              slotProps={{ textField: { fullWidth: true } }}
-              sx={{ mt: 1 }}
-            />
-          </LocalizationProvider>
-          <Button
-            variant="outlined"
-            onClick={handleAddImposedLetter}
-            sx={{ mt: 1 }}
-          >
-            Add Imposed Letter
-          </Button>
+          {/* Add Imposed Letter Input */}
+          {showAddImposed && (
+            <Box display="flex" gap={1} mt={1} alignItems="center">
+              <TextField
+                label="Imposed Letter No"
+                value={currentImposedLetter}
+                onChange={(e) => setCurrentImposedLetter(e.target.value)}
+                size="small"
+                fullWidth
+              />
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="Imposed Date"
+                  value={currentImposedDate}
+                  onChange={(date) => setCurrentImposedDate(date)}
+                  minDate={minImposedDate}
+                  slotProps={{ textField: { size: "small", fullWidth: true } }}
+                />
+              </LocalizationProvider>
+              <Button
+                variant="contained"
+                onClick={handleAddImposedLetter}
+                size="small"
+              >
+                Add
+              </Button>
+            </Box>
+          )}
 
-          {/* Lifting Letters */}
-          <Box mt={2}>
-            <Typography variant="subtitle1">Lifting Letters</Typography>
-            {liftingLetterList.map((letter, i) => (
-              <li key={i}>
-                {letter.liftingLetterNo} -{" "}
-                {letter.date ? dayjs(letter.date).format("YYYY-MM-DD") : ""}
-                <IconButton
-                  size="small"
-                  onClick={() => handleRemoveLiftingLetter(i)}
-                >
-                  ❌
-                </IconButton>
-              </li>
-            ))}
-          </Box>
-
-          {/* Add new lifting letter */}
-          <TextField
-            label="Lifting Letter No"
-            value={liftingLetter}
-            onChange={(e) => setLiftingLetter(e.target.value)}
-            sx={{ mt: 1 }}
-            fullWidth
-          />
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker
-              label="Lifting Date"
-              value={liftingDate}
-              onChange={(date) => setLiftingDate(date)}
-              slotProps={{ textField: { fullWidth: true } }}
-              sx={{ mt: 1 }}
-            />
-          </LocalizationProvider>
-          <Button
-            variant="outlined"
-            onClick={handleAddLiftingLetter}
-            sx={{ mt: 1 }}
-          >
-            Add Lifting Letter
-          </Button>
+          {/* Add Lifting Letter Input */}
+          {showAddLifting && (
+            <Box display="flex" gap={1} mt={1} alignItems="center">
+              <TextField
+                label="Lifting Letter No"
+                value={currentLiftingLetter}
+                onChange={(e) => setCurrentLiftingLetter(e.target.value)}
+                size="small"
+                fullWidth
+              />
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="Lifting Date"
+                  value={currentLiftingDate}
+                  onChange={(date) => setCurrentLiftingDate(date)}
+                  minDate={minLiftingDate}
+                  slotProps={{ textField: { size: "small", fullWidth: true } }}
+                />
+              </LocalizationProvider>
+              <Button
+                variant="contained"
+                color="success"
+                onClick={handleAddLiftingLetter}
+                size="small"
+              >
+                Add
+              </Button>
+            </Box>
+          )}
 
           <TextField
             type="number"

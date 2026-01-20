@@ -174,7 +174,7 @@ const AddDeliverySchedule = () => {
       0
     );
 
-    if (sumOfQuantities !== parseInt(totalQuantity)) {
+    if (totalQuantity && sumOfQuantities !== parseInt(totalQuantity)) {
       setAlertBox({
         open: true,
         error: true,
@@ -185,18 +185,18 @@ const AddDeliverySchedule = () => {
 
     const data = {
       tnNumber : tnDetail, // Use selectedTnId
-      rating: parseInt(rating),
+      rating: rating ? parseInt(rating) : null,
       loa,
       loaDate: loaDate ? dayjs(loaDate).toISOString() : null,
       po,
       poDate: poDate ? dayjs(poDate).toISOString() : null,
-      commencementDays: parseInt(commencementDays),
+      commencementDays: commencementDays ? parseInt(commencementDays) : null,
       commencementDate: commencementDate ? dayjs(commencementDate).toISOString() : null,
       deliveryScheduleDate: deliveryScheduleDate ? dayjs(deliveryScheduleDate).toISOString() : null,
       imposedLetters: imposedLetterList,
       liftingLetters: liftingLetterList,
-      guaranteePeriodMonths: parseInt(guranteeInMonth),
-      totalQuantity: parseInt(totalQuantity),
+      guaranteePeriodMonths: guranteeInMonth ? parseInt(guranteeInMonth) : null,
+      totalQuantity: totalQuantity ? parseInt(totalQuantity) : null,
       deliverySchedule,
       chalanDescription: chalanDescription,
       wound,
@@ -573,7 +573,7 @@ const AddDeliverySchedule = () => {
                 </TableBody>
               </Table>
               {/* ✅ Live validation alert */}
-              {deliverySchedule.reduce(
+              {totalQuantity && deliverySchedule.reduce(
                 (sum, item) => sum + (parseInt(item.quantity) || 0),
                 0
               ) !== parseInt(totalQuantity) && (

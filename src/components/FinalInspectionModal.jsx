@@ -235,8 +235,8 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       const jsonData = XLSX.utils.sheet_to_json(sheet);
 
       const filteredData = jsonData.map((row) => ({
-        trfSiNo: row["TRF SL No."],
-        polySealNo: row["Poly Carbonate Seal No."],
+        trfSiNo: row["TrfsiNo"],
+        polySealNo: row["PolyCarbonateSealNo"],
       }));
 
       setSealingDetails(filteredData);
@@ -560,7 +560,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
             </Grid>
           </Grid>
 
-          <Box mt={2}>
+          {/* <Box mt={2}>
             <Button variant="outlined" component="label" fullWidth>
               Upload Sealing Details
               <input
@@ -575,7 +575,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
                 📄 {fileName}
               </Typography>
             )}
-          </Box>
+          </Box> */}
 
           <Box mt={4} textAlign="center">
             <Button

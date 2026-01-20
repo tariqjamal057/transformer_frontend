@@ -95,18 +95,11 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
       );
       setChalanDescription(record.deliverySchedule.description);
 
-      let subSerialNumbers = [];
-      if (record.transformers && record.transformers.length > 0) {
-        subSerialNumbers = record.transformers.map((t) => ({
-          id: t.transformer.id,
-          serialNo: t.transformer.serialNo,
-        }));
-      } else if (record.serialNumberFrom && record.serialNumberTo) {
-        for (let i = record.serialNumberFrom; i <= record.serialNumberTo; i++) {
-          subSerialNumbers.push({ id: i, serialNo: i });
-        }
-      }
-      setAvailableSubSerialNumbers(subSerialNumbers);
+      setAvailableConsignees(record.consignees || []);
+      setSelectedConsigneeId("");
+      setConsigneeAddress("");
+      setConsigneeGSTNo("");
+      setAvailableSubSerialNumbers([]);
       setSelectedTransformers([]);
     }
   };
@@ -132,25 +125,41 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
     }
   }, []);
 
-  const [consigneeName, setConsigneeName] = useState("");
-  const [selectedConsigneeRecord, setSelectedConsigneeRecord] = useState(null);
+  const [availableConsignees, setAvailableConsignees] = useState([]);
+  const [selectedConsigneeId, setSelectedConsigneeId] = useState("");
   const [consigneeAddress, setConsigneeAddress] = useState("");
   const [consigneeGSTNo, setConsigneeGSTNo] = useState("");
 
   const handleConsigneeChange = (event) => {
-    const selectedName = event.target.value;
-    setConsigneeName(selectedName);
+    const selectedId = event.target.value;
+    setSelectedConsigneeId(selectedId);
 
-    const record = consignees.find((item) => item.name === selectedName);
+    const record = consignees.find((item) => item.id === selectedId);
     if (record) {
-      setSelectedConsigneeRecord(record);
       setConsigneeAddress(record.address);
       setConsigneeGSTNo(record.gstNo);
     } else {
-      setSelectedConsigneeRecord(null);
       setConsigneeAddress("");
       setConsigneeGSTNo("");
     }
+    
+    const selectedConsigneeFromRecord = selectedRecord.consignees.find(
+      (c) => c.consigneeId === selectedId
+    );
+
+    if (selectedConsigneeFromRecord && selectedConsigneeFromRecord.subSnNumber) {
+      const [from, to] = selectedConsigneeFromRecord.subSnNumber
+        .split(" TO ")
+        .map(Number);
+      const subSerialNumbers = [];
+      for (let i = from; i <= to; i++) {
+        subSerialNumbers.push({ id: i, serialNo: i });
+      }
+      setAvailableSubSerialNumbers(subSerialNumbers);
+    } else {
+      setAvailableSubSerialNumbers([]);
+    }
+    setSelectedTransformers([]);
   };
 
   const [driverName, setDriverName] = useState("");
@@ -205,7 +214,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
       consignorPhone: consignorPhoneNo,
       consignorGST: consignorGSTNo,
       consignorEmail,
-      consigneeId: selectedConsigneeRecord?.id || deliveryChalanData.consignee.id,
+      consigneeId: selectedConsigneeId,
       lorryNo,
       truckDriverName: driverName,
       materialDescriptionId: selectedMaterialCode,
@@ -223,6 +232,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
     if (deliveryChalanData && deliveryChalanData.finalInspection) {
       const fi = deliveryChalanData.finalInspection;
       const ds = fi.deliverySchedule;
+      setSelectedRecord(fi);
 
       // 🔹 TN & Serial Numbers
       setSelectedTN(ds?.tnNumber || "");
@@ -230,19 +240,31 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
         fi.snNumber || `${fi.serialNumberFrom} TO ${fi.serialNumberTo}`
       );
 
-      let subSerialNumbers = [];
-      if (fi.transformers && fi.transformers.length > 0) {
-        subSerialNumbers = fi.transformers.map((t) => ({
-          id: t.transformer.id,
-          serialNo: t.transformer.serialNo,
-        }));
-      } else if (fi.serialNumberFrom && fi.serialNumberTo) {
-        for (let i = fi.serialNumberFrom; i <= fi.serialNumberTo; i++) {
-          subSerialNumbers.push({ id: i, serialNo: i });
+      // 🔹 Consignees & Sub-serials
+      const consigneesFromFI = fi.consignees || [];
+      setAvailableConsignees(consigneesFromFI);
+      setSelectedConsigneeId(deliveryChalanData.consigneeId);
+      
+      const selectedConsigneeData = consigneesFromFI.find(c => c.consigneeId === deliveryChalanData.consigneeId);
+      if(selectedConsigneeData && selectedConsigneeData.subSnNumber){
+        const [from, to] = selectedConsigneeData.subSnNumber.split(' TO ').map(Number);
+        const subNumbers = [];
+        for (let i = from; i <= to; i++) {
+          subNumbers.push({ id: i, serialNo: i });
         }
+        setAvailableSubSerialNumbers(subNumbers);
       }
-      setAvailableSubSerialNumbers(subSerialNumbers);
-      setSelectedTransformers([]); // Reset or set based on existing data if needed
+      
+      const subSerialFrom = deliveryChalanData.subSerialNumberFrom;
+      const subSerialTo = deliveryChalanData.subSerialNumberTo;
+      if(subSerialFrom && subSerialTo) {
+          const selected = [];
+          for(let i = parseInt(subSerialFrom); i<= parseInt(subSerialTo); i++){
+              selected.push(i);
+          }
+          setSelectedTransformers(selected);
+      }
+
 
       // 🔹 DI Details
       setDiNo(fi.diNo || "");
@@ -250,7 +272,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
 
       // 🔹 Inspection
       setInspectionDate(fi.inspectionDate ? dayjs(fi.inspectionDate) : null);
-      setInspectionOfficers(fi.inspectionOfficers || []);
+      setInspectionOfficers(fi.inspectionOfficers.join(", ") || []);
 
       // 🔹 PO Details
       setPoNo(ds.po || "");
@@ -272,7 +294,6 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
       setConsignorEmail(deliveryChalanData.consignorEmail || "");
 
       // 🔹 Consignee
-      setConsigneeName(deliveryChalanData.consignee?.name || "");
       setConsigneeAddress(deliveryChalanData.consignee?.address || "");
       setConsigneeGSTNo(deliveryChalanData.consignee?.gstNo || "");
 
@@ -280,7 +301,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
       setLorryNo(deliveryChalanData.lorryNo || "");
       setDriverName(deliveryChalanData.truckDriverName || "");
     }
-  }, [deliveryChalanData]);
+  }, [deliveryChalanData, consignees]);
 
   return (
     <Modal open={open} onClose={handleClose}>
@@ -486,13 +507,13 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
             select
             fullWidth
             label="Select Consignee Name"
-            value={consigneeName}
+            value={selectedConsigneeId}
             onChange={handleConsigneeChange}
             sx={{ mt: 2 }}
           >
-            {consignees?.map((item) => (
-              <MenuItem key={item.name} value={item.name}>
-                {item.name}
+            {availableConsignees?.map((item) => (
+              <MenuItem key={item.consigneeId} value={item.consigneeId}>
+                {item.consigneeName}
               </MenuItem>
             ))}
           </TextField>

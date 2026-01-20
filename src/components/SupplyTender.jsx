@@ -8,7 +8,7 @@ import { MdDelete } from "react-icons/md";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const SupplyTenders = () => {
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, setIsHideSidebarAndHeader } = useContext(MyContext);
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
@@ -18,6 +18,14 @@ const SupplyTenders = () => {
   const [newTenderName, setNewTenderName] = useState("");
   const [newTenderNo, setNewTenderNo] = useState("");
   const companyId = localStorage.getItem("companyId");
+
+    useEffect(() => {
+      setIsHideSidebarAndHeader(true);
+      window.scrollTo(0, 0);
+      return () => {
+        setIsHideSidebarAndHeader(false);
+      };
+    }, [setIsHideSidebarAndHeader]);
 
   const { data: fetchedSupplyTenders, isLoading } = useQuery({
     queryKey: ["supplyTenders", companyId],

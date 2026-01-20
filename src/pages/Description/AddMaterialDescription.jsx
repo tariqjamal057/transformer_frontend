@@ -57,7 +57,7 @@ const AddMaterialDescription = () => {
                 fullWidth
                 value={materialName}
                 onChange={(e) => setMaterialName(e.target.value)}
-                required
+                
               />
             </Grid>
 
@@ -67,7 +67,7 @@ const AddMaterialDescription = () => {
                 fullWidth
                 value={phase}
                 onChange={(e) => setPhase(e.target.value)}
-                required
+                
               />
             </Grid>
 
@@ -77,7 +77,7 @@ const AddMaterialDescription = () => {
                 fullWidth
                 value={rating}
                 onChange={(e) => setRating(e.target.value)}
-                required
+                
               />
             </Grid>
 
@@ -87,7 +87,7 @@ const AddMaterialDescription = () => {
                 fullWidth
                 value={wound}
                 onChange={(e) => setWound(e.target.value)}
-                required
+                
               />
             </Grid>
 

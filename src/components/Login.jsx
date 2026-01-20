@@ -8,11 +8,19 @@ import { MyContext } from "../App";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, setIsHideSidebarAndHeader } = useContext(MyContext);
   const [name, setName] = useState("");
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setIsHideSidebarAndHeader(true);
+    window.scrollTo(0, 0);
+    return () => {
+      setIsHideSidebarAndHeader(false);
+    };
+  }, [setIsHideSidebarAndHeader]);
 
   useEffect(() => {
     // If already logged in, prevent access to login page
@@ -29,11 +37,15 @@ const Login = () => {
       localStorage.setItem("role", data.data.user.role);
       localStorage.setItem("Transformer user", JSON.stringify(data.data.user));
       localStorage.setItem("companies", JSON.stringify(data.data.companies));
-      setAlertBox({open: true, msg: "Login successful!", error: false});
+      setAlertBox({ open: true, msg: "Login successful!", error: false });
       navigate("/companies");
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
+      setAlertBox({
+        open: true,
+        msg: error.response?.data?.message || "An error occurred",
+        error: true,
+      });
     },
   });
 
@@ -123,7 +135,10 @@ const Login = () => {
               <div className="text-center mt-3">
                 <p className="small">
                   Don't have an account?{" "}
-                  <Link to="/signup" className="fw-bold text-decoration-none text-primary">
+                  <Link
+                    to="/signup"
+                    className="fw-bold text-decoration-none text-primary"
+                  >
                     Signup here
                   </Link>
                 </p>

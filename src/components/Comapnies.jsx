@@ -9,9 +9,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../services/api";
 
 const Companies = () => {
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, setIsHideSidebarAndHeader } = useContext(MyContext);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+    useEffect(() => {
+      setIsHideSidebarAndHeader(true);
+      window.scrollTo(0, 0);
+      return () => {
+        setIsHideSidebarAndHeader(false);
+      };
+    }, [setIsHideSidebarAndHeader]);
 
   const { data: companies, isLoading } = useQuery({
     queryKey: ["companies"],

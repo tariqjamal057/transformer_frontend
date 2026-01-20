@@ -9,7 +9,7 @@ import { permissionMapping } from "../data/permission";
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, setIsHideSidebarAndHeader } = useContext(MyContext);
   const [name, setName] = useState("");
   const [loginId, setLoginId] = useState("");
   const [number, setNumber] = useState("");
@@ -17,6 +17,14 @@ const Signup = () => {
   const [role, setRole] = useState("");
   const [pages, setPages] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setIsHideSidebarAndHeader(true);
+    window.scrollTo(0, 0);
+    return () => {
+      setIsHideSidebarAndHeader(false);
+    };
+  }, [setIsHideSidebarAndHeader]);
 
   const roles = ["OWNER", "MANAGER", "DATA_FEEDER", "SUPERVISOR"];
   const permissionKeys = Object.keys(permissionMapping);
@@ -28,11 +36,19 @@ const Signup = () => {
   const signupMutation = useMutation({
     mutationFn: (credentials) => api.post("/users/", credentials),
     onSuccess: () => {
-      setAlertBox({open: true, msg: "Signup successful! Please login.", error: false});
+      setAlertBox({
+        open: true,
+        msg: "Signup successful! Please login.",
+        error: false,
+      });
       navigate("/subadmin-list");
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
+      setAlertBox({
+        open: true,
+        msg: error.response?.data?.message || "An error occurred",
+        error: true,
+      });
     },
   });
 
@@ -110,47 +126,50 @@ const Signup = () => {
               </div>
 
               {/* Role Dropdown */}
-                <div className="mb-3">
-                  <label className="form-label">Select Role</label>
-                  <select
-                    className="form-select"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    required
-                  >
-                    <option value="">Select Role</option>
-                    {roles.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="mb-3">
+                <label className="form-label">Select Role</label>
+                <select
+                  className="form-select"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  required
+                >
+                  <option value="">Select Role</option>
+                  {roles.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                {/* Pages Multi Select */}
-                <div className="mb-3">
-                  <label className="form-label">Select Accessible Pages</label>
-                  <select
-                    className="form-select"
-                    multiple
-                    value={pages}
-                    onChange={(e) =>
-                      setPages(
-                        Array.from(e.target.selectedOptions, (option) => option.value)
-                      )
-                    }
-                    required
-                  >
-                    {permissionKeys.map((key) => (
-                      <option key={key} value={key}>
-                        {key}
-                      </option>
-                    ))}
-                  </select>
-                  <small className="text-muted">
-                    Hold Ctrl (Windows) or Command (Mac) to select multiple pages.
-                  </small>
-                </div>
+              {/* Pages Multi Select */}
+              <div className="mb-3">
+                <label className="form-label">Select Accessible Pages</label>
+                <select
+                  className="form-select"
+                  multiple
+                  value={pages}
+                  onChange={(e) =>
+                    setPages(
+                      Array.from(
+                        e.target.selectedOptions,
+                        (option) => option.value,
+                      ),
+                    )
+                  }
+                  required
+                >
+                  {permissionKeys.map((key) => (
+                    <option key={key} value={key}>
+                      {key}
+                    </option>
+                  ))}
+                </select>
+                <small className="text-muted">
+                  Hold Ctrl (Windows) or Command (Mac) to select multiple pages.
+                </small>
+              </div>
 
               {/* Submit */}
               <button

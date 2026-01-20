@@ -40,6 +40,9 @@ const DamagedTransformerList = () => {
   const [editedData, setEditedData] = useState({});
 
   const [bulkUploadModalOpen, setBulkUploadModalOpen] = useState(false);
+  const [selectedSr, setSelectedSr] = useState(null);
+  const [selectedTrfsiNo, setSelectedTrfsiNo] = useState(null);
+  const [selectedChallanNo, setSelectedChallanNo] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
 
   // Debounce search query

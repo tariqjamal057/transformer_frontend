@@ -351,7 +351,6 @@ const ConsigneeList = () => {
             margin="normal"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            required
           />
 
           <TextField
@@ -360,7 +359,6 @@ const ConsigneeList = () => {
             margin="normal"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            required
           />
 
           <TextField
@@ -369,7 +367,6 @@ const ConsigneeList = () => {
             margin="normal"
             value={gstNo}
             onChange={(e) => setGstNo(e.target.value)}
-            required
           />
 
           <TextField
@@ -379,7 +376,6 @@ const ConsigneeList = () => {
             margin="normal"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
           />
 
           <TextField
@@ -389,7 +385,6 @@ const ConsigneeList = () => {
             maxLength="10"
             className="form-control"
             margin="normal"
-            required
             value={phone}
             onChange={(e) => {
               const numericValue = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters

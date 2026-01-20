@@ -23,15 +23,15 @@ export default function DamagedTransformerPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: finalInspectionList = [] } = useQuery({
-    queryKey: ["allFinalInspections"],
+  const { data: deliveryChallanList = [] } = useQuery({
+    queryKey: ["allDeliveryChallans"],
     queryFn: () =>
-      api.get("/final-inspections?all=true").then((res) => res.data),
+      api.get("/delivery-challans?all=true").then((res) => res.data),
     placeholderData: [],
   });
 
   // State for selected objects from dropdowns
-  const [selectedInspection, setSelectedInspection] = useState(null);
+  const [selectedSr, setSelectedSr] = useState(null);
   const [selectedTrfsiNo, setSelectedTrfsiNo] = useState(null);
 
   // State for manual input fields
@@ -67,34 +67,59 @@ export default function DamagedTransformerPage() {
     },
   });
 
-  const snNumberOptions = useMemo(() => {
-    return finalInspectionList.map((f) => ({
-      label: `${f.serialNumberFrom} TO ${f.serialNumberTo}`,
-      ...f,
+  const srNumberOptions = useMemo(() => {
+    return deliveryChallanList.map((challan) => ({
+      label: `${challan.finalInspection.serialNumberFrom} TO ${challan.finalInspection.serialNumberTo}`,
+      challan,
     }));
-  }, [finalInspectionList]);
+  }, [deliveryChallanList]);
 
-  const handleSnNumberChange = (_, value) => {
-    setSelectedInspection(value);
+  const challanOptions = useMemo(() => {
+    if (!selectedSr) return [];
+    const finalInspectionId = selectedSr.challan.finalInspectionId;
+    return deliveryChallanList.filter(
+      (challan) => challan.finalInspectionId === finalInspectionId,
+    );
+  }, [deliveryChallanList, selectedSr]);
+
+  const challanNoOptions = useMemo(() => {
+    return challanOptions.map((challan) => challan.challanNo);
+  }, [challanOptions]);
+
+  const challanDateOptions = useMemo(() => {
+    return challanOptions.map((challan) =>
+      dayjs(challan.challanCreatedAt).format("YYYY-MM-DD"),
+    );
+  }, [challanOptions]);
+
+  const deliveredFromAcosOptions = useMemo(() => {
+    return challanOptions.map((challan) => challan.consignorName);
+  }, [challanOptions]);
+
+  const handleSrNumberChange = (_, value) => {
+    setSelectedSr(value);
     setSelectedTrfsiNo(null);
+    setSelectedChallanNo(null);
+    setSelectedChallanDate(null);
+    setSelectedDeliveredFromAcos(null);
   };
 
   const handleSubmit = () => {
-    if (!selectedInspection || !selectedTrfsiNo) {
+    if (!selectedSr || !selectedTrfsiNo) {
       setAlertBox({
         open: true,
-        msg: "Please select an SN Number range and a TRFSI Number.",
+        msg: "Please select an SR No and a TRFSI Number.",
         error: true,
       });
       return;
     }
 
     const payload = {
-      serialNo: selectedTrfsiNo,
+      serialNo: String(selectedTrfsiNo),
 
-      snNumberRange: selectedInspection.label,
+      snNumberRange: selectedSr.label,
 
-      finalInspectionId: selectedInspection.id,
+      deliveryChallanId: selectedSr.challan.id,
 
       reasonOfDamaged,
 
@@ -114,11 +139,11 @@ export default function DamagedTransformerPage() {
         ? dayjs(dateOfInspectionAfterRepair).toISOString()
         : null,
 
-      challanNo,
+      challanNo: selectedSr.challan.challanNo,
 
-      challanDate: challanDate ? dayjs(challanDate).toISOString() : null,
+      challanDate: selectedSr.challan.challanCreatedAt,
 
-      deliveredToAcos,
+      deliveredToAcos: selectedSr.challan.consignorName,
     };
 
     addDamagedTransformer(payload);
@@ -143,12 +168,12 @@ export default function DamagedTransformerPage() {
             <Grid container spacing={3} columns={{ xs: 1, sm: 2 }}>
               <Grid item size={1}>
                 <Autocomplete
-                  options={snNumberOptions}
+                  options={srNumberOptions}
                   getOptionLabel={(option) => option.label}
-                  value={selectedInspection}
-                  onChange={handleSnNumberChange}
+                  value={selectedSr}
+                  onChange={handleSrNumberChange}
                   renderInput={(params) => (
-                    <TextField {...params} label="Select SN Number Range" />
+                    <TextField {...params} label="Select SR No" />
                   )}
                 />
               </Grid>
@@ -157,13 +182,14 @@ export default function DamagedTransformerPage() {
               <Grid item size={1}>
                 <Autocomplete
                   options={
-                    selectedInspection?.sealingDetails?.map((s) => s.trfSiNo) ||
-                    []
+                    selectedSr?.challan?.finalInspection?.sealingDetails?.map(
+                      (s) => s.trfSiNo,
+                    ) || []
                   }
                   getOptionLabel={(option) => option.toString()}
                   value={selectedTrfsiNo}
                   onChange={(_, newValue) => setSelectedTrfsiNo(newValue)}
-                  disabled={!selectedInspection}
+                  disabled={!selectedSr}
                   renderInput={(params) => (
                     <TextField {...params} label="Select TRFSI Number" />
                   )}
@@ -175,7 +201,10 @@ export default function DamagedTransformerPage() {
                 <TextField
                   fullWidth
                   label="TN No"
-                  value={selectedInspection?.deliverySchedule?.tnNumber || ""}
+                  value={
+                    selectedSr?.challan?.finalInspection?.deliverySchedule
+                      ?.tnNumber || ""
+                  }
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
@@ -184,7 +213,10 @@ export default function DamagedTransformerPage() {
                 <TextField
                   fullWidth
                   label="Rating In KVA"
-                  value={selectedInspection?.deliverySchedule?.rating || ""}
+                  value={
+                    selectedSr?.challan?.finalInspection?.deliverySchedule
+                      ?.rating || ""
+                  }
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
@@ -193,7 +225,10 @@ export default function DamagedTransformerPage() {
                 <TextField
                   fullWidth
                   label="Wound"
-                  value={selectedInspection?.deliverySchedule?.wound || ""}
+                  value={
+                    selectedSr?.challan?.finalInspection?.deliverySchedule
+                      ?.wound || ""
+                  }
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
@@ -202,7 +237,10 @@ export default function DamagedTransformerPage() {
                 <TextField
                   fullWidth
                   label="Phase"
-                  value={selectedInspection?.deliverySchedule?.phase || ""}
+                  value={
+                    selectedSr?.challan?.finalInspection?.deliverySchedule
+                      ?.phase || ""
+                  }
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
@@ -212,7 +250,9 @@ export default function DamagedTransformerPage() {
                   fullWidth
                   label="Inspection Officers"
                   value={
-                    selectedInspection?.inspectionOfficers?.join(", ") || ""
+                    selectedSr?.challan?.finalInspection?.inspectionOfficers?.join(
+                      ", ",
+                    ) || ""
                   }
                   InputProps={{ readOnly: true }}
                   multiline
@@ -276,11 +316,17 @@ export default function DamagedTransformerPage() {
                 />
               </Grid>
               <Grid item size={1}>
-                <DatePicker
+                <TextField
+                  fullWidth
                   label="Date of Inspection After Repair"
-                  value={dateOfInspectionAfterRepair}
-                  onChange={setDateOfInspectionAfterRepair}
-                  slotProps={{ textField: { fullWidth: true } }}
+                  value={
+                    selectedSr?.challan?.finalInspection?.inspectionDate
+                      ? dayjs(
+                          selectedSr.challan.finalInspection.inspectionDate,
+                        ).format("YYYY-MM-DD")
+                      : ""
+                  }
+                  InputProps={{ readOnly: true }}
                 />
               </Grid>
 
@@ -289,25 +335,31 @@ export default function DamagedTransformerPage() {
                 <TextField
                   fullWidth
                   label="Challan No"
-                  value={challanNo}
-                  onChange={(e) => setChallanNo(e.target.value)}
+                  value={selectedSr?.challan?.challanNo || ""}
+                  InputProps={{ readOnly: true }}
                 />
               </Grid>
               <Grid item size={1}>
-                <DatePicker
+                <TextField
+                  fullWidth
                   label="Challan Date"
-                  value={challanDate}
-                  onChange={setChallanDate}
-                  slotProps={{ textField: { fullWidth: true } }}
+                  value={
+                    selectedSr?.challan?.challanCreatedAt
+                      ? dayjs(selectedSr.challan.challanCreatedAt).format(
+                          "YYYY-MM-DD",
+                        )
+                      : ""
+                  }
+                  InputProps={{ readOnly: true }}
                 />
               </Grid>
 
               <Grid item size={1}>
                 <TextField
                   fullWidth
-                  label="Delivered To ACOS"
-                  value={deliveredToAcos}
-                  onChange={(e) => setDeliveredToAcos(e.target.value)}
+                  label="Delivered From ACOS"
+                  value={selectedSr?.challan?.consignorName || ""}
+                  InputProps={{ readOnly: true }}
                 />
               </Grid>
             </Grid>

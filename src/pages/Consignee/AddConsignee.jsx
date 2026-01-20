@@ -21,12 +21,16 @@ const AddConsignee = () => {
   const addConsigneeMutation = useMutation({
     mutationFn: (newConsignee) => api.post("/consignees", newConsignee),
     onSuccess: () => {
-      setAlertBox({open: true, msg: "Consignee added successfully!", error: false});
+      setAlertBox({
+      open: true,
+        msg: "Consignee added successfully!",
+        error: false,
+      });
       queryClient.invalidateQueries(["consignees"]);
       navigate("/consignee-list");
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.message, error: true});
+      setAlertBox({ open: true, msg: error.message, error: true });
     },
   });
 
@@ -56,7 +60,6 @@ const AddConsignee = () => {
                 fullWidth
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                required
               />
             </Grid>
 
@@ -66,7 +69,6 @@ const AddConsignee = () => {
                 fullWidth
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                required
               />
             </Grid>
 
@@ -76,7 +78,6 @@ const AddConsignee = () => {
                 fullWidth
                 value={gstNo}
                 onChange={(e) => setGstNo(e.target.value)}
-                required
               />
             </Grid>
 
@@ -87,7 +88,6 @@ const AddConsignee = () => {
                 fullWidth
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
               />
             </Grid>
 
@@ -98,7 +98,6 @@ const AddConsignee = () => {
                 inputMode="numeric"
                 maxLength="10"
                 className="form-control"
-                required
                 value={phone}
                 onChange={(e) => {
                   const numericValue = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters

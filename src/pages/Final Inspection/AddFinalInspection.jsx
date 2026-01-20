@@ -148,6 +148,19 @@ const AddFinalInspection = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    const from = parseInt(serialNumberFrom);
+    const to = parseInt(serialNumberTo);
+
+    if (isNaN(from) || isNaN(to) || from > to) {
+      setAlertBox({
+        open: true,
+        msg: "Please enter valid Serial Number From and To range before uploading.",
+        error: true,
+      });
+      e.target.value = null;
+      return;
+    }
+
     setFileName(file.name); // show file name
 
     const reader = new FileReader();
@@ -159,9 +172,29 @@ const AddFinalInspection = () => {
       const jsonData = XLSX.utils.sheet_to_json(sheet);
 
       const filteredData = jsonData.map((row) => ({
-        trfSiNo: row["TRF SL No."],
-        polySealNo: row["Poly Carbonate Seal No."],
+        trfSiNo: row["TrfsiNo"],
+        polySealNo: row["PolyCarbonateSealNo"],
       }));
+
+      const uploadedSet = new Set(filteredData.map((d) => parseInt(d.trfSiNo)));
+      const missing = [];
+      for (let i = from; i <= to; i++) {
+        if (!uploadedSet.has(i)) {
+          missing.push(i);
+        }
+      }
+
+      if (missing.length > 0) {
+        setAlertBox({
+          open: true,
+          msg: `Missing TRFSI Numbers in file: ${missing.join(", ")}`,
+          error: true,
+        });
+        setSealingDetails([]);
+        setFileName("");
+        e.target.value = null;
+        return;
+      }
 
       setSealingDetails(filteredData);
     };
@@ -256,7 +289,9 @@ const AddFinalInspection = () => {
       serialNumberTo: serialNumberTo ? parseInt(serialNumberTo) : null,
       offerDate: offerDate ? dayjs(offerDate).toISOString() : null,
       offeredQuantity: offeredQuantity ? parseInt(offeredQuantity) : null,
-      inspectionDate: inspectionDate ? dayjs(inspectionDate).toISOString() : null,
+      inspectionDate: inspectionDate
+        ? dayjs(inspectionDate).toISOString()
+        : null,
       inspectedQuantity: inspectedQuantity ? parseInt(inspectedQuantity) : null,
       inspectionOfficers: selectedInspectionOfficer,
       nominationLetterNo: nominationLetterNo || null,
@@ -363,51 +398,12 @@ const AddFinalInspection = () => {
                 />
               </Grid>
 
-              <Grid item size={2}>
-                <Typography variant="h6" sx={{ mt: 2 }}>
-                  Consignee Details
-                </Typography>
-              </Grid>
-
-              <Grid item size={2}>
+              <Grid item size={1}>
                 <FormControl fullWidth>
-                  <InputLabel>Select Consignee</InputLabel>
-                  <Select
-                    value={selectedConsignee}
-                    onChange={(e) => setSelectedConsignee(e.target.value)}
-                    label="Select Consignee"
-                  >
-                    {(consignees || []).map((c) => (
-                      <MenuItem key={c.id} value={c.id}>
-                        {c.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              {/* Quantity Input */}
-              <Grid item size={2}>
-                <TextField
-                  label="Quantity"
-                  type="number"
-                  fullWidth
-                  value={consigneeQuantity}
-                  onChange={(e) => setConsigneeQuantity(e.target.value)}
-                />
-              </Grid>
-
-              {/* ✅ New Dropdown for Repaired Transformers */}
-              <Grid item size={2}>
-                <FormControl fullWidth>
-                  <InputLabel>
-                    Select Repaired Transformers (Optional)
-                  </InputLabel>
+                  <InputLabel>Sub Serial No</InputLabel>
                   <Select
                     multiple
-                    input={
-                      <OutlinedInput label="Select Repaired Transformers (Optional)" />
-                    }
+                    input={<OutlinedInput label="Sub Serial No" />}
                     value={selectedTransformers}
                     onChange={(e) => setSelectedTransformers(e.target.value)}
                     renderValue={(selected) =>
@@ -430,73 +426,6 @@ const AddFinalInspection = () => {
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
-
-              {/* Add Button */}
-              <Grid item size={1}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleAddConsignee}
-                >
-                  Add Consignee
-                </Button>
-              </Grid>
-
-              {/* ✅ Consignee Table */}
-              <Grid item size={12}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Consignee</TableCell>
-                      <TableCell>Quantity</TableCell>
-                      <TableCell>Sub Serial No.</TableCell>
-                      <TableCell>Repaired Transformers</TableCell>
-                      <TableCell>Action</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {consigneeList.map((c, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell>
-                          {
-                            consignees.find((con) => con.id === c.consigneeId)
-                              ?.name
-                          }
-                        </TableCell>
-                        <TableCell>{c.quantity}</TableCell>
-                        <TableCell>{c.subSnNumber}</TableCell>
-                        <TableCell>
-                          {c.repairedTransformerIds?.length > 0
-                            ? c.repairedTransformerIds
-                                .map(
-                                  (t_id) =>
-                                    damagedTransformers.find(
-                                      (dt) => dt.id === t_id,
-                                    )?.serialNo,
-                                )
-                                .join(", ")
-                            : "—"}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            color="error"
-                            onClick={() => handleDeleteConsignee(idx)}
-                          >
-                            <Cancel />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {consigneeList.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={5} align="center">
-                          No Consignees Added
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
               </Grid>
 
               <Grid item size={1}>
@@ -600,6 +529,141 @@ const AddFinalInspection = () => {
                   value={warranty}
                   InputProps={{ readOnly: true }}
                 />
+              </Grid>
+              <Grid item size={2}>
+                <Typography variant="h6" sx={{ mt: 2 }}>
+                  Consignee Details
+                </Typography>
+              </Grid>
+
+              <Grid item size={1}>
+                <FormControl fullWidth>
+                  <InputLabel>Select Consignee</InputLabel>
+                  <Select
+                    value={selectedConsignee}
+                    onChange={(e) => setSelectedConsignee(e.target.value)}
+                    label="Select Consignee"
+                  >
+                    {(consignees || []).map((c) => (
+                      <MenuItem key={c.id} value={c.id}>
+                        {c.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {/* Quantity Input */}
+              <Grid item size={1}>
+                <TextField
+                  label="Quantity"
+                  type="number"
+                  fullWidth
+                  value={consigneeQuantity}
+                  onChange={(e) => setConsigneeQuantity(e.target.value)}
+                />
+              </Grid>
+
+              {/* ✅ New Dropdown for Repaired Transformers */}
+              {/* <Grid item size={2}>
+                <FormControl fullWidth>
+                  <InputLabel>
+                    Sub Serial No
+                  </InputLabel>
+                  <Select
+                    multiple
+                    input={
+                      <OutlinedInput label="Sub Serial No" />
+                    }
+                    value={selectedTransformers}
+                    onChange={(e) => setSelectedTransformers(e.target.value)}
+                    renderValue={(selected) =>
+                      selected
+                        .map(
+                          (id) =>
+                            availableTransformers?.find((t) => t.id === id)
+                              ?.serialNo || "",
+                        )
+                        .join(", ")
+                    }
+                  >
+                    {(availableTransformers || []).map((t) => (
+                      <MenuItem key={t.id} value={t.id}>
+                        <Checkbox
+                          checked={selectedTransformers.includes(t.id)}
+                        />
+                        <ListItemText primary={t.serialNo} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid> */}
+
+              {/* Add Button */}
+              <Grid item size={1}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleAddConsignee}
+                >
+                  Add Consignee
+                </Button>
+              </Grid>
+
+              {/* ✅ Consignee Table */}
+              <Grid item size={12}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Consignee</TableCell>
+                      <TableCell>Quantity</TableCell>
+                      <TableCell>Sub Serial No.</TableCell>
+                      {/* <TableCell>Repaired Transformers</TableCell> */}
+                      <TableCell>Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {consigneeList.map((c, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell>
+                          {
+                            consignees.find((con) => con.id === c.consigneeId)
+                              ?.name
+                          }
+                        </TableCell>
+                        <TableCell>{c.quantity}</TableCell>
+                        <TableCell>{c.subSnNumber}</TableCell>
+                        {/* <TableCell>
+                          {c.repairedTransformerIds?.length > 0
+                            ? c.repairedTransformerIds
+                                .map(
+                                  (t_id) =>
+                                    damagedTransformers.find(
+                                      (dt) => dt.id === t_id,
+                                    )?.serialNo,
+                                )
+                                .join(", ")
+                            : "—"}
+                        </TableCell> */}
+                        <TableCell>
+                          <Button
+                            color="error"
+                            onClick={() => handleDeleteConsignee(idx)}
+                          >
+                            <Cancel />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {consigneeList.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} align="center">
+                          No Consignees Added
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </Grid>
 
               <Grid item size={2}>

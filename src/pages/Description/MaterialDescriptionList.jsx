@@ -372,7 +372,7 @@ const MaterialDescriptionList = () => {
             margin="normal"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            required
+            
           />
 
           <TextField
@@ -381,7 +381,7 @@ const MaterialDescriptionList = () => {
             margin="normal"
             value={phase}
             onChange={(e) => setPhase(e.target.value)}
-            required
+            
           />
 
           <TextField
@@ -390,7 +390,7 @@ const MaterialDescriptionList = () => {
             margin="normal"
             value={rating}
             onChange={(e) => setRating(e.target.value)}
-            required
+            
           />
 
           <TextField
@@ -399,7 +399,7 @@ const MaterialDescriptionList = () => {
             margin="normal"
             value={wound}
             onChange={(e) => setWound(e.target.value)}
-            required
+            
           />
 
           <TextField

@@ -211,8 +211,8 @@ const AddFinalInspection = () => {
 
       // Keep only TRFSI No & Polycarbonate Seal No columns
       const filteredData = jsonData.map((row) => ({
-        trfSiNo: row["TRF SL No."],
-        polySealNo: row["Poly Carbonate Seal No."],
+        trfSiNo: row["TrfsiNo"],
+        polySealNo: row["PolyCarbonateSealNo"],
       }));
 
       setShealingDetails(filteredData);

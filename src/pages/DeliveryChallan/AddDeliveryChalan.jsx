@@ -64,7 +64,7 @@ const AddDeliveryChalan = () => {
   const handleTNChange = (tnNumber) => {
     setSelectedTN(tnNumber);
     const record = finalInspections.find(
-      (item) => item.deliverySchedule.tnNumber === tnNumber,
+      (item) => item?.deliverySchedule?.tnNumber === tnNumber,
     );
 
     if (record) {
@@ -83,19 +83,12 @@ const AddDeliveryChalan = () => {
       );
       setChalanDescription(record.deliverySchedule.chalanDescription);
 
-      let subSerialNumbers = [];
-      if (record.transformers && record.transformers.length > 0) {
-        subSerialNumbers = record.transformers.map((t) => ({
-          id: t.transformer.id,
-          serialNo: t.transformer.serialNo,
-        }));
-      } else if (record.serialNumberFrom && record.serialNumberTo) {
-        for (let i = record.serialNumberFrom; i <= record.serialNumberTo; i++) {
-          subSerialNumbers.push({ id: i, serialNo: i });
-        }
-      }
-      setAvailableSubSerialNumbers(subSerialNumbers);
-      setSelectedTransformers([]); // reset on TN change
+      setAvailableConsignees(record.consignees || []);
+      setConsigneeId("");
+      setConsigneeAddress("");
+      setConsigneeGSTNo("");
+      setAvailableSubSerialNumbers([]);
+      setSelectedTransformers([]);
     }
   };
 
@@ -124,6 +117,7 @@ const AddDeliveryChalan = () => {
     }
   }, []);
 
+  const [availableConsignees, setAvailableConsignees] = useState([]);
   const [consigneeId, setConsigneeId] = useState("");
   const [selectedConsigneeRecord, setSelectedConsigneeRecord] = useState(null);
   const [consigneeAddress, setConsigneeAddress] = useState("");
@@ -133,16 +127,35 @@ const AddDeliveryChalan = () => {
     const selectedId = event.target.value;
     setConsigneeId(selectedId);
 
-    const record = consignees.find((item) => item.id === selectedId);
-    if (record) {
-      setSelectedConsigneeRecord(record);
-      setConsigneeAddress(record.address);
-      setConsigneeGSTNo(record.gstNo);
+    const fullConsignee = consignees.find((item) => item.id === selectedId);
+    if (fullConsignee) {
+      setConsigneeAddress(fullConsignee.address);
+      setConsigneeGSTNo(fullConsignee.gstNo);
     } else {
-      setSelectedConsigneeRecord(null);
       setConsigneeAddress("");
       setConsigneeGSTNo("");
     }
+
+    const selectedConsigneeFromRecord = selectedRecord.consignees.find(
+      (c) => c.consigneeId === selectedId,
+    );
+
+    if (
+      selectedConsigneeFromRecord &&
+      selectedConsigneeFromRecord.subSnNumber
+    ) {
+      const [from, to] = selectedConsigneeFromRecord.subSnNumber
+        .split(" TO ")
+        .map(Number);
+      const subSerialNumbers = [];
+      for (let i = from; i <= to; i++) {
+        subSerialNumbers.push({ id: i, serialNo: i });
+      }
+      setAvailableSubSerialNumbers(subSerialNumbers);
+    } else {
+      setAvailableSubSerialNumbers([]);
+    }
+    setSelectedTransformers([]);
   };
 
   const [driverName, setDriverName] = useState("");
@@ -182,22 +195,17 @@ const AddDeliveryChalan = () => {
     e.preventDefault();
     if (!selectedRecord) return;
 
-    const selectedSubSerialNumbers =
-      selectedRecord?.subSerialNo
-        ?.filter((s) => selectedTransformers.includes(s.id))
-        .map((s) => s.serialNo) || [];
-
     const selectedSerialNumbers = availableSubSerialNumbers
       .filter((s) => selectedTransformers.includes(s.id))
       .map((s) => s.serialNo);
 
     const subSerialNumberFrom =
       selectedSerialNumbers.length > 0
-        ? Math.min(...selectedSerialNumbers)
+        ? String(Math.min(...selectedSerialNumbers))
         : null;
     const subSerialNumberTo =
       selectedSerialNumbers.length > 0
-        ? Math.max(...selectedSerialNumbers)
+        ? String(Math.max(...selectedSerialNumbers))
         : null;
 
     const data = {
@@ -215,6 +223,7 @@ const AddDeliveryChalan = () => {
       truckDriverName: driverName,
       materialDescriptionId,
       challanDescription: chalanDescription,
+      supplyTenderId: selectedRecord?.deliverySchedule?.supplyTenderId,
     };
 
     addDeliveryChallanMutation.mutate(data);
@@ -241,10 +250,10 @@ const AddDeliveryChalan = () => {
                 >
                   {finalInspections?.map((tn) => (
                     <MenuItem
-                      key={tn.deliverySchedule.tnNumber}
-                      value={tn.deliverySchedule.tnNumber}
+                      key={tn?.deliverySchedule?.tnNumber}
+                      value={tn?.deliverySchedule?.tnNumber}
                     >
-                      {tn.deliverySchedule.tnNumber}
+                      {tn?.deliverySchedule?.tnNumber}
                     </MenuItem>
                   ))}
                 </TextField>
@@ -422,10 +431,11 @@ const AddDeliveryChalan = () => {
                   label="Select Consignee Name"
                   value={consigneeId}
                   onChange={handleConsigneeChange}
+                  disabled={!availableConsignees.length}
                 >
-                  {consignees?.map((item) => (
-                    <MenuItem key={item.id} value={item.id}>
-                      {item.name}
+                  {availableConsignees.map((item) => (
+                    <MenuItem key={item.consigneeId} value={item.consigneeId}>
+                      {item.consigneeName}
                     </MenuItem>
                   ))}
                 </TextField>
