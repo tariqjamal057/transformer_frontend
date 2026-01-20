@@ -1,5 +1,4 @@
-// MaterialOfferedPage.jsx
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
   Container,
   Paper,
@@ -12,24 +11,45 @@ import {
   TableContainer,
   Box,
   Button,
-  Tab,
+  CircularProgress,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { MyContext } from "../../App";
 import { useNavigate } from "react-router-dom";
-import SupplyGPExpiredStatementFilter from "../../components/MisGP/SupplyGPExpiredStatementFilter";
 import { useQuery } from "@tanstack/react-query";
 import api from "../../services/api";
+import SupplyGPExpiredStatementFilter from "../../components/MisGP/SupplyGPExpiredStatementFilter";
 
 const SupplyGPExpiredStatement = () => {
-  const navigate = useNavigate("");
-
+  const navigate = useNavigate();
+  const { setIsHideSidebarAndHeader } = useContext(MyContext);
   const [filteredData, setFilteredData] = useState([]);
 
-  const { data: inspectionData, isLoading } = useQuery({
+  useEffect(() => {
+    setIsHideSidebarAndHeader(true);
+    window.scrollTo(0, 0);
+    return () => {
+      setIsHideSidebarAndHeader(false);
+    };
+  }, [setIsHideSidebarAndHeader]);
+
+  const {
+    data: reportData,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["supplyGpExpiredStatement"],
-    queryFn: () =>
-      api.get("/mis-reports/supply-gp-expired-statement").then((res) => res.data),
+    queryFn: async () => {
+      const res = await api.get(`/mis-reports/supply-gp-expired-statement`);
+      return res.data;
+    },
   });
+
+  useEffect(() => {
+    if (reportData) {
+      setFilteredData(reportData);
+    }
+  }, [reportData]);
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -42,11 +62,10 @@ const SupplyGPExpiredStatement = () => {
           mb: 3,
         }}
       >
-        {/* Back Button (left corner) */}
         <Button
           variant="outlined"
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate("/new-gp-transformers")}
+          onClick={() => navigate("/mis-reports")}
           sx={{
             position: "absolute",
             left: 0,
@@ -61,8 +80,6 @@ const SupplyGPExpiredStatement = () => {
         >
           Back
         </Button>
-
-        {/* Center Title */}
         <Typography
           variant="h4"
           sx={{ fontWeight: "bold", textAlign: "center" }}
@@ -73,36 +90,44 @@ const SupplyGPExpiredStatement = () => {
 
       <SupplyGPExpiredStatementFilter
         onFilteredData={setFilteredData}
-        data={inspectionData || []}
+        data={reportData || []}
       />
 
       <Paper sx={{ p: 2, mt: 3 }}>
         <Typography variant="h6" mb={1}>
           Supply G.P. Expired Statement
         </Typography>
-
         <TableContainer sx={{ maxHeight: 520 }}>
-          <Table stickyHeader size="small" aria-label="final-inspection-table">
+          <Table
+            stickyHeader
+            size="small"
+            aria-label="gp-expired-statement-table"
+          >
             <TableHead>
               <TableRow>
                 <TableCell>S.No.</TableCell>
-                <TableCell>Firm</TableCell>
+                <TableCell>Firm Name</TableCell>
                 <TableCell>Discom</TableCell>
-                <TableCell>TN NO.</TableCell>
+                <TableCell>Tn No</TableCell>
                 <TableCell>Rating</TableCell>
                 <TableCell>Phase</TableCell>
                 <TableCell>Wound</TableCell>
                 <TableCell>G.P. Tfrs received up to date</TableCell>
                 <TableCell>Qty Balance</TableCell>
-                <TableCell>Last Supply GP Expiry Date</TableCell>
+                <TableCell>Last GP Supply Expiry Date</TableCell>
               </TableRow>
             </TableHead>
-
             <TableBody>
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={10} align="center">
-                    Loading...
+                    <CircularProgress />
+                  </TableCell>
+                </TableRow>
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={10} align="center">
+                    Error fetching data
                   </TableCell>
                 </TableRow>
               ) : filteredData.length === 0 ? (
@@ -123,7 +148,13 @@ const SupplyGPExpiredStatement = () => {
                     <TableCell>{row.deliverySchedule.wound}</TableCell>
                     <TableCell>{row.totalReceivedUnderGPTillDate}</TableCell>
                     <TableCell>{row.qtyBalance}</TableCell>
-                    <TableCell>{row.lastGPSupplyExpiryDate}</TableCell>
+                    <TableCell>
+                      {row.lastGPSupplyExpiryDate
+                        ? new Date(
+                            row.lastGPSupplyExpiryDate,
+                          ).toLocaleDateString()
+                        : "N/A"}
+                    </TableCell>
                   </TableRow>
                 ))
               )}

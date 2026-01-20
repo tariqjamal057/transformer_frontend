@@ -1,4 +1,3 @@
-// MaterialOfferedPage.jsx
 import { useContext, useEffect, useMemo, useState } from "react";
 import {
   Container,
@@ -12,23 +11,45 @@ import {
   TableContainer,
   Box,
   Button,
-  Tab,
+  CircularProgress,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { MyContext } from "../../App";
 import { useNavigate } from "react-router-dom";
-import GPExtendedWarrantyFilter from "../../components/MisGP/GPExtendedWarrantyFilter";
 import { useQuery } from "@tanstack/react-query";
 import api from "../../services/api";
+import GPExtendedWarrantyFilter from "../../components/MisGP/GPExtendedWarrantyFilter";
 
 const GPExtendedWarrantyInformation = () => {
-  const navigate = useNavigate("");
-
+  const navigate = useNavigate();
+  const { setIsHideSidebarAndHeader } = useContext(MyContext);
   const [filteredData, setFilteredData] = useState([]);
 
-  const { data: inspectionData, isLoading } = useQuery({
+  useEffect(() => {
+    setIsHideSidebarAndHeader(true);
+    window.scrollTo(0, 0);
+    return () => {
+      setIsHideSidebarAndHeader(false);
+    };
+  }, [setIsHideSidebarAndHeader]);
+
+  const {
+    data: reportData,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["gpExtendedWarranty"],
-    queryFn: () => api.get("/mis-reports/gp-extended-warranty").then((res) => res.data),
+    queryFn: async () => {
+      const res = await api.get(`/mis-reports/gp-extended-warranty`);
+      return res.data;
+    },
   });
+
+  useEffect(() => {
+    if (reportData) {
+      setFilteredData(reportData);
+    }
+  }, [reportData]);
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -41,11 +62,10 @@ const GPExtendedWarrantyInformation = () => {
           mb: 3,
         }}
       >
-        {/* Back Button (left corner) */}
         <Button
           variant="outlined"
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate("/new-gp-transformers")}
+          onClick={() => navigate("/mis-reports")}
           sx={{
             position: "absolute",
             left: 0,
@@ -60,8 +80,6 @@ const GPExtendedWarrantyInformation = () => {
         >
           Back
         </Button>
-
-        {/* Center Title */}
         <Typography
           variant="h4"
           sx={{ fontWeight: "bold", textAlign: "center" }}
@@ -72,16 +90,19 @@ const GPExtendedWarrantyInformation = () => {
 
       <GPExtendedWarrantyFilter
         onFilteredData={setFilteredData}
-        data={inspectionData || []}
+        data={reportData || []}
       />
 
       <Paper sx={{ p: 2, mt: 3 }}>
         <Typography variant="h6" mb={1}>
           G.P. Extended warranty information
         </Typography>
-
         <TableContainer sx={{ maxHeight: 520 }}>
-          <Table stickyHeader size="small" aria-label="final-inspection-table">
+          <Table
+            stickyHeader
+            size="small"
+            aria-label="gp-extended-warranty-table"
+          >
             <TableHead>
               <TableRow>
                 <TableCell>S.No.</TableCell>
@@ -98,12 +119,17 @@ const GPExtendedWarrantyInformation = () => {
                 <TableCell>Final GP Expiry Date</TableCell>
               </TableRow>
             </TableHead>
-
             <TableBody>
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={12} align="center">
-                    Loading...
+                    <CircularProgress />
+                  </TableCell>
+                </TableRow>
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={12} align="center">
+                    Error fetching data
                   </TableCell>
                 </TableRow>
               ) : filteredData.length === 0 ? (
@@ -121,7 +147,11 @@ const GPExtendedWarrantyInformation = () => {
                     <TableCell>{row.deliverySchedule.rating}</TableCell>
                     <TableCell>{row.deliverySchedule.phase}</TableCell>
                     <TableCell>{row.deliverySchedule.wound}</TableCell>
-                    <TableCell>{row.gpExpiryDateAsPerOriginalSupply}</TableCell>
+                    <TableCell>
+                      {new Date(
+                        row.gpExpiryDateAsPerOriginalSupply,
+                      ).toLocaleDateString()}
+                    </TableCell>
                     <TableCell>
                       {row.remainingOriginalGuranteePeriod} Months
                     </TableCell>
@@ -132,12 +162,11 @@ const GPExtendedWarrantyInformation = () => {
                       Months
                     </TableCell>
                     <TableCell>{row.extendedWarranty} Months</TableCell>
-                    {/* ✅ Last column: show the higher value */}
                     <TableCell>
                       {Math.max(
                         row.remainingOriginalGuranteePeriod +
                           row.tranformersNotInService,
-                        row.extendedWarranty
+                        row.extendedWarranty,
                       )}{" "}
                       Months
                     </TableCell>

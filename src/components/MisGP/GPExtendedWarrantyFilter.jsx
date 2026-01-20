@@ -1,382 +1,231 @@
-// FiltersComponent.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Grid,
   TextField,
   MenuItem,
   Button,
-  Typography,
+  Select,
+  InputLabel,
+  FormControl,
 } from "@mui/material";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable"; // ⬅️ import as a function
-import { DatePicker } from "@mui/x-date-pickers";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-
-import dayjs from "dayjs";
-import { useQuery } from "@tanstack/react-query";
-import api from "../../services/api";
-
-// ✅ Dummy Data (replace with props/imports in your real project)
+import autoTable from "jspdf-autotable";
 
 const GPExtendedWarrantyFilter = ({ onFilteredData, data }) => {
   const [selectedCompany, setSelectedCompany] = useState("all");
   const [selectedDiscom, setSelectedDiscom] = useState("all");
+  const [selectedRating, setSelectedRating] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDate, setSelectedDate] = useState(null);
 
-  const [filteredData, setFilteredData] = useState(data || []);
+  const uniqueCompanies = useMemo(
+    () => [...new Set(data.map((item) => item.companyName).filter(Boolean))],
+    [data]
+  );
+  const uniqueDiscoms = useMemo(
+    () => [...new Set(data.map((item) => item.discom).filter(Boolean))],
+    [data]
+  );
+  const uniqueRatings = useMemo(
+    () => [
+      ...new Set(
+        data.map((item) => item.deliverySchedule?.rating).filter(Boolean)
+      ),
+    ],
+    [data]
+  );
 
-  const { data: companies } = useQuery({
-    queryKey: ["companies"],
-    queryFn: () => api.get("/companies").then((res) => res.data.data),
-  });
-
-  const { data: deliverySchedules } = useQuery({
-    queryKey: ["deliverySchedules"],
-    queryFn: () => api.get("/delivery-schedules").then((res) => res.data.data),
-  });
-
-  const discoms = [
-    { name: "Ajmer" },
-    { name: "Jaipur" },
-    { name: "Jodhpur" },
-  ];
-
-  // 🔹 Filtering logic
   useEffect(() => {
-    let result = [...data];
+    let result = Array.isArray(data) ? [...data] : [];
 
     if (selectedCompany !== "all") {
       result = result.filter((item) => item.companyName === selectedCompany);
     }
-
     if (selectedDiscom !== "all") {
       result = result.filter((item) => item.discom === selectedDiscom);
     }
-
-    if (selectedDate) {
-      const dateStr = selectedDate.format("DD-MM-YYYY"); // match your data format
-      result = result.filter((item) => {
-        return (
-          item.inspetionDate && // safeguard
-          dayjs(item.inspetionDate, "DD-MM-YYYY").format("DD-MM-YYYY") ===
-            dateStr
-        );
-      });
+    if (selectedRating !== "all") {
+      result = result.filter(
+        (item) => item.deliverySchedule.rating === selectedRating
+      );
     }
-
-    if (searchQuery.trim() !== "") {
+    if (searchQuery) {
+      const lowercasedQuery = searchQuery.toLowerCase();
       result = result.filter(
         (item) =>
-          item.deliverySchedule.tnNumber
-            ?.toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          item.deliverySchedule.rating
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          item.deliverySchedule.phase
-            ?.toLowerCase()
-            .includes(searchQuery.toLowerCase())
+          item.tfrSrNo?.toLowerCase().includes(lowercasedQuery) ||
+          item.deliverySchedule?.tnNumber?.toLowerCase().includes(lowercasedQuery)
       );
     }
 
-    setFilteredData(result);
     onFilteredData(result);
-  }, [data, selectedCompany, selectedDiscom, searchQuery, selectedDate]);
-
-  // 🔹 Unique dropdown values from ALL data
-  const uniqueCompanies = [...new Set(companies.map((item) => item.name))];
-  const uniqueDiscoms = [...new Set(discoms.map((item) => item.name))];
+  }, [
+    data,
+    selectedCompany,
+    selectedDiscom,
+    selectedRating,
+    searchQuery,
+    onFilteredData,
+  ]);
 
   const exportExcel = () => {
-    if (!filteredData || filteredData.length === 0) {
+    if (!data || data.length === 0) {
       alert("No data to export");
       return;
     }
 
-    // Step 1: Prepare data same as PDF
-    const excelData = filteredData.map((item, index) => ({
+    const excelData = data.map((item, index) => ({
       "S.No": index + 1,
-      "Tfr Sr No": item.tfrSrNo,
-      "Tn No": item.deliverySchedule.tnNumber,
+      "Tfr Sr No.": item.tfrSrNo,
+      "TN NO.": item.deliverySchedule.tnNumber,
       Rating: item.deliverySchedule.rating,
       Phase: item.deliverySchedule.phase,
       Wound: item.deliverySchedule.wound,
-      "GP Expiry Date As Per Original Supply":
-        item.gpExpiryDateAsPerOriginalSupply,
-      "Remaining Original Gurantee Period":
-        item.remainingOriginalGuranteePeriod + " Months",
-      "Transformers Not In Services": item.tranformersNotInService + " Months",
-      "Sum Total":
-        item.remainingOriginalGuranteePeriod +
-        item.tranformersNotInService +
-        " Months",
-      "Extended Warranty": item.extendedWarranty + " Months",
-      "Final GP Expiry Date":
-        Math.max(
-          item.remainingOriginalGuranteePeriod + item.tranformersNotInService,
-          item.extendedWarranty
-        ) + " Months",
+      "GP Expiry Date As Per Original Supply": new Date(
+        item.gpExpiryDateAsPerOriginalSupply
+      ).toLocaleDateString(),
+      "Remaining Original Gurantee Period": `${item.remainingOriginalGuranteePeriod} Months`,
+      "Transformers Not In Services": `${item.tranformersNotInService} Months`,
+      Total: `${
+        item.remainingOriginalGuranteePeriod + item.tranformersNotInService
+      } Months`,
+      "Extended Warranty": `${item.extendedWarranty} Months`,
+      "Final GP Expiry Date": `${Math.max(
+        item.remainingOriginalGuranteePeriod + item.tranformersNotInService,
+        item.extendedWarranty
+      )} Months`,
     }));
 
-    // Step 2: Find non-empty columns
-    const allKeys = Object.keys(excelData[0] || {});
-    const nonEmptyKeys = allKeys.filter((key) =>
-      excelData.some((row) => row[key] && row[key].toString().trim() !== "")
-    );
-
-    // Step 3: Filter data to only include non-empty columns
-    const filteredExcelData = excelData.map((row) => {
-      const newRow = {};
-      nonEmptyKeys.forEach((key) => {
-        newRow[key] = row[key];
-      });
-      return newRow;
-    });
-
-    // Step 4: Convert JSON to sheet
-    const worksheet = XLSX.utils.json_to_sheet(filteredExcelData);
-
-    // Step 5: Create workbook & append worksheet
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "GP Extended Warranty");
-
-    // Step 6: Save Excel file
-    XLSX.writeFile(workbook, "G.P. Extended warranty information.xlsx");
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      "GPExtendedWarranty"
+    );
+    XLSX.writeFile(workbook, `GPExtendedWarranty.xlsx`);
   };
 
-  // ✅ Export PDF
   const exportPDF = () => {
-    const doc = new jsPDF("l", "pt", "a4"); // Landscape A4
-
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-
-    // ✅ Centered title
+    const doc = new jsPDF("l", "pt", "a4");
     doc.setFontSize(14);
     doc.setFont(undefined, "bold");
-    doc.text("G.P. Extended Warranty Information", pageWidth / 2, 25, {
-      align: "center",
-    });
-
-    // Step 1: Prepare data as array
-    const pdfData = filteredData.map((item, index) => [
-      index + 1, // S.No
-      item.tfrSrNo || "",
-      item.deliverySchedule?.tnNumber || "",
-      item.deliverySchedule?.rating || "",
-      item.deliverySchedule?.phase || "",
-      item.deliverySchedule?.wound || "",
-      item.gpExpiryDateAsPerOriginalSupply || "",
-      (item.remainingOriginalGuranteePeriod ?? 0) + " Months",
-      (item.tranformersNotInService ?? 0) + " Months",
-      (item.remainingOriginalGuranteePeriod ?? 0) +
-        (item.tranformersNotInService ?? 0) +
-        " Months",
-      (item.extendedWarranty ?? 0) + " Months",
-      Math.max(
-        (item.remainingOriginalGuranteePeriod ?? 0) +
-          (item.tranformersNotInService ?? 0),
-        item.extendedWarranty ?? 0
-      ) + " Months",
-    ]);
-
-    // Column headers
-    const headers = [
-      "S.No",
-      "Tfr Sr No",
-      "Tn No",
-      "Rating",
-      "Phase",
-      "Wound",
-      "GP Expiry\nDate As Per\nOriginal\nSupply",
-      "Remaining\nOriginal\nGurantee\nPeriod",
-      "Transformers\nNot In\nServices",
-      "Sum\nTotal",
-      "Extended\nWarranty",
-      "Final GP\nExpiry\nDate",
-    ];
-
-    // Filter out columns with no data
-    const hasDataInColumn = (colIndex) => {
-      return pdfData.some((row) => {
-        const value = row[colIndex];
-        return (
-          value !== null &&
-          value !== undefined &&
-          value.toString().trim() !== "" &&
-          value.toString().trim() !== "0 Months"
-        );
-      });
-    };
-
-    const filteredHeaders = [];
-    const filteredColumnIndices = [];
-
-    headers.forEach((header, index) => {
-      if (hasDataInColumn(index)) {
-        filteredHeaders.push(header);
-        filteredColumnIndices.push(index);
+    doc.text(
+      "G.P. Extended Warranty Information",
+      doc.internal.pageSize.getWidth() / 2,
+      25,
+      {
+        align: "center",
       }
-    });
-
-    const filteredBody = pdfData.map((row) =>
-      filteredColumnIndices.map((index) => row[index])
     );
 
-    // Custom column widths for 12 columns
-    const getColumnStyles = () => {
-      const styles = {};
-      const baseWidths = {
-        0: 35, // S.No
-        1: 65, // Tfr Sr No
-        2: 55, // Tn No
-        3: 50, // Rating
-        4: 60, // Phase
-        5: 55, // Wound
-        6: 65, // GP Expiry Date
-        7: 60, // Remaining Original
-        8: 65, // Transformers Not In Service
-        9: 50, // Sum Total
-        10: 60, // Extended Warranty
-        11: 60, // Final GP Expiry
-      };
+    const pdfData = data.map((item, index) => [
+      index + 1,
+      item.tfrSrNo,
+      item.deliverySchedule.tnNumber,
+      item.deliverySchedule.rating,
+      item.deliverySchedule.phase,
+      item.deliverySchedule.wound,
+      new Date(item.gpExpiryDateAsPerOriginalSupply).toLocaleDateString(),
+      `${item.remainingOriginalGuranteePeriod} Months`,
+      `${item.tranformersNotInService} Months`,
+      `${
+        item.remainingOriginalGuranteePeriod + item.tranformersNotInService
+      } Months`,
+      `${item.extendedWarranty} Months`,
+      `${Math.max(
+        item.remainingOriginalGuranteePeriod + item.tranformersNotInService,
+        item.extendedWarranty
+      )} Months`,
+    ]);
 
-      let totalTableWidth = 0;
-
-      filteredColumnIndices.forEach((originalIndex, newIndex) => {
-        const width = baseWidths[originalIndex];
-        styles[newIndex] = { cellWidth: width };
-        totalTableWidth += width;
-      });
-
-      return { styles, totalTableWidth };
-    };
-
-    const { styles: columnStyles, totalTableWidth } = getColumnStyles();
-
-    const horizontalMargin = Math.max((pageWidth - totalTableWidth) / 2, 10);
-
+    const headers = [
+      "S.No.", "Tfr Sr No.", "TN NO.", "Rating", "Phase", "Wound",
+      "GP Expiry Date", "Remaining Gurantee", "Not In Services",
+      "Total", "Extended Warranty", "Final GP Expiry",
+    ];
 
     autoTable(doc, {
-      head: [filteredHeaders],
-      body: filteredBody,
+      head: [headers],
+      body: pdfData,
       startY: 40,
       theme: "grid",
-
-      styles: {
-        fontSize: 7,
-        cellPadding: 2,
-        halign: "center",
-        valign: "middle",
-        overflow: "linebreak",
-        lineColor: [0, 0, 0],
-        lineWidth: 0.5,
-      },
-
-      headStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontSize: 7,
-        fontStyle: "bold",
-        minCellHeight: 25,
-      },
-
-      columnStyles,
-
-      margin: {
-        top: 40,
-        bottom: 25,
-        left: horizontalMargin,
-        right: horizontalMargin,
-      },
-
-      tableWidth: totalTableWidth,
-      showHead: "everyPage",
-      didDrawPage: function (data) {
-        const pageCount = doc.internal.getNumberOfPages();
-        doc.setFontSize(8);
-        doc.setFont(undefined, "normal");
-        doc.text(
-          `Page ${
-            doc.internal.getCurrentPageInfo().pageNumber
-          } of ${pageCount}`,
-          pageWidth / 2,
-          pageHeight - 12,
-          { align: "center" }
-        );
-      },
     });
 
-    doc.save("GP_Extended_Warranty_Information.pdf");
+    doc.save("GPExtendedWarranty.pdf");
+  };
+
+  const handleResetFilters = () => {
+    setSelectedCompany("all");
+    setSelectedDiscom("all");
+    setSelectedRating("all");
+    setSearchQuery("");
   };
 
   return (
     <Box sx={{ p: 2, background: "#f5f5f5", borderRadius: "12px" }}>
       <Grid container spacing={2} alignItems="center">
-        {/* Company Dropdown */}
-        <Grid item xs={12} md={3}>
-          <TextField
-            select
-            label="Select Company"
-            fullWidth
-            value={selectedCompany}
-            onChange={(e) => setSelectedCompany(e.target.value)}
-          >
-            <MenuItem value="all">All Companies</MenuItem>
-            {uniqueCompanies.map((c, idx) => (
-              <MenuItem key={idx} value={c}>
-                {c}
-              </MenuItem>
-            ))}
-          </TextField>
+        <Grid item xs={12} sm={6} md={3}>
+          <FormControl fullWidth>
+            <InputLabel>Select Company</InputLabel>
+            <Select
+              value={selectedCompany}
+              onChange={(e) => setSelectedCompany(e.target.value)}
+              label="Select Company"
+            >
+              <MenuItem value="all">All Companies</MenuItem>
+              {uniqueCompanies.map((option, i) => (
+                <MenuItem key={i} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Grid>
-
-        {/* Discom Dropdown */}
-        <Grid item xs={12} md={3}>
-          <TextField
-            select
-            label="Select Discom"
-            fullWidth
-            value={selectedDiscom}
-            onChange={(e) => setSelectedDiscom(e.target.value)}
-          >
-            <MenuItem value="all">All Discoms</MenuItem>
-            {uniqueDiscoms.map((d, idx) => (
-              <MenuItem key={idx} value={d}>
-                {d}
-              </MenuItem>
-            ))}
-          </TextField>
+        <Grid item xs={12} sm={6} md={3}>
+          <FormControl fullWidth>
+            <InputLabel>Select Discom</InputLabel>
+            <Select
+              value={selectedDiscom}
+              onChange={(e) => setSelectedDiscom(e.target.value)}
+              label="Select Discom"
+            >
+              <MenuItem value="all">All Discom</MenuItem>
+              {uniqueDiscoms.map((option, i) => (
+                <MenuItem key={i} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Grid>
-
-        {/* Calendar */}
-        <Grid item xs={12} md={3}>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker
-              label="Enter Date Of Inspection"
-              value={selectedDate}
-              onChange={(newVal) => setSelectedDate(newVal)}
-              slotProps={{ textField: { fullWidth: true } }}
-            />
-          </LocalizationProvider>
+        <Grid item xs={12} sm={6} md={3}>
+          <FormControl fullWidth>
+            <InputLabel>Select Rating</InputLabel>
+            <Select
+              value={selectedRating}
+              onChange={(e) => setSelectedRating(e.target.value)}
+              label="Select Rating"
+            >
+              <MenuItem value="all">All Rating</MenuItem>
+              {uniqueRatings.map((option, i) => (
+                <MenuItem key={i} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Grid>
-
-        {/* Search */}
-        <Grid item xs={12} md={3}>
+        <Grid item xs={12} sm={6} md={3}>
           <TextField
-            label="Search TN No, Rating, Phase"
+            label="Search Tfr/TN No"
             fullWidth
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </Grid>
-
-        {/* Export Buttons */}
-        <Grid item xs={12} md={3}>
+        <Grid item xs={12} sm={6} md={2}>
           <Button
             variant="contained"
             color="success"
@@ -386,8 +235,7 @@ const GPExtendedWarrantyFilter = ({ onFilteredData, data }) => {
             Export Excel
           </Button>
         </Grid>
-
-        <Grid item xs={12} md={3}>
+        <Grid item xs={12} sm={6} md={2}>
           <Button
             variant="contained"
             color="error"
@@ -395,6 +243,16 @@ const GPExtendedWarrantyFilter = ({ onFilteredData, data }) => {
             onClick={exportPDF}
           >
             Export PDF
+          </Button>
+        </Grid>
+        <Grid item xs={12} sm={6} md={2}>
+          <Button
+            variant="outlined"
+            color="primary"
+            fullWidth
+            onClick={handleResetFilters}
+          >
+            Clear Filters
           </Button>
         </Grid>
       </Grid>
