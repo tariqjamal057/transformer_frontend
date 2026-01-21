@@ -32,7 +32,7 @@ export default function DamagedTransformerPage() {
 
   // State for selected objects from dropdowns
   const [selectedSr, setSelectedSr] = useState(null);
-  const [selectedTrfsiNo, setSelectedTrfsiNo] = useState(null);
+  const [selectedTrfsiNo, setSelectedTrfsiNo] = useState([]);
 
   // State for manual input fields
   const [reasonOfDamaged, setReasonOfDamaged] = useState("");
@@ -46,6 +46,7 @@ export default function DamagedTransformerPage() {
   const [challanNo, setChallanNo] = useState("");
   const [challanDate, setChallanDate] = useState(null);
   const [deliveredToAcos, setDeliveredToAcos] = useState("");
+  const [selectedChallanNo, setSelectedChallanNo] = useState("");
 
   const { mutate: addDamagedTransformer, isPending } = useMutation({
     mutationFn: (payload) => api.post("/damaged-transformers", payload),
@@ -68,10 +69,15 @@ export default function DamagedTransformerPage() {
   });
 
   const srNumberOptions = useMemo(() => {
-    return deliveryChallanList.map((challan) => ({
-      label: `${challan.finalInspection.serialNumberFrom} TO ${challan.finalInspection.serialNumberTo}`,
-      challan,
-    }));
+    if (!deliveryChallanList) return [];
+    return deliveryChallanList
+      .filter(
+        (challan) => challan.subSerialNumberFrom && challan.subSerialNumberTo,
+      )
+      .map((challan) => ({
+        label: `(${challan.subSerialNumberFrom} TO ${challan.subSerialNumberTo})`,
+        challan,
+      }));
   }, [deliveryChallanList]);
 
   const challanOptions = useMemo(() => {
@@ -96,26 +102,39 @@ export default function DamagedTransformerPage() {
     return challanOptions.map((challan) => challan.consignorName);
   }, [challanOptions]);
 
+  const trfsiOptions = useMemo(() => {
+    if (!selectedSr) return [];
+    const from = parseInt(selectedSr.challan.subSerialNumberFrom);
+    const to = parseInt(selectedSr.challan.subSerialNumberTo);
+    if (isNaN(from) || isNaN(to)) return [];
+
+    const options = [];
+    for (let i = from; i <= to; i++) {
+      options.push(i);
+    }
+    return options;
+  }, [selectedSr]);
+
   const handleSrNumberChange = (_, value) => {
     setSelectedSr(value);
-    setSelectedTrfsiNo(null);
+    setSelectedTrfsiNo([]);
     setSelectedChallanNo(null);
     setSelectedChallanDate(null);
     setSelectedDeliveredFromAcos(null);
   };
 
   const handleSubmit = () => {
-    if (!selectedSr || !selectedTrfsiNo) {
+    if (!selectedSr || selectedTrfsiNo.length === 0) {
       setAlertBox({
         open: true,
-        msg: "Please select an SR No and a TRFSI Number.",
+        msg: "Please select an SR No and at least one TRFSI Number.",
         error: true,
       });
       return;
     }
 
     const payload = {
-      serialNo: String(selectedTrfsiNo),
+      serialNo: selectedTrfsiNo,
 
       snNumberRange: selectedSr.label,
 
@@ -181,11 +200,8 @@ export default function DamagedTransformerPage() {
               {/* TRFSI Number Dropdown */}
               <Grid item size={1}>
                 <Autocomplete
-                  options={
-                    selectedSr?.challan?.finalInspection?.sealingDetails?.map(
-                      (s) => s.trfSiNo,
-                    ) || []
-                  }
+                  multiple
+                  options={trfsiOptions || []}
                   getOptionLabel={(option) => option.toString()}
                   value={selectedTrfsiNo}
                   onChange={(_, newValue) => setSelectedTrfsiNo(newValue)}

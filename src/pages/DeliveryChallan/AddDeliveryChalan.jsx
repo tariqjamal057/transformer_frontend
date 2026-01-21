@@ -63,9 +63,7 @@ const AddDeliveryChalan = () => {
 
   const handleTNChange = (tnNumber) => {
     setSelectedTN(tnNumber);
-    const record = finalInspections.find(
-      (item) => item?.deliverySchedule?.tnNumber === tnNumber,
-    );
+    const record = finalInspections.find((item) => item?.id === tnNumber);
 
     if (record) {
       setSelectedRecord(record);
@@ -87,8 +85,19 @@ const AddDeliveryChalan = () => {
       setConsigneeId("");
       setConsigneeAddress("");
       setConsigneeGSTNo("");
-      setAvailableSubSerialNumbers([]);
       setSelectedTransformers([]);
+      console.log("record", record.repaired_transformer_srno);
+      if (record.repaired_transformer_srno) {
+        const subSerialNumbers = record.repaired_transformer_mapping.map(
+          (srNoIst) => ({
+            id: srNoIst.oldSrNo,
+            serialNo: srNoIst.oldSrNo,
+          }),
+        );
+        setAvailableSubSerialNumbers(subSerialNumbers);
+      } else {
+        setAvailableSubSerialNumbers([]);
+      }
     }
   };
 
@@ -135,27 +144,6 @@ const AddDeliveryChalan = () => {
       setConsigneeAddress("");
       setConsigneeGSTNo("");
     }
-
-    const selectedConsigneeFromRecord = selectedRecord.consignees.find(
-      (c) => c.consigneeId === selectedId,
-    );
-
-    if (
-      selectedConsigneeFromRecord &&
-      selectedConsigneeFromRecord.subSnNumber
-    ) {
-      const [from, to] = selectedConsigneeFromRecord.subSnNumber
-        .split(" TO ")
-        .map(Number);
-      const subSerialNumbers = [];
-      for (let i = from; i <= to; i++) {
-        subSerialNumbers.push({ id: i, serialNo: i });
-      }
-      setAvailableSubSerialNumbers(subSerialNumbers);
-    } else {
-      setAvailableSubSerialNumbers([]);
-    }
-    setSelectedTransformers([]);
   };
 
   const [driverName, setDriverName] = useState("");
@@ -249,10 +237,7 @@ const AddDeliveryChalan = () => {
                   onChange={(e) => handleTNChange(e.target.value)}
                 >
                   {finalInspections?.map((tn) => (
-                    <MenuItem
-                      key={tn?.deliverySchedule?.tnNumber}
-                      value={tn?.deliverySchedule?.tnNumber}
-                    >
+                    <MenuItem key={tn?.id} value={tn?.id}>
                       {tn?.deliverySchedule?.tnNumber}
                     </MenuItem>
                   ))}
@@ -287,7 +272,7 @@ const AddDeliveryChalan = () => {
                         )
                         .join(", ")
                     }
-                    disabled={!availableSubSerialNumbers?.length}
+                    disabled={!selectedTN || !availableSubSerialNumbers?.length}
                   >
                     {availableSubSerialNumbers?.map((s) => (
                       <MenuItem key={s.id} value={s.id}>

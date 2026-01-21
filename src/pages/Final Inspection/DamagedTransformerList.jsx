@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   TextField,
@@ -9,6 +9,11 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  Autocomplete,
+  Grid,
+  Box,
+  CircularProgress,
+  Typography
 } from "@mui/material";
 import dayjs from "dayjs";
 import SearchIcon from "@mui/icons-material/Search";
@@ -40,10 +45,18 @@ const DamagedTransformerList = () => {
   const [editedData, setEditedData] = useState({});
 
   const [bulkUploadModalOpen, setBulkUploadModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+
   const [selectedSr, setSelectedSr] = useState(null);
   const [selectedTrfsiNo, setSelectedTrfsiNo] = useState(null);
-  const [selectedChallanNo, setSelectedChallanNo] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
+
+
+  const { data: deliveryChallanList = [] } = useQuery({
+    queryKey: ["allDeliveryChallans"],
+    queryFn: () =>
+      api.get("/delivery-challans?all=true").then((res) => res.data),
+    placeholderData: [],
+  });
 
   // Debounce search query
   useEffect(() => {
@@ -137,8 +150,42 @@ const DamagedTransformerList = () => {
     });
   };
 
+  const srNumberOptions = useMemo(() => {
+    if (!deliveryChallanList) return [];
+    return deliveryChallanList
+      .filter((challan) => challan.subSerialNumberFrom && challan.subSerialNumberTo)
+      .map((challan) => ({
+        label: `Challan ${challan.challanNo} (${challan.subSerialNumberFrom} TO ${challan.subSerialNumberTo})`,
+        challan,
+      }));
+  }, [deliveryChallanList]);
+
+  const trfsiOptions = useMemo(() => {
+    if (!selectedSr) return [];
+    const from = parseInt(selectedSr.challan.subSerialNumberFrom);
+    const to = parseInt(selectedSr.challan.subSerialNumberTo);
+    if (isNaN(from) || isNaN(to)) return [];
+
+    const options = [];
+    for (let i = from; i <= to; i++) {
+      options.push(i);
+    }
+    return options;
+  }, [selectedSr]);
+
   const handleEditClick = (item) => {
     setSelectedTransformer(item);
+    
+    if (item && srNumberOptions.length > 0) {
+      const matchingSr = srNumberOptions.find(
+        (option) => option.challan.id === item.deliveryChallanId
+      );
+      if (matchingSr) {
+        setSelectedSr(matchingSr);
+        setSelectedTrfsiNo(parseInt(item.serialNo, 10));
+      }
+    }
+
     setEditedData({
       ...item,
       ctlReportDate: item.ctlReportDate ? dayjs(item.ctlReportDate) : null,
@@ -163,22 +210,27 @@ const DamagedTransformerList = () => {
   };
 
   const handleEditSave = () => {
-    const dataToSave = {
+    if (!selectedSr || !selectedTrfsiNo) {
+      setAlertBox({
+        open: true,
+        msg: "Please select an SR No and a TRFSI Number.",
+        error: true,
+      });
+      return;
+    }
+  
+    const payload = {
       ...editedData,
-      ctlReportDate: editedData.ctlReportDate
-        ? dayjs(editedData.ctlReportDate).toISOString()
-        : null,
-      liftingLetterDate: editedData.liftingLetterDate
-        ? dayjs(editedData.liftingLetterDate).toISOString()
-        : null,
-      dateOfInspectionAfterRepair: editedData.dateOfInspectionAfterRepair
-        ? dayjs(editedData.dateOfInspectionAfterRepair).toISOString()
-        : null,
-      challanDate: editedData.challanDate
-        ? dayjs(editedData.challanDate).toISOString()
-        : null,
+      serialNo: String(selectedTrfsiNo),
+      snNumberRange: selectedSr.label,
+      deliveryChallanId: selectedSr.challan.id,
+      ctlReportDate: editedData.ctlReportDate ? dayjs(editedData.ctlReportDate).toISOString() : null,
+      liftingLetterDate: editedData.liftingLetterDate ? dayjs(editedData.liftingLetterDate).toISOString() : null,
+      dateOfInspectionAfterRepair: editedData.dateOfInspectionAfterRepair ? dayjs(editedData.dateOfInspectionAfterRepair).toISOString() : null,
+      challanDate: editedData.challanDate ? dayjs(editedData.challanDate).toISOString() : null,
     };
-    updateMutation.mutate(dataToSave);
+  
+    updateMutation.mutate(payload);
   };
 
   const downloadSample = () => {
@@ -283,10 +335,6 @@ const DamagedTransformerList = () => {
                 <th>Lifting Letter No</th>
                 <th>Lifting Letter Date</th>
                 <th>Lifting From Acos</th>
-                {/* <th>Inspection After Repair Date</th>
-                <th>Challan No</th>
-                <th>Challan Date</th>
-                <th>Delivered To ACOS</th> */}
                 <th>Action</th>
               </tr>
             </thead>
@@ -302,7 +350,7 @@ const DamagedTransformerList = () => {
               ) : apiResponse?.items.length > 0 ? (
                 apiResponse.items.map((row) => (
                   <tr key={row.id}>
-                    <td>{row.serialNo}</td>
+                    <td>{row?.serialNo ? row?.serialNo?.map(String).join(', ') : "-"}</td>
                     <td>{row.snNumberRange}</td>
                     <td>{row.reasonOfDamaged}</td>
                     <td>{row.ctlReportNo}</td>
@@ -318,20 +366,6 @@ const DamagedTransformerList = () => {
                         : "-"}
                     </td>
                     <td>{row.liftingFromAcos}</td>
-                    {/* <td>
-                      {row.dateOfInspectionAfterRepair
-                        ? dayjs(row.dateOfInspectionAfterRepair).format(
-                            "YYYY-MM-DD"
-                          )
-                        : "-"}
-                    </td>
-                    <td>{row.challanNo || "-"}</td>
-                    <td>
-                      {row.challanDate
-                        ? dayjs(row.challanDate).format("YYYY-MM-DD")
-                        : "-"}
-                    </td>
-                    <td>{row.deliveredToAcos || "-"}</td> */}
                     <td>
                       <div className="d-flex gap-2 align-items-center justify-content-center">
                         <button
@@ -340,12 +374,6 @@ const DamagedTransformerList = () => {
                         >
                           <FaPencilAlt />
                         </button>
-                        {/* <button
-                          className="btn btn-sm btn-danger"
-                          onClick={() => handleDelete(row.id)}
-                        >
-                          <FaTrash />
-                        </button> */}
                       </div>
                     </td>
                   </tr>
@@ -360,7 +388,6 @@ const DamagedTransformerList = () => {
         </div>
       </div>
 
-      {/* Pagination */}
       {apiResponse?.totalPages > 1 && (
         <ResponsivePagination
           current={currentPage}
@@ -369,105 +396,107 @@ const DamagedTransformerList = () => {
         />
       )}
 
-      {/* Edit Modal */}
       <Dialog
         open={editModalOpen}
         onClose={() => setEditModalOpen(false)}
         fullWidth
+        maxWidth="md"
       >
         <DialogTitle>Edit Damaged Transformer</DialogTitle>
         <DialogContent>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <TextField
-              margin="dense"
-              label="Serial No (TRFSI)"
-              name="serialNo"
-              value={editedData.serialNo || ""}
-              onChange={handleEditChange}
-              fullWidth
-            />
-            <TextField
-              margin="dense"
-              label="SN Number Range"
-              name="snNumberRange"
-              value={editedData.snNumberRange || ""}
-              onChange={handleEditChange}
-              fullWidth
-            />
-            <TextField
-              margin="dense"
-              label="Reason of Damage"
-              name="reasonOfDamaged"
-              value={editedData.reasonOfDamaged || ""}
-              onChange={handleEditChange}
-              fullWidth
-            />
-            <TextField
-              margin="dense"
-              label="CTL Report No"
-              name="ctlReportNo"
-              value={editedData.ctlReportNo || ""}
-              onChange={handleEditChange}
-              fullWidth
-            />
-            <DatePicker
-              label="CTL Report Date"
-              value={editedData.ctlReportDate}
-              onChange={(date) => handleDateChange("ctlReportDate", date)}
-              slotProps={{ textField: { fullWidth: true, margin: "dense" } }}
-            />
-            <TextField
-              margin="dense"
-              label="Lifting Letter No"
-              name="liftingLetterNo"
-              value={editedData.liftingLetterNo || ""}
-              onChange={handleEditChange}
-              fullWidth
-            />
-            <DatePicker
-              label="Lifting Letter Date"
-              value={editedData.liftingLetterDate}
-              onChange={(date) => handleDateChange("liftingLetterDate", date)}
-              slotProps={{ textField: { fullWidth: true, margin: "dense" } }}
-            />
-            <TextField
-              margin="dense"
-              label="Lifting From Acos"
-              name="liftingFromAcos"
-              value={editedData.liftingFromAcos || ""}
-              onChange={handleEditChange}
-              fullWidth
-            />
-            <DatePicker
-              label="Inspection After Repair Date"
-              value={editedData.dateOfInspectionAfterRepair}
-              onChange={(date) =>
-                handleDateChange("dateOfInspectionAfterRepair", date)
-              }
-              slotProps={{ textField: { fullWidth: true, margin: "dense" } }}
-            />
-            <TextField
-              margin="dense"
-              label="Challan No"
-              name="challanNo"
-              value={editedData.challanNo || ""}
-              onChange={handleEditChange}
-              fullWidth
-            />
-            <DatePicker
-              label="Challan Date"
-              value={editedData.challanDate}
-              onChange={(date) => handleDateChange("challanDate", date)}
-              slotProps={{ textField: { fullWidth: true, margin: "dense" } }}
-            />
-            <TextField
-              margin="dense"
-              label="Delivered To ACOS"
-              name="deliveredToAcos"
-              value={editedData.deliveredToAcos || ""}
-              onChange={handleEditChange}
-              fullWidth
-            />
+            <Box mt={2}>
+            <Grid container spacing={3} columns={{ xs: 1, sm: 2 }}>
+              <Grid item size={1}>
+                <Autocomplete
+                  options={srNumberOptions}
+                  getOptionLabel={(option) => option.label}
+                  value={selectedSr}
+                  onChange={(_, value) => {
+                    setSelectedSr(value);
+                    setSelectedTrfsiNo(null);
+                  }}
+                  renderInput={(params) => (
+                    <TextField {...params} label="Select SR No" />
+                  )}
+                />
+              </Grid>
+
+              <Grid item size={1}>
+                <Autocomplete
+                  options={trfsiOptions || []}
+                  getOptionLabel={(option) => option.toString()}
+                  value={selectedTrfsiNo}
+                  onChange={(_, newValue) => setSelectedTrfsiNo(newValue)}
+                  disabled={!selectedSr}
+                  renderInput={(params) => (
+                    <TextField {...params} label="Select TRFSI Number" />
+                  )}
+                />
+              </Grid>
+
+              <Grid item size={2}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  label="Reason Of Failure / Damaged"
+                  name="reasonOfDamaged"
+                  value={editedData.reasonOfDamaged || ""}
+                  onChange={handleEditChange}
+                  margin="normal"
+                />
+              </Grid>
+
+              <Grid item size={1}>
+                <TextField
+                  fullWidth
+                  label="CTL Report No."
+                  name="ctlReportNo"
+                  value={editedData.ctlReportNo || ""}
+                  onChange={handleEditChange}
+                />
+              </Grid>
+
+              <Grid item size={1}>
+                <DatePicker
+                  label="CTL Report Date"
+                  value={editedData.ctlReportDate}
+                  onChange={(date) => handleDateChange("ctlReportDate", date)}
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+              </Grid>
+
+              <Grid item size={1}>
+                <TextField
+                  fullWidth
+                  label="Lifting Letter No."
+                  name="liftingLetterNo"
+                  value={editedData.liftingLetterNo || ""}
+                  onChange={handleEditChange}
+                />
+              </Grid>
+
+              <Grid item size={1}>
+                <DatePicker
+                  label="Lifting Letter Date"
+                  value={editedData.liftingLetterDate}
+                  onChange={(date) => handleDateChange("liftingLetterDate", date)}
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+              </Grid>
+
+              <Grid item size={1}>
+                <TextField
+                  fullWidth
+                  label="Lifting From Acos"
+                  name="liftingFromAcos"
+                  value={editedData.liftingFromAcos || ""}
+                  onChange={handleEditChange}
+                />
+              </Grid>
+              </Grid>
+            </Box>
           </LocalizationProvider>
         </DialogContent>
         <DialogActions>
@@ -482,7 +511,6 @@ const DamagedTransformerList = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Bulk Upload Modal */}
       <Dialog
         open={bulkUploadModalOpen}
         onClose={() => setBulkUploadModalOpen(false)}

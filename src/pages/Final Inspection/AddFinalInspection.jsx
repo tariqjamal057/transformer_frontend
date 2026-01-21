@@ -68,7 +68,10 @@ const AddFinalInspection = () => {
   const [sealingDetails, setSealingDetails] = useState([]);
   const [fileName, setFileName] = useState("");
 
-  const [selectedTransformers, setSelectedTransformers] = useState([]);
+  const [repairedTransformerSrno, setRepairedTransformerSrno] = useState([]);
+  const [repairedTransformerMapping, setRepairedTransformerMapping] = useState(
+    [],
+  );
 
   const { data: deliverySchedules } = useQuery({
     queryKey: ["allDeliverySchedules"],
@@ -94,9 +97,25 @@ const AddFinalInspection = () => {
 
   useEffect(() => {
     if (damagedTransformers) {
-      setAvailableTransformers(damagedTransformers);
+      setAvailableTransformers(damagedTransformers.filter((t) => !t.used));
     }
   }, [damagedTransformers]);
+
+  useEffect(() => {
+    const to = parseInt(serialNumberTo);
+    if (!isNaN(to) && repairedTransformerSrno.length > 0) {
+      const mapping = repairedTransformerSrno.map((id, index) => {
+        const transformer = damagedTransformers.find((t) => t.id === id);
+        return {
+          oldSrNo: transformer?.serialNo,
+          newSrNo: to + 1 + index,
+        };
+      });
+      setRepairedTransformerMapping(mapping);
+    } else {
+      setRepairedTransformerMapping([]);
+    }
+  }, [serialNumberTo, repairedTransformerSrno, damagedTransformers]);
 
   const addFinalInspectionMutation = useMutation({
     mutationFn: (newInspection) =>
@@ -213,7 +232,7 @@ const AddFinalInspection = () => {
 
     const from = parseInt(serialNumberFrom);
     const to = parseInt(serialNumberTo);
-    if (!from || !to || from >= to) {
+    if (isNaN(from) || isNaN(to) || from > to) {
       setAlertBox({
         open: true,
         msg: "Invalid serial number range",
@@ -222,12 +241,14 @@ const AddFinalInspection = () => {
       return;
     }
 
-    const totalAvailable = to - from + 1;
+    const totalNewAvailable = to - from + 1;
+    const totalRepairedAvailable = repairedTransformerSrno.length;
+    const totalAvailable = totalNewAvailable + totalRepairedAvailable;
+
     const totalDistributed = consigneeList.reduce(
       (sum, c) => sum + c.quantity,
       0,
     );
-
     const newTotal = totalDistributed + parseInt(consigneeQuantity);
 
     if (newTotal > totalAvailable) {
@@ -239,43 +260,60 @@ const AddFinalInspection = () => {
       return;
     }
 
-    const startSn = parseInt(serialNumberFrom) + totalDistributed;
-    const endSn = startSn + parseInt(consigneeQuantity) - 1;
-    const subSnNumber = `${startSn} TO ${endSn}`;
+    const totalNewDistributed = consigneeList.reduce(
+      (sum, c) => sum + (c.newQuantity || 0),
+      0,
+    );
+    const totalRepairedDistributed = consigneeList.reduce(
+      (sum, c) => sum + (c.repairedQuantity || 0),
+      0,
+    );
+
+    const newQtyForThisConsignee = Math.min(
+      parseInt(consigneeQuantity),
+      totalNewAvailable - totalNewDistributed,
+    );
+    const repairedQtyForThisConsignee =
+      parseInt(consigneeQuantity) - newQtyForThisConsignee;
+
+    const startSn = from + totalNewDistributed;
+    const endSn = startSn + newQtyForThisConsignee - 1;
+    const newSubSn = newQtyForThisConsignee > 0 ? `${startSn} TO ${endSn}` : "";
+
+    const repairedStartSn = to + 1 + totalRepairedDistributed;
+    const repairedEndSn = repairedStartSn + repairedQtyForThisConsignee - 1;
+    const repairedSubSn =
+      repairedQtyForThisConsignee > 0
+        ? `${repairedStartSn} TO ${repairedEndSn}`
+        : "";
+
+    const subSnNumber = [newSubSn, repairedSubSn].filter(Boolean).join(", ");
 
     const selectedConsigneeObj = consignees.find(
       (c) => c.id === selectedConsignee,
+    );
+
+    const assignedRepairedIds = repairedTransformerSrno.slice(
+      totalRepairedDistributed,
+      totalRepairedDistributed + repairedQtyForThisConsignee,
     );
 
     const newConsignee = {
       consigneeId: selectedConsignee,
       consigneeName: selectedConsigneeObj?.name,
       quantity: parseInt(consigneeQuantity),
+      newQuantity: newQtyForThisConsignee,
+      repairedQuantity: repairedQtyForThisConsignee,
       subSnNumber,
-      repairedTransformerIds: selectedTransformers,
+      repairedTransformerIds: assignedRepairedIds,
     };
 
-    const updatedAvailable = availableTransformers?.filter(
-      (t) => !selectedTransformers.includes(t.id),
-    );
-
-    setAvailableTransformers(updatedAvailable);
     setConsigneeList([...consigneeList, newConsignee]);
     setSelectedConsignee("");
     setConsigneeQuantity("");
-    setSelectedTransformers([]);
   };
 
   const handleDeleteConsignee = (idx) => {
-    const removed = consigneeList[idx];
-    if (removed.repairedTransformerIds?.length > 0) {
-      setAvailableTransformers((prev) => [
-        ...prev,
-        ...damagedTransformers.filter((t) =>
-          removed.repairedTransformerIds.includes(t.id),
-        ),
-      ]);
-    }
     const updated = [...consigneeList];
     updated.splice(idx, 1);
     setConsigneeList(updated);
@@ -306,6 +344,8 @@ const AddFinalInspection = () => {
         polySealNo: s.polySealNo,
       })),
       warranty: warranty || null,
+      repaired_transformer_srno: repairedTransformerSrno,
+      repaired_transformer_mapping: repairedTransformerMapping,
       status: "Active",
     };
 
@@ -400,12 +440,14 @@ const AddFinalInspection = () => {
 
               <Grid item size={1}>
                 <FormControl fullWidth>
-                  <InputLabel>Sub Serial No</InputLabel>
+                  <InputLabel>Repaired Transformer SRN No</InputLabel>
                   <Select
                     multiple
-                    input={<OutlinedInput label="Sub Serial No" />}
-                    value={selectedTransformers}
-                    onChange={(e) => setSelectedTransformers(e.target.value)}
+                    input={
+                      <OutlinedInput label="Repaired Transformer SRN No" />
+                    }
+                    value={repairedTransformerSrno}
+                    onChange={(e) => setRepairedTransformerSrno(e.target.value)}
                     renderValue={(selected) =>
                       selected
                         .map(
@@ -419,7 +461,7 @@ const AddFinalInspection = () => {
                     {(availableTransformers || []).map((t) => (
                       <MenuItem key={t.id} value={t.id}>
                         <Checkbox
-                          checked={selectedTransformers.includes(t.id)}
+                          checked={repairedTransformerSrno.includes(t.id)}
                         />
                         <ListItemText primary={t.serialNo} />
                       </MenuItem>
@@ -575,8 +617,8 @@ const AddFinalInspection = () => {
                     input={
                       <OutlinedInput label="Sub Serial No" />
                     }
-                    value={selectedTransformers}
-                    onChange={(e) => setSelectedTransformers(e.target.value)}
+                    value={repairedTransformerSrno}
+                    onChange={(e) => setRepairedTransformerSrno(e.target.value)}
                     renderValue={(selected) =>
                       selected
                         .map(
@@ -590,7 +632,7 @@ const AddFinalInspection = () => {
                     {(availableTransformers || []).map((t) => (
                       <MenuItem key={t.id} value={t.id}>
                         <Checkbox
-                          checked={selectedTransformers.includes(t.id)}
+                          checked={repairedTransformerSrno.includes(t.id)}
                         />
                         <ListItemText primary={t.serialNo} />
                       </MenuItem>
