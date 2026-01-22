@@ -97,17 +97,28 @@ const AddFinalInspection = () => {
 
   useEffect(() => {
     if (damagedTransformers) {
-      setAvailableTransformers(damagedTransformers.filter((t) => !t.used));
+      const flattened = [];
+      damagedTransformers.forEach((t) => {
+        if (!t.used) {
+          const serials = Array.isArray(t.serialNo) ? t.serialNo : [t.serialNo];
+          serials.forEach((sn) => {
+            flattened.push({
+              id: t.id,
+              serialNo: sn,
+            });
+          });
+        }
+      });
+      setAvailableTransformers(flattened);
     }
   }, [damagedTransformers]);
 
   useEffect(() => {
     const to = parseInt(serialNumberTo);
     if (!isNaN(to) && repairedTransformerSrno.length > 0) {
-      const mapping = repairedTransformerSrno.map((id, index) => {
-        const transformer = damagedTransformers.find((t) => t.id === id);
+      const mapping = repairedTransformerSrno.map((sn, index) => {
         return {
-          oldSrNo: transformer?.serialNo,
+          oldSrNo: sn,
           newSrNo: to + 1 + index,
         };
       });
@@ -280,7 +291,7 @@ const AddFinalInspection = () => {
     // Calculate continuous sub serial number range
     const startSn = from + totalDistributed;
     const endSn = startSn + parseInt(consigneeQuantity) - 1;
-    const subSnNumber = `${startSn} TO ${endSn}`;
+    const subSnNumber = ` TO `;
 
     // Determine how many new and repaired transformers are assigned to this consignee
     const totalNewDistributed = consigneeList.reduce(
@@ -459,20 +470,15 @@ const AddFinalInspection = () => {
                     }
                     value={repairedTransformerSrno}
                     onChange={(e) => setRepairedTransformerSrno(e.target.value)}
-                    renderValue={(selected) =>
-                      selected
-                        .map(
-                          (id) =>
-                            availableTransformers?.find((t) => t.id === id)
-                              ?.serialNo || "",
-                        )
-                        .join(", ")
-                    }
+                    renderValue={(selected) => selected.join(", ")}
                   >
                     {(availableTransformers || []).map((t) => (
-                      <MenuItem key={t.id} value={t.id}>
+                      <MenuItem
+                        key={`${t.id}-${t.serialNo}`}
+                        value={t.serialNo}
+                      >
                         <Checkbox
-                          checked={repairedTransformerSrno.includes(t.id)}
+                          checked={repairedTransformerSrno.includes(t.serialNo)}
                         />
                         <ListItemText primary={t.serialNo} />
                       </MenuItem>
@@ -616,41 +622,6 @@ const AddFinalInspection = () => {
                   onChange={(e) => setConsigneeQuantity(e.target.value)}
                 />
               </Grid>
-
-              {/* ✅ New Dropdown for Repaired Transformers */}
-              {/* <Grid item size={2}>
-                <FormControl fullWidth>
-                  <InputLabel>
-                    Sub Serial No
-                  </InputLabel>
-                  <Select
-                    multiple
-                    input={
-                      <OutlinedInput label="Sub Serial No" />
-                    }
-                    value={repairedTransformerSrno}
-                    onChange={(e) => setRepairedTransformerSrno(e.target.value)}
-                    renderValue={(selected) =>
-                      selected
-                        .map(
-                          (id) =>
-                            availableTransformers?.find((t) => t.id === id)
-                              ?.serialNo || "",
-                        )
-                        .join(", ")
-                    }
-                  >
-                    {(availableTransformers || []).map((t) => (
-                      <MenuItem key={t.id} value={t.id}>
-                        <Checkbox
-                          checked={repairedTransformerSrno.includes(t.id)}
-                        />
-                        <ListItemText primary={t.serialNo} />
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid> */}
 
               {/* Add Button */}
               <Grid item size={1}>
