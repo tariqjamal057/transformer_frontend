@@ -291,7 +291,7 @@ const AddFinalInspection = () => {
     // Calculate continuous sub serial number range
     const startSn = from + totalDistributed;
     const endSn = startSn + parseInt(consigneeQuantity) - 1;
-    const subSnNumber = ` TO `;
+    const subSnNumber = `${startSn} TO ${endSn}`;
 
     // Determine how many new and repaired transformers are assigned to this consignee
     const totalNewDistributed = consigneeList.reduce(
