@@ -235,6 +235,19 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    const from = parseInt(serialNumberFrom);
+    const to = parseInt(serialNumberTo);
+
+    if (isNaN(from) || isNaN(to) || from > to) {
+      setAlertBox({
+        open: true,
+        msg: "Please enter valid Serial Number From and To range before uploading.",
+        error: true,
+      });
+      e.target.value = null;
+      return;
+    }
+
     setFileName(file.name); // show file name
 
     const reader = new FileReader();
@@ -249,6 +262,43 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
         trfSiNo: row["TrfsiNo"],
         polySealNo: row["PolyCarbonateSealNo"],
       }));
+
+      const uploadedSet = new Set(filteredData.map((d) => parseInt(d.trfSiNo)));
+      const missing = [];
+
+      // Check for missing TRFSI in the serial number range
+      for (let i = from; i <= to; i++) {
+        if (!uploadedSet.has(i)) {
+          missing.push(i);
+        }
+      }
+
+      // Check for missing TRFSI for repaired transformers (old serial numbers)
+      const repairedMapping = repairedTransformerSrno.map((id, index) => {
+        const transformer = damagedTransformers.find((t) => t.id === id);
+        return {
+          oldSrNo: transformer?.serialNo,
+          newSrNo: to + 1 + index,
+        };
+      });
+
+      repairedMapping.forEach((item) => {
+        if (item.oldSrNo && !uploadedSet.has(parseInt(item.oldSrNo))) {
+          missing.push(item.oldSrNo);
+        }
+      });
+
+      if (missing.length > 0) {
+        setAlertBox({
+          open: true,
+          msg: `Missing TRFSI Numbers in file: ${missing.join(", ")}`,
+          error: true,
+        });
+        setSealingDetails([]);
+        setFileName("");
+        e.target.value = null;
+        return;
+      }
 
       setSealingDetails(filteredData);
     };
@@ -602,7 +652,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
             </Grid>
           </Grid>
 
-          {/* <Box mt={2}>
+          <Box mt={2}>
             <Button variant="outlined" component="label" fullWidth>
               Upload Sealing Details
               <input
@@ -617,7 +667,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
                 📄 {fileName}
               </Typography>
             )}
-          </Box> */}
+          </Box>
 
           <Box mt={4} textAlign="center">
             <Button
