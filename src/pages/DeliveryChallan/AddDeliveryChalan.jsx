@@ -61,6 +61,15 @@ const AddDeliveryChalan = () => {
       api.get("/material-descriptions?all=true").then((res) => res.data),
   });
 
+  const companyId = localStorage.getItem("companyId");
+
+  const { data: companyDetails } = useQuery({
+    queryKey: ["companyDetails", companyId],
+    queryFn: () =>
+      companyId ? api.get(`/companies/${companyId}`).then((res) => res.data) : null,
+    enabled: !!companyId,
+  });
+
   const handleTNChange = (tnNumber) => {
     setSelectedTN(tnNumber);
     const record = finalInspections.find((item) => item?.id === tnNumber);
@@ -113,18 +122,16 @@ const AddDeliveryChalan = () => {
   const [consignorGSTNo, setConsignorGSTNo] = useState("");
   const [consignorEmail, setConsignorEmail] = useState("");
 
-  // ✅ Load Consignor Details from LocalStorage
+  // ✅ Load Consignor Details from Company API
   useEffect(() => {
-    const storedCompany = localStorage.getItem("selectedCompany");
-    if (storedCompany) {
-      const company = JSON.parse(storedCompany);
-      setConsignorName(company.name || "");
-      setConsignorAddress(company.address || "");
-      setConsignorPhoneNo(company.phone || "");
-      setConsignorGSTNo(company.gst || "");
-      setConsignorEmail(company.email || "");
+    if (companyDetails) {
+      setConsignorName(companyDetails.name || "");
+      setConsignorAddress(companyDetails.address || "");
+      setConsignorPhoneNo(companyDetails.phone || "");
+      setConsignorGSTNo(companyDetails.gstNo || "");
+      setConsignorEmail(companyDetails.email || "");
     }
-  }, []);
+  }, [companyDetails]);
 
   const [availableConsignees, setAvailableConsignees] = useState([]);
   const [consigneeId, setConsigneeId] = useState("");

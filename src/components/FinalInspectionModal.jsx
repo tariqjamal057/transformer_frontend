@@ -19,6 +19,9 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  Checkbox,
+  ListItemText,
+  OutlinedInput,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
@@ -91,6 +94,10 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
   const [diDate, setDiDate] = useState(null);
   const [warranty, setWarranty] = useState("");
   const [repairedTransformerSrno, setRepairedTransformerSrno] = useState([]);
+  const [repairedTransformerMapping, setRepairedTransformerMapping] = useState(
+    [],
+  );
+  const [availableTransformers, setAvailableTransformers] = useState([]);
 
   // 👉 New Consignee States
   const [consigneeList, setConsigneeList] = useState([]); // final array
@@ -133,13 +140,48 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       );
       setSealingDetails(inspectionData.sealingDetails || []);
       setRepairedTransformerSrno(
-        inspectionData.repaired_transformer_srno || [],
+        (inspectionData.repaired_transformer_srno || []).map(String),
       );
 
       // ✅ Load existing consignee list
       setConsigneeList(inspectionData.consignees || []);
     }
   }, [inspectionData]);
+
+  useEffect(() => {
+    if (damagedTransformers) {
+      const flattened = [];
+      damagedTransformers.forEach((t) => {
+        const serials = Array.isArray(t.serialNo) ? t.serialNo : [t.serialNo];
+        serials.forEach((sn) => {
+          const isCurrent =
+            inspectionData?.repaired_transformer_srno?.includes(sn);
+          if (!t.used || isCurrent) {
+            flattened.push({
+              id: t.id,
+              serialNo: sn,
+            });
+          }
+        });
+      });
+      setAvailableTransformers(flattened);
+    }
+  }, [damagedTransformers, inspectionData]);
+
+  useEffect(() => {
+    const to = parseInt(serialNumberTo);
+    if (!isNaN(to) && repairedTransformerSrno.length > 0) {
+      const mapping = repairedTransformerSrno.map((sn, index) => {
+        return {
+          oldSrNo: sn,
+          newSrNo: to + 1 + index,
+        };
+      });
+      setRepairedTransformerMapping(mapping);
+    } else {
+      setRepairedTransformerMapping([]);
+    }
+  }, [serialNumberTo, repairedTransformerSrno]);
 
   const handleAddInspectionOfficer = () => {
     const trimmed = inspectionOfficer.trim();
@@ -277,10 +319,9 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       }
 
       // Check for missing TRFSI for repaired transformers (old serial numbers)
-      const repairedMapping = repairedTransformerSrno.map((id, index) => {
-        const transformer = damagedTransformers.find((t) => t.id === id);
+      const repairedMapping = repairedTransformerSrno.map((srNo, index) => {
         return {
-          oldSrNo: transformer?.serialNo,
+          oldSrNo: srNo,
           newSrNo: to + 1 + index,
         };
       });
@@ -353,7 +394,11 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       diNo: diNo || null,
       diDate: diDate ? dayjs(diDate).toISOString() : null,
       warranty: warranty ? String(warranty) : null,
-      repaired_transformer_srno: repairedTransformerSrno,
+      repaired_transformer_srno: repairedTransformerSrno.map(String),
+      repaired_transformer_mapping: repairedTransformerMapping.map((item) => ({
+        ...item,
+        oldSrNo: String(item.oldSrNo),
+      })),
       consignees: consigneeList.map((c) => ({
         consigneeId: c.consigneeId || c.consignee?.id,
         consigneeName: c.consigneeName,
@@ -365,18 +410,6 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     };
     updateFinalInspection(updatedData);
   };
-
-  const repairedTransformerSrnoOptions = damagedTransformers
-    ? damagedTransformers
-        .filter(
-          (t) =>
-            !t.used ||
-            (inspectionData?.repaired_transformer_srno || []).includes(
-              t.serialNo,
-            ),
-        )
-        .map((t) => t.serialNo)
-    : [];
 
   return (
     <Modal open={open} onClose={handleClose}>
@@ -554,24 +587,31 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
             sx={{ mt: 2 }}
             InputProps={{ readOnly: true }}
           />
-          {/* <Autocomplete
-            multiple
-            id="repaired-transformer-srno"
-            options={repairedTransformerSrnoOptions}
-            value={repairedTransformerSrno}
-            onChange={(event, newValue) => {
-              setRepairedTransformerSrno(newValue);
-            }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                variant="standard"
-                label="Repaired Transformer SRN No"
-                placeholder="Repaired Transformer SRN No"
-              />
-            )}
-            sx={{ mt: 2 }}
-          /> */}
+
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel>Sub Serial No</InputLabel>
+            <Select
+              multiple
+              input={<OutlinedInput label="Sub Serial No" />}
+              value={repairedTransformerSrno}
+              onChange={(e) => setRepairedTransformerSrno(e.target.value)}
+              renderValue={(selected) => selected.join(", ")}
+            >
+              {(availableTransformers || []).map((t) => (
+                <MenuItem
+                  key={`${t.id}-${t.serialNo}`}
+                  value={String(t.serialNo)}
+                >
+                  <Checkbox
+                    checked={repairedTransformerSrno.includes(
+                      String(t.serialNo),
+                    )}
+                  />
+                  <ListItemText primary={t.serialNo} />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <Grid container spacing={3} columns={{ xs: 1, sm: 2 }}>
             <Grid item size={2}>

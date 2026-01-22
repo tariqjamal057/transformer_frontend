@@ -217,10 +217,9 @@ const AddFinalInspection = () => {
       }
 
       // Check for missing TRFSI for repaired transformers (old serial numbers)
-      const repairedMapping = repairedTransformerSrno.map((id, index) => {
-        const transformer = damagedTransformers.find((t) => t.id === id);
+      const repairedMapping = repairedTransformerSrno.map((srNo, index) => {
         return {
-          oldSrNo: transformer?.serialNo,
+          oldSrNo: srNo,
           newSrNo: to + 1 + index,
         };
       });
@@ -366,8 +365,11 @@ const AddFinalInspection = () => {
         polySealNo: s.polySealNo,
       })),
       warranty: warranty || null,
-      repaired_transformer_srno: repairedTransformerSrno,
-      repaired_transformer_mapping: repairedTransformerMapping,
+      repaired_transformer_srno: repairedTransformerSrno.map(String),
+      repaired_transformer_mapping: repairedTransformerMapping.map((item) => ({
+        ...item,
+        oldSrNo: String(item.oldSrNo),
+      })),
       status: "Active",
     };
 
@@ -462,11 +464,11 @@ const AddFinalInspection = () => {
 
               <Grid item size={1}>
                 <FormControl fullWidth>
-                  <InputLabel>Repaired Transformer SRN No</InputLabel>
+                  <InputLabel>Sub Serial No</InputLabel>
                   <Select
                     multiple
                     input={
-                      <OutlinedInput label="Repaired Transformer SRN No" />
+                      <OutlinedInput label="Sub Serial No" />
                     }
                     value={repairedTransformerSrno}
                     onChange={(e) => setRepairedTransformerSrno(e.target.value)}
@@ -475,10 +477,12 @@ const AddFinalInspection = () => {
                     {(availableTransformers || []).map((t) => (
                       <MenuItem
                         key={`${t.id}-${t.serialNo}`}
-                        value={t.serialNo}
+                        value={String(t.serialNo)}
                       >
                         <Checkbox
-                          checked={repairedTransformerSrno.includes(t.serialNo)}
+                          checked={repairedTransformerSrno.includes(
+                            String(t.serialNo),
+                          )}
                         />
                         <ListItemText primary={t.serialNo} />
                       </MenuItem>
