@@ -131,6 +131,8 @@ const AddDeliveryChalan = () => {
   const [selectedConsigneeRecord, setSelectedConsigneeRecord] = useState(null);
   const [consigneeAddress, setConsigneeAddress] = useState("");
   const [consigneeGSTNo, setConsigneeGSTNo] = useState("");
+  const [subSerialNumberFrom, setSubSerialNumberFrom] = useState("");
+  const [subSerialNumberTo, setSubSerialNumberTo] = useState("");
 
   const handleConsigneeChange = (event) => {
     const selectedId = event.target.value;
@@ -183,18 +185,19 @@ const AddDeliveryChalan = () => {
     e.preventDefault();
     if (!selectedRecord) return;
 
-    const selectedSerialNumbers = availableSubSerialNumbers
-      .filter((s) => selectedTransformers.includes(s.id))
-      .map((s) => s.serialNo);
+    // Find the selected consignee to get subSnNumber
+    const selectedConsignee = availableConsignees.find(
+      (c) => c.consigneeId === consigneeId
+    );
 
-    const subSerialNumberFrom =
-      selectedSerialNumbers.length > 0
-        ? String(Math.min(...selectedSerialNumbers))
-        : null;
-    const subSerialNumberTo =
-      selectedSerialNumbers.length > 0
-        ? String(Math.max(...selectedSerialNumbers))
-        : null;
+    let subSerialNumberFrom = null;
+    let subSerialNumberTo = null;
+
+    if (selectedConsignee && selectedConsignee.subSnNumber) {
+      const [from, to] = selectedConsignee.subSnNumber.split(" TO ");
+      subSerialNumberFrom = from ? String(from) : null;
+      subSerialNumberTo = to ? String(to) : null;
+    }
 
     const data = {
       finalInspectionId: selectedRecord.id,

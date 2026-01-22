@@ -186,18 +186,19 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const selectedSerialNumbers = availableSubSerialNumbers
-      .filter((s) => selectedTransformers.includes(s.id))
-      .map((s) => s.serialNo);
+    // Find the selected consignee to get subSnNumber
+    const selectedConsignee = availableConsignees.find(
+      (c) => c.consigneeId === selectedConsigneeId
+    );
 
-    const subSerialNumberFrom =
-      selectedSerialNumbers.length > 0
-        ? String(Math.min(...selectedSerialNumbers))
-        : null;
-    const subSerialNumberTo =
-      selectedSerialNumbers.length > 0
-        ? String(Math.max(...selectedSerialNumbers))
-        : null;
+    let subSerialNumberFrom = null;
+    let subSerialNumberTo = null;
+
+    if (selectedConsignee && selectedConsignee.subSnNumber) {
+      const [from, to] = selectedConsignee.subSnNumber.split(" TO ");
+      subSerialNumberFrom = from ? String(from) : null;
+      subSerialNumberTo = to ? String(to) : null;
+    }
 
     const data = {
       finalInspectionId:
