@@ -277,6 +277,12 @@ const AddFinalInspection = () => {
       return;
     }
 
+    // Calculate continuous sub serial number range
+    const startSn = from + totalDistributed;
+    const endSn = startSn + parseInt(consigneeQuantity) - 1;
+    const subSnNumber = `${startSn} TO ${endSn}`;
+
+    // Determine how many new and repaired transformers are assigned to this consignee
     const totalNewDistributed = consigneeList.reduce(
       (sum, c) => sum + (c.newQuantity || 0),
       0,
@@ -286,33 +292,21 @@ const AddFinalInspection = () => {
       0,
     );
 
+    const remainingNew = Math.max(0, totalNewAvailable - totalNewDistributed);
     const newQtyForThisConsignee = Math.min(
       parseInt(consigneeQuantity),
-      totalNewAvailable - totalNewDistributed,
+      remainingNew,
     );
     const repairedQtyForThisConsignee =
       parseInt(consigneeQuantity) - newQtyForThisConsignee;
 
-    const startSn = from + totalNewDistributed;
-    const endSn = startSn + newQtyForThisConsignee - 1;
-    const newSubSn = newQtyForThisConsignee > 0 ? `${startSn} TO ${endSn}` : "";
-
-    const repairedStartSn = to + 1 + totalRepairedDistributed;
-    const repairedEndSn = repairedStartSn + repairedQtyForThisConsignee - 1;
-    const repairedSubSn =
-      repairedQtyForThisConsignee > 0
-        ? `${repairedStartSn} TO ${repairedEndSn}`
-        : "";
-
-    const subSnNumber = [newSubSn, repairedSubSn].filter(Boolean).join(", ");
-
-    const selectedConsigneeObj = consignees.find(
-      (c) => c.id === selectedConsignee,
-    );
-
     const assignedRepairedIds = repairedTransformerSrno.slice(
       totalRepairedDistributed,
       totalRepairedDistributed + repairedQtyForThisConsignee,
+    );
+
+    const selectedConsigneeObj = consignees.find(
+      (c) => c.id === selectedConsignee,
     );
 
     const newConsignee = {

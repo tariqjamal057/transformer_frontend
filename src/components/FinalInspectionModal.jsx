@@ -187,7 +187,10 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       return;
     }
 
-    const totalAvailable = to - from + 1;
+    const totalNewAvailable = to - from + 1;
+    const totalRepairedAvailable = repairedTransformerSrno.length;
+    const totalAvailable = totalNewAvailable + totalRepairedAvailable;
+
     const totalDistributed = consigneeList.reduce(
       (sum, c) => sum + c.quantity,
       0,
@@ -203,7 +206,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       return;
     }
 
-    // Calculate sub serial range
+    // Calculate continuous sub serial number range
     const startSn = from + totalDistributed;
     const endSn = startSn + parseInt(consigneeQuantity) - 1;
     const subSnNumber = `${startSn} TO ${endSn}`;
