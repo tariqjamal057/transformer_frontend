@@ -15,7 +15,7 @@ import Pagination from "../../components/Pagination";
 import GPReceiptBulkUploadModal from "../../components/GPReceiptBulkUploadModal";
 
 const NewGPReceiptRecordList = () => {
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
 
   const [openModal, setOpenModal] = useState(false);
@@ -34,7 +34,7 @@ const NewGPReceiptRecordList = () => {
     queryFn: () =>
       api
         .get(
-          `/new-gp-receipt-records?page=${currentPage}&search=${searchQuery}`
+          `/new-gp-receipt-records?page=${currentPage}&search=${searchQuery}`,
         )
         .then((res) => res.data),
   });
@@ -187,7 +187,7 @@ const NewGPReceiptRecordList = () => {
     };
     const totalTableWidth = Object.values(columnStyles).reduce(
       (sum, col) => sum + (col.cellWidth || 0),
-      0
+      0,
     );
     const horizontalMargin = Math.max((pageWidth - totalTableWidth) / 2, 10);
     autoTable(doc, {
@@ -260,15 +260,19 @@ const NewGPReceiptRecordList = () => {
                 ),
               }}
             />
-            <Button
-              className="btn-blue ms-3 ps-3 pe-3"
-              onClick={() => setOpenBulkUploadModal(true)}
-            >
-              Bulk Upload
-            </Button>
-            <Link to={"/add-newGPReceiptRecord"}>
-              <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
-            </Link>
+            {hasPermission("GPReceiptRecordCreate") && (
+              <Button
+                className="btn-blue ms-3 ps-3 pe-3"
+                onClick={() => setOpenBulkUploadModal(true)}
+              >
+                Bulk Upload
+              </Button>
+            )}
+            {hasPermission("GPReceiptRecordCreate") && (
+              <Link to={"/add-newGPReceiptRecord"}>
+                <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
+              </Link>
+            )}
             <Button variant="contained" color="primary" onClick={handlePrint}>
               Print
             </Button>
@@ -306,7 +310,9 @@ const NewGPReceiptRecordList = () => {
                   <th>Date Of Supply</th>
                   <th>Parts Condition</th>
                   <th>Remarks</th>
-                  <th className="action-col">Action</th>
+                  {hasPermission("GPReceiptRecordUpdate") && (
+                    <th className="action-col">Action</th>
+                  )}
                 </tr>
               </thead>
 
@@ -366,16 +372,18 @@ const NewGPReceiptRecordList = () => {
                         </div>
                       </td>
                       <td className="text-start">{item.remarks}</td>
-                      <td className="action-col">
-                        <div className="d-flex gap-2 align-items-center justify-content-center">
-                          <button
-                            className="btn btn-sm btn-success"
-                            onClick={() => handleEditClick(item)}
-                          >
-                            <FaPencilAlt />
-                          </button>
-                        </div>
-                      </td>
+                      {hasPermission("GPReceiptRecordUpdate") && (
+                        <td className="action-col">
+                          <div className="d-flex gap-2 align-items-center justify-content-center">
+                            <button
+                              className="btn btn-sm btn-success"
+                              onClick={() => handleEditClick(item)}
+                            >
+                              <FaPencilAlt />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (

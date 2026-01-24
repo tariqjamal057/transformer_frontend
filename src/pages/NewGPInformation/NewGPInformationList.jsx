@@ -14,7 +14,7 @@ import ViewNewGPInformationModal from "../../components/ViewNewGPInformationModa
 import NewGPInformationBulkUploadModal from "../../components/NewGPInformationBulkUploadModal";
 
 const NewGPInformationList = () => {
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
 
   const [openEditModal, setOpenEditModal] = useState(false);
@@ -111,15 +111,19 @@ const NewGPInformationList = () => {
                 ),
               }}
             />
-            <Button
-              className="btn-blue ms-2"
-              onClick={() => setOpenBulkUploadModal(true)}
-            >
-              Bulk Upload
-            </Button>
-            <Link to={"/add-NewGPInformation"}>
-              <Button className="btn-blue ms-2">Add</Button>
-            </Link>
+            {hasPermission("newGPInformationCreate") && (
+              <Button
+                className="btn-blue ms-2"
+                onClick={() => setOpenBulkUploadModal(true)}
+              >
+                Bulk Upload
+              </Button>
+            )}
+            {hasPermission("newGPInformationCreate") && (
+              <Link to={"/add-NewGPInformation"}>
+                <Button className="btn-blue ms-2">Add</Button>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -132,7 +136,7 @@ const NewGPInformationList = () => {
                   <th>Challan Receipted Item No</th>
                   <th>Challan Receipted Date</th>
                   <th>No. of Records</th>
-                  <th>Actions</th>
+                  {hasPermission("newGPInformationUpdate") && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody className="text-center">
@@ -153,28 +157,30 @@ const NewGPInformationList = () => {
                         {dayjs(item.challanReceiptedDate).format("DD-MM-YYYY")}
                       </td>
                       <td>{item.records?.length || 0}</td>
-                      <td>
-                        <div className="d-flex gap-2 align-items-center justify-content-center">
-                          {/* <button
+                      {hasPermission("newGPInformationUpdate") && (
+                        <td>
+                          <div className="d-flex gap-2 align-items-center justify-content-center">
+                            {/* <button
                             className="btn btn-sm btn-info"
                             onClick={() => handleViewClick(item)}
                           >
                             <FaEye />
                           </button> */}
-                          <button
-                            className="btn btn-sm btn-success"
-                            onClick={() => handleEditClick(item)}
-                          >
-                            <FaPencilAlt />
-                          </button>
-                          {/* <button
+                            <button
+                              className="btn btn-sm btn-success"
+                              onClick={() => handleEditClick(item)}
+                            >
+                              <FaPencilAlt />
+                            </button>
+                            {/* <button
                             className="btn btn-sm btn-danger"
                             onClick={() => handleDelete(item.id)}
                           >
                             <FaTrash />
                           </button> */}
-                        </div>
-                      </td>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (

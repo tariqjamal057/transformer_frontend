@@ -5,7 +5,7 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useMutation } from "@tanstack/react-query";
 import api from "../services/api";
 import { MyContext } from "../App";
-import { permissionMapping } from "../data/permission";
+import { defaultPermissions } from "../data/permission";
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -27,7 +27,7 @@ const Signup = () => {
   }, [setIsHideSidebarAndHeader]);
 
   const roles = ["OWNER", "MANAGER", "DATA_FEEDER", "SUPERVISOR"];
-  const permissionKeys = Object.keys(permissionMapping);
+  const permissionKeys = Object.keys(defaultPermissions);
 
   useEffect(() => {
     window.scrollTo(0, 0);

@@ -17,7 +17,7 @@ import GPFailureBulkUploadModal from "../../components/GPFailureBulkUploadModal"
 import Pagination from "../../components/Pagination";
 
 const GPFailureInformationList = () => {
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
 
   const [openModal, setOpenModal] = useState(false);
@@ -110,15 +110,19 @@ const GPFailureInformationList = () => {
                 ),
               }}
             />
-            <Button
-              className="btn-blue ms-3 ps-3 pe-3"
-              onClick={() => setOpenBulkUploadModal(true)}
-            >
-              Bulk Upload
-            </Button>
-            <Link to={"/add-GPFailureInformation"}>
-              <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
-            </Link>
+            {hasPermission("GPFailureInformationCreate") && (
+              <Button
+                className="btn-blue ms-3 ps-3 pe-3"
+                onClick={() => setOpenBulkUploadModal(true)}
+              >
+                Bulk Upload
+              </Button>
+            )}
+            {hasPermission("GPFailureInformationCreate") && (
+              <Link to={"/add-GPFailureInformation"}>
+                <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -142,7 +146,9 @@ const GPFailureInformationList = () => {
                   <th>Guarantee Period</th>
                   <th>Expiry Date</th>
                   <th>Status</th>
-                  <th>Action</th>
+                  {hasPermission("GPFailureInformationUpdate") && (
+                    <th>Action</th>
+                  )}
                 </tr>
               </thead>
 
@@ -284,22 +290,24 @@ const GPFailureInformationList = () => {
                         </td>
 
                         {/* Actions */}
-                        <td>
-                          <div className="d-flex gap-2 align-items-center justify-content-center">
-                            <button
-                              className="btn btn-sm btn-success"
-                              onClick={() => handleEditClick(item)}
-                            >
-                              <FaPencilAlt />
-                            </button>
-                            {/* <button
+                        {hasPermission("GPFailureInformationUpdate") && (
+                          <td>
+                            <div className="d-flex gap-2 align-items-center justify-content-center">
+                              <button
+                                className="btn btn-sm btn-success"
+                                onClick={() => handleEditClick(item)}
+                              >
+                                <FaPencilAlt />
+                              </button>
+                              {/* <button
                               className="btn btn-sm btn-danger"
                               onClick={() => handleDelete(item.id)}
                             >
                               <FaTrash />
                             </button> */}
-                          </div>
-                        </td>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     );
                   })

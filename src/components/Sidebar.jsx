@@ -13,31 +13,9 @@ import { IoDocuments } from "react-icons/io5";
 
 const Sidebar = () => {
   const [activeTab, setActiveTab] = useState(null);
-  const [userPermissions, setUserPermissions] = useState([]);
 
-  const { setAlertBox, windowWidth, setIsOpenNav } = useContext(MyContext);
-
-  useEffect(() => {
-    const userData = localStorage.getItem("Transformer user");
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        let pages = parsedUser.pages || [];
-        if (typeof pages === "string") {
-          pages = JSON.parse(pages);
-        }
-        setUserPermissions(pages);
-      } catch (error) {
-        console.error("Error parsing user permissions:", error);
-      }
-    }
-  }, []);
-
-  const hasPermission = (permission) => {
-        return (
-          userPermissions.includes("*") || userPermissions.includes(permission)
-        );
-  };
+  const { setAlertBox, windowWidth, setIsOpenNav, hasPermission } =
+    useContext(MyContext);
 
   const isOpenSubmenu = (index) => {
     if (activeTab === index) {
@@ -68,9 +46,9 @@ const Sidebar = () => {
                 </li>*/}
 
         {/* Ads */}
-        {(hasPermission("DeliverySchedule") ||
+        {(hasPermission("DeliveryScheduleList") ||
           hasPermission("ConsigneeList") ||
-          hasPermission("MaterialDescription")) && (
+          hasPermission("MaterialDescriptionList")) && (
           <li>
             <Button
               className={`w-100 ${activeTab === 1 ? "active" : ""}`}
@@ -89,7 +67,7 @@ const Sidebar = () => {
             >
               <ul className="submenu">
                 {/*<li><Link to='/tnNumber-list' onClick={handleCloseSidebarOnMobile}>TN Number, Rating & Discom</Link></li>*/}
-                {hasPermission("DeliverySchedule") && (
+                {hasPermission("DeliveryScheduleList") && (
                   <li>
                     <Link
                       to="/deliverySchedule-list"
@@ -111,7 +89,7 @@ const Sidebar = () => {
                     </Link>
                   </li>
                 )}
-                {hasPermission("MaterialDescription") && (
+                {hasPermission("MaterialDescriptionList") && (
                   <li>
                     <Link
                       to="/materialDescription-list"
@@ -127,7 +105,7 @@ const Sidebar = () => {
           </li>
         )}
 
-        {hasPermission("SubAdmin") && (
+        {hasPermission("SubAdminList") && (
           <li>
             <Link to="/subadmin-list" onClick={handleCloseSidebarOnMobile}>
               <Button
@@ -143,7 +121,7 @@ const Sidebar = () => {
           </li>
         )}
 
-        {hasPermission("FinalInspection") && (
+        {hasPermission("FinalInspectionList") && (
           <li>
             <Link
               to="/finalInspection-list"
@@ -162,7 +140,7 @@ const Sidebar = () => {
           </li>
         )}
 
-        {hasPermission("CTLOrDamageTransformer") && (
+        {hasPermission("CTLOrDamageTransformerList") && (
           <li>
             <Link
               to="/damageTransformer-list"
@@ -181,8 +159,8 @@ const Sidebar = () => {
           </li>
         )}
 
-        {(hasPermission("DeliveryChallan") ||
-          hasPermission("DeliveryDetails")) && (
+        {(hasPermission("DeliveryChallanList") ||
+          hasPermission("DeliveryDetailsList")) && (
           <li>
             <Button
               className={`w-100 ${activeTab === 5 ? "active" : ""}`}
@@ -200,7 +178,7 @@ const Sidebar = () => {
               className={`submenuWrapper ${activeTab === 5 ? "colapse" : "colapsed"}`}
             >
               <ul className="submenu">
-                {hasPermission("DeliveryChallan") && (
+                {hasPermission("DeliveryChallanList") && (
                   <li>
                     <Link
                       to="/deliveryChalan-list"
@@ -210,7 +188,7 @@ const Sidebar = () => {
                     </Link>
                   </li>
                 )}
-                {hasPermission("DeliveryDetails") && (
+                {hasPermission("DeliveryDetailsList") && (
                   <li>
                     <Link
                       to="/deliveryDetails-list"
@@ -225,11 +203,11 @@ const Sidebar = () => {
           </li>
         )}
 
-        {(hasPermission("GPFailureInformation") ||
-          hasPermission("GPReceiptRecord") ||
-          hasPermission("GPReceiptNote") ||
-          hasPermission("newGPInformation") ||
-          hasPermission("FailureAnalysis")) && (
+        {(hasPermission("GPFailureInformationList") ||
+          hasPermission("GPReceiptRecordList") ||
+          hasPermission("GPReceiptNoteList") ||
+          hasPermission("newGPInformationList") ||
+          hasPermission("FailureAnalysisList")) && (
           <li>
             <Button
               className={`w-100 ${activeTab === 6 ? "active" : ""}`}
@@ -247,7 +225,7 @@ const Sidebar = () => {
               className={`submenuWrapper ${activeTab === 6 ? "colapse" : "colapsed"}`}
             >
               <ul className="submenu">
-                {hasPermission("GPFailureInformation") && (
+                {hasPermission("GPFailureInformationList") && (
                   <li>
                     <Link
                       to="/GPFailureInformation-list"
@@ -257,7 +235,7 @@ const Sidebar = () => {
                     </Link>
                   </li>
                 )}
-                {hasPermission("GPReceiptRecord") && (
+                {hasPermission("GPReceiptRecordList") && (
                   <li>
                     <Link
                       to="/GPReceiptRecord-list"
@@ -267,7 +245,7 @@ const Sidebar = () => {
                     </Link>
                   </li>
                 )}
-                {hasPermission("GPReceiptNote") && (
+                {hasPermission("GPReceiptNoteList") && (
                   <li>
                     <Link
                       to="/GPReceiptNote-list"
@@ -277,7 +255,7 @@ const Sidebar = () => {
                     </Link>
                   </li>
                 )}
-                {hasPermission("newGPInformation") && (
+                {hasPermission("newGPInformationList") && (
                   <li>
                     <Link
                       to="/newGPInformation-list"
@@ -287,7 +265,7 @@ const Sidebar = () => {
                     </Link>
                   </li>
                 )}
-                {hasPermission("FailureAnalysis") && (
+                {hasPermission("FailureAnalysisList") && (
                   <li>
                     <Link
                       to="/failureAnalysis-list"

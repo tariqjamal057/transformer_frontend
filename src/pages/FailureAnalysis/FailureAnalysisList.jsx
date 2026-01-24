@@ -13,7 +13,7 @@ import Pagination from "../../components/Pagination";
 import dayjs from "dayjs";
 
 const FailureAnalysisList = () => {
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
 
   const [openModal, setOpenModal] = useState(false);
@@ -113,17 +113,19 @@ const FailureAnalysisList = () => {
               ),
             }}
           />
-          <div className="d-flex align-items-center">
-            <Button
-              className="btn-blue ms-3 ps-3 pe-3"
-              onClick={() => setOpenBulkUploadModal(true)}
-            >
-              Bulk Upload
-            </Button>
-            <Link to={"/add-FailureAnalysis"}>
-              <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
-            </Link>
-          </div>
+          {hasPermission("FailureAnalysisCreate") && (
+            <div className="d-flex align-items-center">
+              <Button
+                className="btn-blue ms-3 ps-3 pe-3"
+                onClick={() => setOpenBulkUploadModal(true)}
+              >
+                Bulk Upload
+              </Button>
+              <Link to={"/add-FailureAnalysis"}>
+                <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Table */}
@@ -144,7 +146,7 @@ const FailureAnalysisList = () => {
                   <th>Location Of Failure</th>
                   <th>Date Of Supply</th>
                   <th>Date Of Expiry</th>
-                  <th>Action</th>
+                  {hasPermission("FailureAnalysisUpdate") && <th>Action</th>}
                 </tr>
               </thead>
               <tbody className="text-center align-middle">
@@ -183,33 +185,35 @@ const FailureAnalysisList = () => {
                         <td>
                           {failureDetails.informationDate
                             ? dayjs(failureDetails.informationDate).format(
-                                "DD-MM-YYYY"
+                                "DD-MM-YYYY",
                               )
                             : "N/A"}
                         </td>
                         <td>
                           {failureDetails.failureDate
                             ? dayjs(failureDetails.failureDate).format(
-                                "DD-MM-YYYY"
+                                "DD-MM-YYYY",
                               )
                             : "N/A"}
                         </td>
-                        <td>
-                          <div className="d-flex gap-2 align-items-center justify-content-center">
-                            <button
-                              className="btn btn-sm btn-success"
-                              onClick={() => handleEditClick(item)}
-                            >
-                              <FaPencilAlt />
-                            </button>
-                            <button
+                        {hasPermission("FailureAnalysisUpdate") && (
+                          <td>
+                            <div className="d-flex gap-2 align-items-center justify-content-center">
+                              <button
+                                className="btn btn-sm btn-success"
+                                onClick={() => handleEditClick(item)}
+                              >
+                                <FaPencilAlt />
+                              </button>
+                              {/* <button
                               className="btn btn-sm btn-danger"
                               onClick={() => handleDelete(item.id)}
                             >
                               <FaTrash />
-                            </button>
-                          </div>
-                        </td>
+                            </button> */}
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     );
                   })

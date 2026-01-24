@@ -23,7 +23,7 @@ import { saveAs } from "file-saver";
 import { useDropzone } from "react-dropzone";
 
 const MaterialDescriptionList = () => {
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -135,7 +135,7 @@ const MaterialDescriptionList = () => {
     mutationFn: (updatedDescription) =>
       api.put(
         `/material-descriptions/${selectedDescription.id}`,
-        updatedDescription
+        updatedDescription,
       ),
     onSuccess: () => {
       setAlertBox({
@@ -202,19 +202,21 @@ const MaterialDescriptionList = () => {
       <div className="right-content w-100">
         <div className="card shadow border-0 w-100 flex-row p-4 align-items-center">
           <h5 className="mb-0">Material Description List</h5>
-          <div className="ms-auto d-flex align-items-center">
-            <Button
-              className="btn-blue ms-3 ps-3 pe-3"
-              onClick={() => setBulkUploadModalOpen(true)}
-            >
-              Bulk Upload
-            </Button>
-            <Link to={"/add-materialDescription"}>
-              <Button className="btn-blue ms-3 ps-3 pe-3">
-                Add Material Description
+          {hasPermission("MaterialDescriptionCreate") && (
+            <div className="ms-auto d-flex align-items-center">
+              <Button
+                className="btn-blue ms-3 ps-3 pe-3"
+                onClick={() => setBulkUploadModalOpen(true)}
+              >
+                Bulk Upload
               </Button>
-            </Link>
-          </div>
+              <Link to={"/add-materialDescription"}>
+                <Button className="btn-blue ms-3 ps-3 pe-3">
+                  Add Material Description
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Bulk Upload Modal */}
@@ -290,7 +292,9 @@ const MaterialDescriptionList = () => {
                   <th>Rating</th>
                   <th>Wound</th>
                   <th>MATERIAL DESCRIPTION</th>
-                  <th>ACTION</th>
+                  {hasPermission("MaterialDescriptionUpdate") && (
+                    <th>ACTION</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="text-center">
@@ -316,22 +320,24 @@ const MaterialDescriptionList = () => {
                         <td>{item.rating}</td>
                         <td>{item.wound}</td>
                         <td>{shortDescription}</td>
-                        <td>
-                          <div className="d-flex gap-2 align-item-center justify-content-center">
-                            <button
-                              className="btn btn-sm btn-success"
-                              onClick={() => handleEditClick(item)}
-                            >
-                              <FaPencilAlt />
-                            </button>
-                            {/* <button
+                        {hasPermission("MaterialDescriptionUpdate") && (
+                          <td>
+                            <div className="d-flex gap-2 align-item-center justify-content-center">
+                              <button
+                                className="btn btn-sm btn-success"
+                                onClick={() => handleEditClick(item)}
+                              >
+                                <FaPencilAlt />
+                              </button>
+                              {/* <button
                               className="btn btn-sm btn-danger"
                               onClick={() => handleDelete(item.id)}
                             >
                               <MdDelete />
                             </button> */}
-                          </div>
-                        </td>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     );
                   })
@@ -372,7 +378,6 @@ const MaterialDescriptionList = () => {
             margin="normal"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            
           />
 
           <TextField
@@ -381,7 +386,6 @@ const MaterialDescriptionList = () => {
             margin="normal"
             value={phase}
             onChange={(e) => setPhase(e.target.value)}
-            
           />
 
           <TextField
@@ -390,7 +394,6 @@ const MaterialDescriptionList = () => {
             margin="normal"
             value={rating}
             onChange={(e) => setRating(e.target.value)}
-            
           />
 
           <TextField
@@ -399,7 +402,6 @@ const MaterialDescriptionList = () => {
             margin="normal"
             value={wound}
             onChange={(e) => setWound(e.target.value)}
-            
           />
 
           <TextField

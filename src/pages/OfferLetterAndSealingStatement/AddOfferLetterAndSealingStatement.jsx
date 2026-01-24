@@ -15,7 +15,7 @@ import api from "../../services/api";
 import dayjs from "dayjs";
 
 const AddOfferLetterAndSealingStatement = () => {
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, hasPermission } = useContext(MyContext);
 
   const [selectedRecords, setSelectedRecords] = useState([]);
   const [startDate, setStartDate] = useState(null);
@@ -40,7 +40,7 @@ const AddOfferLetterAndSealingStatement = () => {
     if (!newGPReceiptRecords || !finalInspections) return [];
 
     const validTrfsiNos = finalInspections.flatMap(
-      (f) => f.sealingDetails?.map((s) => Number(s.trfSiNo)) || [] // Corrected from trfsiNo to trfSiNo
+      (f) => f.sealingDetails?.map((s) => Number(s.trfSiNo)) || [], // Corrected from trfsiNo to trfSiNo
     );
 
     return newGPReceiptRecords.filter((rec) => {
@@ -57,7 +57,9 @@ const AddOfferLetterAndSealingStatement = () => {
 
       // 3. Inspection/dispatch filter
       const relatedInspection = finalInspections.find((f) =>
-        f.sealingDetails?.some((s) => Number(s.trfSiNo) === Number(rec.trfsiNo))
+        f.sealingDetails?.some(
+          (s) => Number(s.trfSiNo) === Number(rec.trfsiNo),
+        ),
       );
 
       if (inspectionFilter === "withoutInspection") {
@@ -80,7 +82,7 @@ const AddOfferLetterAndSealingStatement = () => {
 
   const handleCheckboxChange = (id) => {
     setSelectedRecords((prev) =>
-      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id],
     );
   };
 
@@ -92,11 +94,11 @@ const AddOfferLetterAndSealingStatement = () => {
 
       const inspection = finalInspections.find((f) =>
         f.sealingDetails?.some(
-          (s) => Number(s.trfSiNo) === Number(gpRecord.trfsiNo)
-        )
+          (s) => Number(s.trfSiNo) === Number(gpRecord.trfsiNo),
+        ),
       );
       const sealingDetail = inspection?.sealingDetails?.find(
-        (s) => Number(s.trfSiNo) === Number(gpRecord.trfsiNo)
+        (s) => Number(s.trfSiNo) === Number(gpRecord.trfsiNo),
       );
 
       excelData.push({
@@ -232,7 +234,7 @@ const AddOfferLetterAndSealingStatement = () => {
                         <div>{item.accountReceiptNoteNo}</div>
                         <div className="text-muted small">
                           {dayjs(item.accountReceiptNoteDate).format(
-                            "DD-MM-YYYY"
+                            "DD-MM-YYYY",
                           )}
                         </div>
                       </td>
@@ -264,13 +266,15 @@ const AddOfferLetterAndSealingStatement = () => {
           </div>
         </div>
         <div className="text-end mt-3">
-          <button
-            className="btn btn-primary"
-            onClick={() => setShowModal(true)}
-            disabled={selectedRecords.length === 0}
-          >
-            Save & Generate
-          </button>
+          {hasPermission("OfferAndSealingStatement") && (
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowModal(true)}
+              disabled={selectedRecords.length === 0}
+            >
+              Save & Generate
+            </button>
+          )}
         </div>
         <GenerateModal
           open={showModal}

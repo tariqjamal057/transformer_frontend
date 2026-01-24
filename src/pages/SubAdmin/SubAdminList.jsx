@@ -27,10 +27,10 @@ import "react-responsive-pagination/themes/classic.css";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { useDropzone } from "react-dropzone";
-import { permissionMapping } from "../../data/permission";
+import { defaultPermissions } from "../../data/permission";
 
 const SubAdminList = () => {
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -46,7 +46,7 @@ const SubAdminList = () => {
   const [bulkUploadModalOpen, setBulkUploadModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
 
-  const allAccessPages = Object.keys(permissionMapping);
+  const allAccessPages = Object.keys(defaultPermissions);
   const subAdminRoles = ["OWNER", "MANAGER", "DATA_FEEDER", "SUPERVISOR"];
 
   const {
@@ -218,17 +218,19 @@ const SubAdminList = () => {
       <div className="right-content w-100">
         <div className="card shadow border-0 w-100 flex-row p-4 align-items-center">
           <h5 className="mb-0">SubAdmin List</h5>
-          <div className="ms-auto d-flex align-items-center">
-            <Button
-              className="btn-blue ms-3 ps-3 pe-3"
-              onClick={() => setBulkUploadModalOpen(true)}
-            >
-              Bulk Upload
-            </Button>
-            <Link to={"/signup"}>
-              <Button className="btn-blue ms-3 ps-3 pe-3">Add Users</Button>
-            </Link>
-          </div>
+          {hasPermission("SubAdminCreate") && (
+            <div className="ms-auto d-flex align-items-center">
+              <Button
+                className="btn-blue ms-3 ps-3 pe-3"
+                onClick={() => setBulkUploadModalOpen(true)}
+              >
+                Bulk Upload
+              </Button>
+              <Link to={"/signup"}>
+                <Button className="btn-blue ms-3 ps-3 pe-3">Add Users</Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Bulk Upload Modal */}
@@ -302,7 +304,7 @@ const SubAdminList = () => {
                   <th>NAME</th>
                   <th>ROLE</th>
                   <th>Login Id</th>
-                  <th>ACTION</th>
+                  {hasPermission("SubAdminUpdate") && <th>ACTION</th>}
                 </tr>
               </thead>
               <tbody className="text-center">
@@ -324,22 +326,24 @@ const SubAdminList = () => {
                       </td>
                       <td>{item.role}</td>
                       <td>{item.loginId}</td>
-                      <td>
-                        <div className="d-flex gap-2 align-item-center justify-content-center">
-                          <button
-                            className="btn btn-sm btn-success"
-                            onClick={() => handleEditClick(item)}
-                          >
-                            <FaPencilAlt />
-                          </button>
-                          {/* <button
+                      {hasPermission("SubAdminUpdate") && (
+                        <td>
+                          <div className="d-flex gap-2 align-item-center justify-content-center">
+                            <button
+                              className="btn btn-sm btn-success"
+                              onClick={() => handleEditClick(item)}
+                            >
+                              <FaPencilAlt />
+                            </button>
+                            {/* <button
                             className="btn btn-sm btn-danger"
                             onClick={() => handleDeleteClick(item.id)}
                           >
                             <FaTrash />
                           </button> */}
-                        </div>
-                      </td>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (

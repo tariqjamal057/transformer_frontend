@@ -5,6 +5,7 @@ import {
   BrowserRouter as Router,
   Routes,
   useLocation,
+  Navigate,
 } from "react-router-dom";
 import { useEffect, useState, createContext } from "react";
 import LoadingBar from "react-top-loading-bar";
@@ -81,6 +82,23 @@ const AppContent = () => {
   });
 
   const [isHideSidebarAndHeader, setIsHideSidebarAndHeader] = useState(false);
+  const [userPermissions, setUserPermissions] = useState(() => {
+    const userData = localStorage.getItem("Transformer user");
+    if (userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        let pages = parsedUser.pages || [];
+        if (typeof pages === "string") {
+          pages = JSON.parse(pages);
+        }
+        return pages;
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        return [];
+      }
+    }
+    return [];
+  });
 
   useEffect(() => {
     const handleResize = () => {
@@ -105,6 +123,12 @@ const AppContent = () => {
     setAlertBox((prev) => ({ ...prev, open: false }));
   };
 
+  const hasPermission = (permission) => {
+    return (
+      userPermissions.includes("*") || userPermissions.includes(permission)
+    );
+  };
+
   return (
     <MyContext.Provider
       value={{
@@ -117,6 +141,7 @@ const AppContent = () => {
         setProgress,
         setAlertBox,
         setIsHideSidebarAndHeader,
+        hasPermission,
       }}
     >
       <LoadingBar
@@ -175,7 +200,13 @@ const AppContent = () => {
             <Route
               exact
               path="/add-tnNumber"
-              element={<PrivateRoute element={<AddTnNumber />} />}
+              element={
+                hasPermission("DeliveryScheduleCreate") ? (
+                  <PrivateRoute element={<AddTnNumber />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
@@ -185,7 +216,13 @@ const AppContent = () => {
             <Route
               exact
               path="/add-loa"
-              element={<PrivateRoute element={<AddLoa />} />}
+              element={
+                hasPermission("DeliveryScheduleCreate") ? (
+                  <PrivateRoute element={<AddLoa />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
@@ -195,17 +232,29 @@ const AppContent = () => {
             <Route
               exact
               path="/add-deliverySchedule"
-              element={<PrivateRoute element={<AddDeliverySchedule />} />}
+              element={
+                hasPermission("DeliveryScheduleCreate") ? (
+                  <PrivateRoute element={<AddDeliverySchedule />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
-              path={permissionMapping.DeliverySchedule}
+              path={permissionMapping.DeliveryScheduleList}
               element={<PrivateRoute element={<DeliveryScheduleList />} />}
             />
             <Route
               exact
               path="/add-deffermentDetails"
-              element={<PrivateRoute element={<AddDeffermentDetails />} />}
+              element={
+                hasPermission("DeliveryScheduleCreate") ? (
+                  <PrivateRoute element={<AddDeffermentDetails />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
@@ -214,43 +263,73 @@ const AppContent = () => {
             />
             <Route
               exact
-              path={permissionMapping.SubAdmin}
-              element={<PrivateRoute element={<SubAdminList />} />}
+              path={permissionMapping.SubAdminList}
+              element={
+                hasPermission("SubAdminList") ? (
+                  <PrivateRoute element={<SubAdminList />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
               path="/add-finalInspection"
-              element={<PrivateRoute element={<AddFinalInspection />} />}
+              element={
+                hasPermission("FinalInspectionCreate") ? (
+                  <PrivateRoute element={<AddFinalInspection />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
-              path={permissionMapping.FinalInspection}
+              path={permissionMapping.FinalInspectionList}
               element={<PrivateRoute element={<FinalInspectionList />} />}
             />
             <Route
               exact
               path="/add-deliveryChalan"
-              element={<PrivateRoute element={<AddDeliveryChalan />} />}
+              element={
+                hasPermission("DeliveryChallanCreate") ? (
+                  <PrivateRoute element={<AddDeliveryChalan />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
-              path={permissionMapping.DeliveryChallan}
+              path={permissionMapping.DeliveryChallanList}
               element={<PrivateRoute element={<DeliveryChalanList />} />}
             />
             <Route
               exact
               path="/add-deliveryDetails"
-              element={<PrivateRoute element={<AddDeliveryDetails />} />}
+              element={
+                hasPermission("DeliveryDetailsCreate") ? (
+                  <PrivateRoute element={<AddDeliveryDetails />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
-              path={permissionMapping.DeliveryDetails}
+              path={permissionMapping.DeliveryDetailsList}
               element={<PrivateRoute element={<DeliveryDetailsList />} />}
             />
             <Route
               exact
               path="/add-consignee"
-              element={<PrivateRoute element={<AddConsignee />} />}
+              element={
+                hasPermission("ConsigneeCreate") ? (
+                  <PrivateRoute element={<AddConsignee />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
@@ -260,17 +339,29 @@ const AppContent = () => {
             <Route
               exact
               path="/add-materialDescription"
-              element={<PrivateRoute element={<AddMaterialDescription />} />}
+              element={
+                hasPermission("MaterialDescriptionCreate") ? (
+                  <PrivateRoute element={<AddMaterialDescription />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
-              path={permissionMapping.MaterialDescription}
+              path={permissionMapping.MaterialDescriptionList}
               element={<PrivateRoute element={<MaterialDescriptionList />} />}
             />
             <Route
               exact
               path="/add-chalanDescription"
-              element={<PrivateRoute element={<AddChalanDescription />} />}
+              element={
+                hasPermission("MaterialDescriptionCreate") ? (
+                  <PrivateRoute element={<AddChalanDescription />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
@@ -280,46 +371,76 @@ const AppContent = () => {
             <Route
               exact
               path="/damageTransformer"
-              element={<PrivateRoute element={<DamagedTransformerPage />} />}
+              element={
+                hasPermission("CTLOrDamageTransformerCreate") ? (
+                  <PrivateRoute element={<DamagedTransformerPage />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
               path="/add-GPFailureInformation"
-              element={<PrivateRoute element={<AddGPFailureInformation />} />}
+              element={
+                hasPermission("GPFailureInformationCreate") ? (
+                  <PrivateRoute element={<AddGPFailureInformation />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
-              path={permissionMapping.GPFailureInformation}
+              path={permissionMapping.GPFailureInformationList}
               element={<PrivateRoute element={<GPFailureInformationList />} />}
             />
             <Route
               exact
               path="/add-newGPReceiptRecord"
-              element={<PrivateRoute element={<AddNewGPReceiptRecord />} />}
+              element={
+                hasPermission("GPReceiptRecordCreate") ? (
+                  <PrivateRoute element={<AddNewGPReceiptRecord />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
-              path={permissionMapping.GPReceiptRecord}
+              path={permissionMapping.GPReceiptRecordList}
               element={<PrivateRoute element={<NewGPReceiptRecordList />} />}
             />
             <Route
               exact
               path="/add-GPReceiptNote"
-              element={<PrivateRoute element={<AddGPReceiptNote />} />}
+              element={
+                hasPermission("GPReceiptNoteCreate") ? (
+                  <PrivateRoute element={<AddGPReceiptNote />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
-              path={permissionMapping.GPReceiptNote}
+              path={permissionMapping.GPReceiptNoteList}
               element={<PrivateRoute element={<GPReceiptNote />} />}
             />
             <Route
               exact
               path="/add-FailureAnalysis"
-              element={<PrivateRoute element={<AddFailureAnalysis />} />}
+              element={
+                hasPermission("FailureAnalysisCreate") ? (
+                  <PrivateRoute element={<AddFailureAnalysis />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
-              path={permissionMapping.FailureAnalysis}
+              path={permissionMapping.FailureAnalysisList}
               element={<PrivateRoute element={<FailureAnalysisList />} />}
             />
             <Route
@@ -329,7 +450,7 @@ const AppContent = () => {
             />
             <Route
               exact
-              path={permissionMapping.CTLOrDamageTransformer}
+              path={permissionMapping.CTLOrDamageTransformerList}
               element={<PrivateRoute element={<DamagedTransformerList />} />}
             />
             <Route
@@ -371,11 +492,17 @@ const AppContent = () => {
             <Route
               exact
               path="/add-newGPInformation"
-              element={<PrivateRoute element={<AddNewGPInformation />} />}
+              element={
+                hasPermission("newGPInformationCreate") ? (
+                  <PrivateRoute element={<AddNewGPInformation />} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               exact
-              path={permissionMapping.newGPInformation}
+              path={permissionMapping.newGPInformationList}
               element={<PrivateRoute element={<NewGPInformationList />} />}
             />
             <Route

@@ -24,7 +24,7 @@ import { MyContext } from "../../App";
 import Swal from "sweetalert2";
 
 const DeliveryChalanList = () => {
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
 
   const [openModal, setOpenModal] = useState(false);
@@ -118,7 +118,7 @@ const DeliveryChalanList = () => {
     root.render(
       <div style={{ width: "800px" }}>
         <PdfTemplate item={item} />
-      </div>
+      </div>,
     );
 
     // Wait for rendering to finish
@@ -148,31 +148,42 @@ const DeliveryChalanList = () => {
 
           <div className="d-flex align-items-center">
             <TextField
-            variant="outlined"
-            placeholder="Search ...."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            size="small"
-            sx={{ width: { xs: '100%', sm: '300px' }, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: '#ccc' }, '&:hover fieldset': { borderColor: '#f0883d' }, '&.Mui-focused fieldset': { borderColor: '#f0883d' } } }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: '#f0883d' }} />
-                </InputAdornment>
-              ),
-            }}
-          />
-            <Button
-              className="btn-blue ms-3 ps-3 pe-3"
-              onClick={() => setOpenBulkUploadModal(true)}
-            >
-              Bulk Upload
-            </Button>
-            <Link to={"/add-deliveryChalan"}>
-              <Button className="btn-blue ms-3 ps-3 pe-3">
-                Create New Delivery Challan
-              </Button>
-            </Link>
+              variant="outlined"
+              placeholder="Search ...."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              size="small"
+              sx={{
+                width: { xs: "100%", sm: "300px" },
+                "& .MuiOutlinedInput-root": {
+                  "& fieldset": { borderColor: "#ccc" },
+                  "&:hover fieldset": { borderColor: "#f0883d" },
+                  "&.Mui-focused fieldset": { borderColor: "#f0883d" },
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: "#f0883d" }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            {hasPermission("DeliveryChallanCreate") && (
+              <>
+                <Button
+                  className="btn-blue ms-3 ps-3 pe-3"
+                  onClick={() => setOpenBulkUploadModal(true)}
+                >
+                  Bulk Upload
+                </Button>
+                <Link to={"/add-deliveryChalan"}>
+                  <Button className="btn-blue ms-3 ps-3 pe-3">
+                    Create New Delivery Challan
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -265,7 +276,7 @@ const DeliveryChalanList = () => {
                               >
                                 {officer}
                               </span>
-                            )
+                            ),
                           )}
                         </div>
                       </td>
@@ -328,12 +339,14 @@ const DeliveryChalanList = () => {
                           >
                             <FaEye />
                           </button> */}
-                          <button
-                            className="btn btn-sm btn-success"
-                            onClick={() => handleEditClick(item)}
-                          >
-                            <FaPencilAlt />
-                          </button>
+                          {hasPermission("DeliveryChallanUpdate") && (
+                            <button
+                              className="btn btn-sm btn-success"
+                              onClick={() => handleEditClick(item)}
+                            >
+                              <FaPencilAlt />
+                            </button>
+                          )}
                           <Tooltip title="Download pdf" placement="top">
                             <button
                               className="btn btn-sm btn-primary"

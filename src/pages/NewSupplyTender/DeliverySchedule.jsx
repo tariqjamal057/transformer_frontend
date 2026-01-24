@@ -41,7 +41,7 @@ import { useDropzone } from "react-dropzone";
 
 const DeliverySchedule = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const { setProgress, setAlertBox, setIsHideSidebarAndHeader } =
+  const { setProgress, setAlertBox, setIsHideSidebarAndHeader, hasPermission } =
     useContext(MyContext);
   const queryClient = useQueryClient();
 
@@ -628,17 +628,19 @@ const DeliverySchedule = () => {
               ),
             }}
           />
-          <div className="d-flex align-items-center">
-            <Button
-              className="btn-blue ms-3 ps-3 pe-3"
-              onClick={() => setBulkUploadModalOpen(true)}
-            >
-              Bulk Upload
-            </Button>
-            <Link to={"/add-deliverySchedule"}>
-              <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
-            </Link>
-          </div>
+          {hasPermission("DeliveryScheduleCreate") && (
+            <div className="d-flex align-items-center">
+              <Button
+                className="btn-blue ms-3 ps-3 pe-3"
+                onClick={() => setBulkUploadModalOpen(true)}
+              >
+                Bulk Upload
+              </Button>
+              <Link to={"/add-deliverySchedule"}>
+                <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         <Dialog
@@ -719,7 +721,7 @@ const DeliverySchedule = () => {
                   <th>TOTAL QUANTITY</th>
                   {/*<th>DELIVERY SCHEDULE (AUTO CALCULATED)</th>*/}
                   <th>STATUS</th>
-                  <th>ACTION</th>
+                  {hasPermission("DeliveryScheduleUpdate") && <th>ACTION</th>}
                 </tr>
               </thead>
               <tbody className="text-center">
@@ -884,16 +886,18 @@ const DeliverySchedule = () => {
                           </span>
                         </td>
 
-                        <td>
-                          <div className="d-flex gap-2 align-item-center justify-content-center">
-                            <button
-                              className="btn btn-sm btn-success"
-                              onClick={() => handleEditClick(item)}
-                            >
-                              <FaPencilAlt />
-                            </button>
-                          </div>
-                        </td>
+                        {hasPermission("DeliveryScheduleUpdate") && (
+                          <td>
+                            <div className="d-flex gap-2 align-item-center justify-content-center">
+                              <button
+                                className="btn btn-sm btn-success"
+                                onClick={() => handleEditClick(item)}
+                              >
+                                <FaPencilAlt />
+                              </button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     );
                   })

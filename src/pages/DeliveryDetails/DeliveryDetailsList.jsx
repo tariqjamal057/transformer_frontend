@@ -12,7 +12,7 @@ import DeliveryDetailsBulkUploadModal from "../../components/DeliveryDetailsBulk
 import dayjs from "dayjs";
 
 const DeliveryDetailsList = () => {
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -119,24 +119,26 @@ const DeliveryDetailsList = () => {
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center gap-3 mb-3 card shadow border-0 w-100 flex-row p-4">
           <h5 className="mb-0">Delivery Details Of Transformers List</h5>
-          <div className="ms-auto d-flex align-items-center">
-            {/* <SearchBox
+          {hasPermission("DeliveryDetailsCreate") && (
+            <div className="ms-auto d-flex align-items-center">
+              {/* <SearchBox
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               setCurrentPage={setCurrentPage}
             /> */}
-            <Button
-              className="btn-blue ms-3 ps-3 pe-3"
-              onClick={() => setOpenBulkUploadModal(true)}
-            >
-              Bulk Upload
-            </Button>
-            <Link to={"/add-deliveryDetails"}>
-              <Button className="btn-blue ms-3 ps-3 pe-3">
-                Add New Delivery Detail
+              <Button
+                className="btn-blue ms-3 ps-3 pe-3"
+                onClick={() => setOpenBulkUploadModal(true)}
+              >
+                Bulk Upload
               </Button>
-            </Link>
-          </div>
+              <Link to={"/add-deliveryDetails"}>
+                <Button className="btn-blue ms-3 ps-3 pe-3">
+                  Add New Delivery Detail
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className="card shadow border-0 p-3 mt-4">
@@ -228,7 +230,7 @@ const DeliveryDetailsList = () => {
                     <th>Consignor Details</th>
                     <th>Consignee Details</th>
                     {/* <th>Material Description</th> */}
-                    <th>Action</th>
+                    {/* <th>Action</th> */}
                   </tr>
                 </thead>
 
@@ -389,7 +391,7 @@ const DeliveryDetailsList = () => {
                         </td> */}
 
                           {/* Action Buttons */}
-                          <td>
+                          {/* <td>
                             <div className="d-flex gap-2 align-items-center justify-content-center">
                               <button
                                 className="btn btn-sm btn-danger"
@@ -401,7 +403,7 @@ const DeliveryDetailsList = () => {
                                 <MdDelete />
                               </button>
                             </div>
-                          </td>
+                          </td> */}
                         </tr>
                       );
                     })

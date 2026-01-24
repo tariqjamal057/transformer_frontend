@@ -23,7 +23,7 @@ import { saveAs } from "file-saver";
 import { useDropzone } from "react-dropzone";
 
 const ConsigneeList = () => {
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -190,17 +190,21 @@ const ConsigneeList = () => {
       <div className="right-content w-100">
         <div className="card shadow border-0 w-100 flex-row p-4 align-items-center">
           <h5 className="mb-0">Consignee List</h5>
-          <div className="ms-auto d-flex align-items-center">
-            <Button
-              className="btn-blue ms-3 ps-3 pe-3"
-              onClick={() => setBulkUploadModalOpen(true)}
-            >
-              Bulk Upload
-            </Button>
-            <Link to={"/add-consignee"}>
-              <Button className="btn-blue ms-3 ps-3 pe-3">Add Consignee</Button>
-            </Link>
-          </div>
+          {hasPermission("ConsigneeCreate") && (
+            <div className="ms-auto d-flex align-items-center">
+              <Button
+                className="btn-blue ms-3 ps-3 pe-3"
+                onClick={() => setBulkUploadModalOpen(true)}
+              >
+                Bulk Upload
+              </Button>
+              <Link to={"/add-consignee"}>
+                <Button className="btn-blue ms-3 ps-3 pe-3">
+                  Add Consignee
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Bulk Upload Modal */}
@@ -276,7 +280,7 @@ const ConsigneeList = () => {
                   <th>GST NO</th>
                   <th>EMAIL</th>
                   <th>PHONE NUMBER</th>
-                  <th>ACTION</th>
+                  {hasPermission("ConsigneeUpdate") && <th>ACTION</th>}
                 </tr>
               </thead>
               <tbody className="text-center">
@@ -297,22 +301,24 @@ const ConsigneeList = () => {
                       <td>{item.gstNo}</td>
                       <td>{item.email}</td>
                       <td>{item.phone}</td>
-                      <td>
-                        <div className="d-flex gap-2 align-item-center justify-content-center">
-                          <button
-                            className="btn btn-sm btn-success"
-                            onClick={() => handleEditClick(item)}
-                          >
-                            <FaPencilAlt />
-                          </button>
-                          {/* <button
+                      {hasPermission("ConsigneeUpdate") && (
+                        <td>
+                          <div className="d-flex gap-2 align-item-center justify-content-center">
+                            <button
+                              className="btn btn-sm btn-success"
+                              onClick={() => handleEditClick(item)}
+                            >
+                              <FaPencilAlt />
+                            </button>
+                            {/* <button
                             className="btn btn-sm btn-danger"
                             onClick={() => handleDelete(item.id)}
-                          >
+                            >
                             <MdDelete />
-                          </button> */}
-                        </div>
-                      </td>
+                            </button> */}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (

@@ -13,7 +13,7 @@ import GPReceiptNoteBulkUploadModal from "../../components/GPReceiptNoteBulkUplo
 import dayjs from "dayjs";
 
 const GPReceiptNote = () => {
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, hasPermission } = useContext(MyContext);
   const [currentPage, setCurrentPage] = useState(1);
   const [openBulkUploadModal, setOpenBulkUploadModal] = useState(false);
 
@@ -69,6 +69,7 @@ const GPReceiptNote = () => {
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center gap-3 mb-3 card shadow border-0 w-100 flex-row p-4">
           <h5 className="mb-0">G.P. Receipt Notes</h5>
+          { hasPermission("GPReceiptNoteCreate") && (
           <div className="ms-auto d-flex align-items-center">
             <Button
               className="btn-blue ms-3 ps-3 pe-3"
@@ -80,6 +81,7 @@ const GPReceiptNote = () => {
               <Button className="btn-blue ms-3 ps-3 pe-3">Add</Button>
             </Link>
           </div>
+          )}
         </div>
 
         {/* Table */}
