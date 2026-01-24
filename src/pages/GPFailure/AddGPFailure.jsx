@@ -43,18 +43,23 @@ const AddGPFailureInformation = () => {
 
   const { data: deliveryChallans } = useQuery({
     queryKey: ["deliveryChallans"],
-    queryFn: () => api.get("/delivery-challans?all=true").then((res) => res.data),
+    queryFn: () =>
+      api.get("/delivery-challans?all=true").then((res) => res.data),
   });
 
   const addGPFailureMutation = useMutation({
     mutationFn: (newFailure) => api.post("/gp-failures", newFailure),
     onSuccess: () => {
-      setAlertBox({open: true, msg: "GP Failure Information added successfully!", error: false});
+      setAlertBox({
+        open: true,
+        msg: "GP Failure Information added successfully!",
+        error: false,
+      });
       queryClient.invalidateQueries(["gpFailures"]);
       navigate("/GPFailureInformation-list");
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.message, error: true});
+      setAlertBox({ open: true, msg: error.message, error: true });
     },
   });
 
@@ -62,19 +67,19 @@ const AddGPFailureInformation = () => {
     if (trfsiNo && rating) {
       const found = deliveryChallans?.find((ch) => {
         const hasTrfsi = ch.finalInspection.sealingDetails.some(
-          (s) => String(s.trfSiNo) === String(trfsiNo)
+          (s) => String(s.trfSiNo) === String(trfsiNo),
         );
-        if (hasTrfsi){
-          return ch
+        if (hasTrfsi) {
+          return ch;
         }
         // // const sameRating =
         // //   ch.finalInspection.deliverySchedule.rating === rating;
-        
+
         // console.log("hastrsif ", hasTrfsi)
         // // console.log("sameRating ", sameRating)
         // return hasTrfsi;
       });
-      console.log("found ", found)
+      console.log("found ", found);
       setSelectedChalan(found || null);
     } else {
       setSelectedChalan(null);
@@ -104,12 +109,17 @@ const AddGPFailureInformation = () => {
 
   const handleSubmit = () => {
     if (!selectedChalan) {
-      setAlertBox({open: true, msg: "No matching record found. Please check TRFSI No and Rating.", error: true});
+      setAlertBox({
+        open: true,
+        msg: "No matching record found. Please check TRFSI No and Rating.",
+        error: true,
+      });
       return;
     }
 
     const challanDate = new Date(selectedChalan.createdAt);
-    const guaranteeMonths = selectedChalan.finalInspection.deliverySchedule.guaranteePeriodMonths;
+    const guaranteeMonths =
+      selectedChalan.finalInspection.deliverySchedule.guaranteePeriodMonths;
     const expiryDate = addMonths(challanDate, guaranteeMonths);
     const today = new Date();
     const isUnderGuarantee = isAfter(expiryDate, today);
@@ -140,7 +150,12 @@ const AddGPFailureInformation = () => {
           </Typography>
 
           {/* Input Section */}
-          <Grid container spacing={2} columns={{ xs: 1, sm: 1, lg: 3, md: 3 }} sx={{ mb: 3 }}>
+          <Grid
+            container
+            spacing={2}
+            columns={{ xs: 1, sm: 1, lg: 3, md: 3 }}
+            sx={{ mb: 3 }}
+          >
             <Grid item size={1}>
               <TextField
                 fullWidth
@@ -320,6 +335,7 @@ const AddGPFailureInformation = () => {
                   setDateOfInformation(date ? dayjs(date) : null)
                 }
                 slotProps={{ textField: { fullWidth: true } }}
+                format="DD/MM/YYYY"
               />
             </Grid>
 
@@ -332,6 +348,7 @@ const AddGPFailureInformation = () => {
                     setTrfFailureDate(date ? dayjs(date) : null)
                   }
                   slotProps={{ textField: { fullWidth: true } }}
+                  format="DD/MM/YYYY"
                 />
                 <Button
                   variant="contained"

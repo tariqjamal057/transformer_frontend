@@ -184,6 +184,7 @@ const AddNewGPInformation = () => {
                 value={challanReceiptedDate}
                 onChange={(date) => setChallanReceiptedDate(date)}
                 slotProps={{ textField: { fullWidth: true } }}
+                format="DD/MM/YYYY"
               />
             </Grid>
           </Grid>

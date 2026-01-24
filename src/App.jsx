@@ -164,7 +164,7 @@ const AppContent = () => {
             />
             <Route
               exact
-              path="/supply-tender"
+              path="/discom"
               element={<PrivateRoute element={<SupplyTender />} />}
             />
             <Route

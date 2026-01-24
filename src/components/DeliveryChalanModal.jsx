@@ -393,6 +393,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
               label="DI Date"
               value={diDate}
               //disabled
+              format="DD/MM/YYYY"
               slotProps={{ textField: { fullWidth: true } }}
               sx={{ mt: 2 }}
             />
@@ -404,6 +405,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
               label="Inspection Date"
               value={inspectionDate}
               //disabled
+              format="DD/MM/YYYY"
               slotProps={{ textField: { fullWidth: true } }}
               sx={{ mt: 2 }}
             />
@@ -435,6 +437,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
             <DatePicker
               label="PO Date"
               value={poDate}
+              format="DD/MM/YYYY"
               slotProps={{ textField: { fullWidth: true } }}
               sx={{ mt: 2 }}
             />

@@ -301,6 +301,7 @@ export default function DamagedTransformerPage() {
                   label="CTL Report Date"
                   value={ctlReportDate}
                   onChange={setCtlReportDate}
+                  format="dd/MM/yyyy"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
@@ -319,6 +320,7 @@ export default function DamagedTransformerPage() {
                   label="Lifting Letter Date"
                   value={liftingLetterDate}
                   onChange={setLiftingLetterDate}
+                  format="dd/MM/yyyy"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>

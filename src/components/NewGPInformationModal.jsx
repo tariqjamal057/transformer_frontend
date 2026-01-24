@@ -219,6 +219,7 @@ const NewGPInformationModal = ({ open, handleClose, newGPInformation }) => {
                   onChange={(date) =>
                     setChallanReceiptedDate(date ? dayjs(date) : null)
                   }
+                  format="DD/MM/YYYY"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>

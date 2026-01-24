@@ -463,6 +463,7 @@ const DamagedTransformerList = () => {
                   label="CTL Report Date"
                   value={editedData.ctlReportDate}
                   onChange={(date) => handleDateChange("ctlReportDate", date)}
+                  format="DD/MM/YYYY"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
@@ -482,6 +483,7 @@ const DamagedTransformerList = () => {
                   label="Lifting Letter Date"
                   value={editedData.liftingLetterDate}
                   onChange={(date) => handleDateChange("liftingLetterDate", date)}
+                  format="DD/MM/YYYY"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>

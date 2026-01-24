@@ -190,6 +190,7 @@ const AddNewGPReceiptRecord = () => {
                 value={accountReceiptNoteDate}
                 onChange={(newValue) => setAccountReceiptNoteDate(newValue)}
                 slotProps={{ textField: { fullWidth: true } }}
+                format="DD/MM/YYYY"
               />
             </Grid>
 
@@ -233,6 +234,7 @@ const AddNewGPReceiptRecord = () => {
                 value={discomReceiptNoteDate}
                 onChange={(newValue) => setDiscomReceiptNoteDate(newValue)}
                 slotProps={{ textField: { fullWidth: true } }}
+                format="DD/MM/YYYY"
               />
             </Grid>
 

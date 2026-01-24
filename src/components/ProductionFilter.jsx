@@ -425,6 +425,7 @@ const ProductionFilter = ({
               label="Offered Date"
               value={selectedDate}
               onChange={(newVal) => setSelectedDate(newVal)}
+              format="DD/MM/YYYY"
               slotProps={{ textField: { fullWidth: true } }}
             />
           </LocalizationProvider>

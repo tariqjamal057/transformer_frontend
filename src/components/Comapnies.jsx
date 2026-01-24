@@ -45,7 +45,7 @@ const Companies = () => {
     localStorage.setItem("companyId", selectedCompany);
     try {
       const response = await api.post("/auth/select-company", { companyId: selectedCompany });
-      navigate("/supply-tender", { state: { supplyTenders: response.data.supplyTenders } });
+      navigate("/discom", { state: { supplyTenders: response.data.supplyTenders } });
     } catch (error) {
       setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
     }

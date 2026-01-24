@@ -429,6 +429,7 @@ const AddFinalInspection = () => {
                   label="Date Of Offer"
                   value={offerDate}
                   onChange={setOfferDate}
+                  format="dd/MM/yyyy"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
@@ -505,6 +506,7 @@ const AddFinalInspection = () => {
                   label="Nomination Date"
                   value={nominationDate}
                   onChange={setNominationDate}
+                  format="dd/MM/yyyy"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
@@ -543,6 +545,7 @@ const AddFinalInspection = () => {
                   label="Inspection Date"
                   value={inspectionDate}
                   onChange={setInspectionDate}
+                  format="dd/MM/yyyy"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
@@ -581,6 +584,7 @@ const AddFinalInspection = () => {
                   label="DI Date"
                   value={diDate}
                   onChange={setDiDate}
+                  format="dd/MM/yyyy"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>

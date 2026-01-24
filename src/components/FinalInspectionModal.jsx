@@ -486,6 +486,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
               label="Date Of Offer"
               value={offerDate}
               onChange={setOfferDate}
+              format="DD/MM/YYYY"
               slotProps={{ textField: { fullWidth: true } }}
               sx={{ mt: 2, width: "100%" }}
             />
@@ -511,6 +512,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
               label="Nomination Date"
               value={nominationDate}
               onChange={setNominationDate}
+              format="DD/MM/YYYY"
               slotProps={{ textField: { fullWidth: true } }}
               sx={{ mt: 2, width: "100%" }}
             />
@@ -541,6 +543,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
               label="Inspection Date"
               value={inspectionDate}
               onChange={setInspectionDate}
+              format="DD/MM/YYYY"
               slotProps={{ textField: { fullWidth: true } }}
               sx={{ mt: 2, width: "100%" }}
             />
@@ -575,6 +578,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
               label="DI Date"
               value={diDate}
               onChange={setDiDate}
+              format="DD/MM/YYYY"
               slotProps={{ textField: { fullWidth: true } }}
               sx={{ mt: 2, width: "100%" }}
             />

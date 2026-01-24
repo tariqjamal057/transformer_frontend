@@ -215,17 +215,7 @@ const SupplyTenders = () => {
                       required
                       value={newTenderName}
                       onChange={(e) => setNewTenderName(e.target.value)}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Supply Tender Number</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      required
-                      value={newTenderNo}
-                      onChange={(e) => setNewTenderNo(e.target.value)}
-                    />
+                    /> 
                   </div>
                 </div>
                 <div className="modal-footer">

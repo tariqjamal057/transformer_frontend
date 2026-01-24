@@ -151,6 +151,7 @@ const EditNewGPInformationModal = ({ open, handleClose, newGPInformation }) => {
                     challanReceiptedDate: date,
                   }))
                 }
+                format="DD/MM/YYYY"
                 slotProps={{ textField: { fullWidth: true } }}
               />
             </Grid>

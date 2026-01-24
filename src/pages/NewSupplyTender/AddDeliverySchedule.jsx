@@ -279,6 +279,7 @@ const AddDeliverySchedule = () => {
                 //minDate={today}
                 value={loaDate}
                 onChange={(date) => setLoaDate(date ? dayjs(date) : null)}
+                format="DD/MM/YYYY"
                 slotProps={{ textField: { fullWidth: true } }}
               />
             </Grid>
@@ -298,6 +299,7 @@ const AddDeliverySchedule = () => {
                 //minDate={today}
                 value={poDate}
                 onChange={(date) => setPoDate(date ? dayjs(date) : null)}
+                format="DD/MM/YYYY"
                 slotProps={{ textField: { fullWidth: true } }}
               />
             </Grid>
@@ -325,6 +327,7 @@ const AddDeliverySchedule = () => {
                 value={commencementDate}
                 readOnly
                 //disabled
+                format="DD/MM/YYYY"
                 slotProps={{ textField: { fullWidth: true } }}
               />
             </Grid>
@@ -337,6 +340,7 @@ const AddDeliverySchedule = () => {
                 onChange={(date) =>
                   setDeliveryScheduleDate(date ? dayjs(date) : null)
                 }
+                format="DD/MM/YYYY"
                 slotProps={{ textField: { fullWidth: true } }}
               />
             </Grid>
@@ -376,6 +380,7 @@ const AddDeliverySchedule = () => {
                   }
                   value={imposedDate}
                   onChange={(date) => setImposedDate(date ? dayjs(date) : null)}
+                  format="DD/MM/YYYY"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
                 <Button variant="contained" onClick={handleAddImposedLetter}>
@@ -432,6 +437,7 @@ const AddDeliverySchedule = () => {
                   minDate={imposedDate ? imposedDate.add(1, "day") : today}
                   value={liftingDate}
                   onChange={(date) => setLiftingDate(date ? dayjs(date) : null)}
+                  format="DD/MM/YYYY"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
                 <Button variant="contained" onClick={handleAddLiftingLetter}>

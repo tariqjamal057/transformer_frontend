@@ -35,7 +35,7 @@ const AddDeliveryDetails = () => {
   });
 
   const availableChallans = deliveryChallans?.filter(
-    (challan) => !challan.deliveryDetail
+    (challan) => !challan.deliveryDetail,
   );
 
   const addDeliveryDetailsMutation = useMutation({
@@ -60,7 +60,7 @@ const AddDeliveryDetails = () => {
 
     // find the record
     const record = availableChallans.find(
-      (item) => item.challanNo === challanNo
+      (item) => item.challanNo === challanNo,
     );
     setSelectedData(record || null);
   };
@@ -117,7 +117,7 @@ const AddDeliveryDetails = () => {
                   <TextField
                     label="DI Date"
                     value={dayjs(selectedData.finalInspection.diDate).format(
-                      "YYYY-MM-DD"
+                      "YYYY-MM-DD",
                     )}
                     fullWidth
                     InputProps={{ readOnly: true }}
@@ -162,12 +162,12 @@ const AddDeliveryDetails = () => {
                     label="GP Expiry Date"
                     value={dayjs(
                       selectedData.finalInspection.deliverySchedule
-                        .deliveryScheduleDate
+                        .deliveryScheduleDate,
                     )
                       .add(
                         selectedData.finalInspection.deliverySchedule
                           .guaranteePeriodMonths,
-                        "month"
+                        "month",
                       )
                       .format("YYYY-MM-DD")}
                     fullWidth
@@ -189,6 +189,7 @@ const AddDeliveryDetails = () => {
                 value={receiptedChallanDate}
                 onChange={setReceiptedChallanDate}
                 slotProps={{ textField: { fullWidth: true } }}
+                format="DD/MM/YYYY"
               />
 
               <Button

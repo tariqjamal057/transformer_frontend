@@ -143,7 +143,7 @@ const AddFinalInspection = () => {
   const [offeredQuantity, setOfferedQuantity] = useState("");
   const [inspectionOfficer, setInspectionOfficer] = useState("");
   const [selectedInspectionOfficer, setSelectedInspectionOfficer] = useState(
-    []
+    [],
   );
   const [total, setTotal] = useState("");
   const [diNo, setDiNo] = useState("");
@@ -160,7 +160,7 @@ const AddFinalInspection = () => {
 
   // States
   const [availableTransformers, setAvailableTransformers] = useState(
-    damagedRepairedTransformers
+    damagedRepairedTransformers,
   );
   const [selectedTransformers, setSelectedTransformers] = useState([]);
 
@@ -181,7 +181,7 @@ const AddFinalInspection = () => {
 
   const handleRemove = (officer) => {
     setSelectedInspectionOfficer(
-      inspectionOfficer.filter((o) => o !== officer)
+      inspectionOfficer.filter((o) => o !== officer),
     );
   };
 
@@ -247,7 +247,7 @@ const AddFinalInspection = () => {
     const totalAvailable = to - from + 1;
     const totalDistributed = consigneeList.reduce(
       (sum, c) => sum + c.quantity,
-      0
+      0,
     );
     const newTotal = totalDistributed + parseInt(consigneeQuantity);
 
@@ -267,7 +267,7 @@ const AddFinalInspection = () => {
 
     // ✅ Attach selected repaired transformers
     const selectedTransformerObjects = availableTransformers.filter((t) =>
-      selectedTransformers.includes(t.id)
+      selectedTransformers.includes(t.id),
     );
 
     const newConsignee = {
@@ -279,7 +279,7 @@ const AddFinalInspection = () => {
 
     // ✅ Remove assigned transformers from available list
     const updatedAvailable = availableTransformers.filter(
-      (t) => !selectedTransformers.includes(t.id)
+      (t) => !selectedTransformers.includes(t.id),
     );
 
     setAvailableTransformers(updatedAvailable);
@@ -386,6 +386,7 @@ const AddFinalInspection = () => {
                   minDate={today}
                   value={offerDate}
                   onChange={setOfferDate}
+                  format="dd/MM/yyyy"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
@@ -481,7 +482,7 @@ const AddFinalInspection = () => {
                         .map(
                           (id) =>
                             availableTransformers.find((t) => t.id === id)
-                              ?.serialNo || ""
+                              ?.serialNo || "",
                         )
                         .join(", ")
                     }
@@ -570,6 +571,7 @@ const AddFinalInspection = () => {
                   minDate={today}
                   value={nominationDate}
                   onChange={setNominationDate}
+                  format="dd/MM/yyyy"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
@@ -609,6 +611,7 @@ const AddFinalInspection = () => {
                   minDate={today}
                   value={inspectionDate}
                   onChange={setInspectionDate}
+                  format="dd/MM/yyyy"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
@@ -646,6 +649,7 @@ const AddFinalInspection = () => {
                   minDate={today}
                   value={diDate}
                   onChange={setDiDate}
+                  format="dd/MM/yyyy"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
@@ -658,10 +662,6 @@ const AddFinalInspection = () => {
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
-
-              
-
-              
 
               <Grid item size={2}>
                 <div>

@@ -53,7 +53,6 @@ const AddGPReceiptNote = () => {
     queryFn: () => api.get("/consignees?all=true").then((res) => res.data),
   });
 
-
   const { mutate: addGPReceiptNote, isLoading: isAdding } = useMutation({
     mutationFn: (newNote) => api.post("/gp-receipt-notes", newNote),
     onSuccess: () => {
@@ -88,13 +87,9 @@ const AddGPReceiptNote = () => {
     const selectedName = selectedConsignee?.name || "";
     console.log("selectedName", selectedName);
 
-
     if (newGpReceiptRecords) {
-      const matches = newGpReceiptRecords.filter(
-        (record) =>
-          record.consigneeName
-            .toLowerCase()
-            .includes(selectedName.toLowerCase())
+      const matches = newGpReceiptRecords.filter((record) =>
+        record.consigneeName.toLowerCase().includes(selectedName.toLowerCase()),
       );
       console.log("matches", matches);
       setFilteredRecords(matches);
@@ -105,7 +100,7 @@ const AddGPReceiptNote = () => {
     setSelectedRecordIds((prev) =>
       prev.includes(id)
         ? prev.filter((recordId) => recordId !== id)
-        : [...prev, id]
+        : [...prev, id],
     );
   };
 
@@ -156,6 +151,7 @@ const AddGPReceiptNote = () => {
                 value={selectDateFrom}
                 onChange={(newValue) => setSelectDateFrom(newValue)}
                 slotProps={{ textField: { fullWidth: true } }}
+                format="DD/MM/YYYY"
               />
             </Grid>
 
@@ -165,6 +161,7 @@ const AddGPReceiptNote = () => {
                 value={selectDateTo}
                 onChange={(newValue) => setSelectDateTo(newValue)}
                 slotProps={{ textField: { fullWidth: true } }}
+                format="DD/MM/YYYY"
               />
             </Grid>
 
@@ -176,9 +173,12 @@ const AddGPReceiptNote = () => {
                   label="Consignee Name"
                   onChange={(e) => setConsigneeId(e.target.value)}
                 >
-                  {consignees && consignees.map((consignee) => (
-                    <MenuItem key={consignee.id} value={consignee.id}>{consignee.name}</MenuItem>
-                  ))}
+                  {consignees &&
+                    consignees.map((consignee) => (
+                      <MenuItem key={consignee.id} value={consignee.id}>
+                        {consignee.name}
+                      </MenuItem>
+                    ))}
                 </Select>
               </FormControl>
             </Grid>
@@ -199,6 +199,7 @@ const AddGPReceiptNote = () => {
                 value={accountReceiptNoteDate}
                 onChange={(newValue) => setAccountReceiptNoteDate(newValue)}
                 slotProps={{ textField: { fullWidth: true } }}
+                format="DD/MM/YYYY"
               />
             </Grid>
 
@@ -228,6 +229,7 @@ const AddGPReceiptNote = () => {
                 value={discomReceiptNoteDate}
                 onChange={(newValue) => setDiscomReceiptNoteDate(newValue)}
                 slotProps={{ textField: { fullWidth: true } }}
+                format="DD/MM/YYYY"
               />
             </Grid>
           </Grid>
@@ -248,7 +250,7 @@ const AddGPReceiptNote = () => {
                           onChange={(e) => {
                             if (e.target.checked) {
                               setSelectedRecordIds(
-                                filteredRecords.map((rec) => rec.id)
+                                filteredRecords.map((rec) => rec.id),
                               );
                             } else {
                               setSelectedRecordIds([]);
@@ -273,34 +275,35 @@ const AddGPReceiptNote = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredRecords && filteredRecords?.map((rec) => (
-                      <TableRow key={rec.id} hover>
-                        <TableCell padding="checkbox">
-                          <Checkbox
-                            checked={selectedRecordIds.includes(rec.id)}
-                            onChange={() => handleSelectRecord(rec.id)}
-                          />
-                        </TableCell>
-                        <TableCell>{rec.sinNo}</TableCell>
-                        <TableCell>{rec.trfsiNo}</TableCell>
-                        <TableCell>{rec.rating}</TableCell>
-                        <TableCell>
-                          {rec.deliveryChallan.materialDescription.name}
-                        </TableCell>
-                        <TableCell>
-                          {rec.deliveryChallan.materialDescription.phase}
-                        </TableCell>
-                        <TableCell>
-                          {
-                            rec.deliveryChallan.finalInspection.deliverySchedule
-                              .tnNumber
-                          }
-                        </TableCell>
-                        <TableCell>{rec.oilLevel}</TableCell>
-                        <TableCell>{rec.hvBushing}</TableCell>
-                        <TableCell>{rec.lvBushing}</TableCell>
-                      </TableRow>
-                    ))}
+                    {filteredRecords &&
+                      filteredRecords?.map((rec) => (
+                        <TableRow key={rec.id} hover>
+                          <TableCell padding="checkbox">
+                            <Checkbox
+                              checked={selectedRecordIds.includes(rec.id)}
+                              onChange={() => handleSelectRecord(rec.id)}
+                            />
+                          </TableCell>
+                          <TableCell>{rec.sinNo}</TableCell>
+                          <TableCell>{rec.trfsiNo}</TableCell>
+                          <TableCell>{rec.rating}</TableCell>
+                          <TableCell>
+                            {rec.deliveryChallan.materialDescription.name}
+                          </TableCell>
+                          <TableCell>
+                            {rec.deliveryChallan.materialDescription.phase}
+                          </TableCell>
+                          <TableCell>
+                            {
+                              rec.deliveryChallan.finalInspection
+                                .deliverySchedule.tnNumber
+                            }
+                          </TableCell>
+                          <TableCell>{rec.oilLevel}</TableCell>
+                          <TableCell>{rec.hvBushing}</TableCell>
+                          <TableCell>{rec.lvBushing}</TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
                 </Table>
               </Box>

@@ -240,6 +240,7 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
               margin="normal"
               sx={{ mt: 2, mb: 1 }}
               onChange={setAccountReceiptNoteDate}
+              format="DD/MM/YYYY"
               slotProps={{ textField: { fullWidth: true } }}
             />
 
@@ -284,6 +285,7 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
               sx={{ mt: 2, mb: 1 }}
               margin="normal"
               onChange={setDiscomReceiptNoteDate}
+              format="DD/MM/YYYY"
               slotProps={{ textField: { fullWidth: true } }}
             />
 

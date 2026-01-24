@@ -66,7 +66,9 @@ const AddDeliveryChalan = () => {
   const { data: companyDetails } = useQuery({
     queryKey: ["companyDetails", companyId],
     queryFn: () =>
-      companyId ? api.get(`/companies/${companyId}`).then((res) => res.data) : null,
+      companyId
+        ? api.get(`/companies/${companyId}`).then((res) => res.data)
+        : null,
     enabled: !!companyId,
   });
 
@@ -194,7 +196,7 @@ const AddDeliveryChalan = () => {
 
     // Find the selected consignee to get subSnNumber
     const selectedConsignee = availableConsignees.find(
-      (c) => c.consigneeId === consigneeId
+      (c) => c.consigneeId === consigneeId,
     );
 
     let subSerialNumberFrom = null;
@@ -311,6 +313,7 @@ const AddDeliveryChalan = () => {
                 <DatePicker
                   label="DI Date"
                   value={diDate}
+                  format="DD/MM/YYYY"
                   //disabled
                   slotProps={{ textField: { fullWidth: true } }}
                 />
@@ -321,6 +324,7 @@ const AddDeliveryChalan = () => {
                 <DatePicker
                   label="Inspection Date"
                   value={inspectionDate}
+                  format="DD/MM/YYYY"
                   //disabled
                   slotProps={{ textField: { fullWidth: true } }}
                 />
@@ -347,6 +351,7 @@ const AddDeliveryChalan = () => {
                 <DatePicker
                   label="PO Date"
                   value={poDate}
+                  format="DD/MM/YYYY"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>

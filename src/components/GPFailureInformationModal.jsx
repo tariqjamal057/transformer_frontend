@@ -296,6 +296,7 @@ const GPFailureInformationModal = ({ open, handleClose, gpFailureData }) => {
               label="TFR Failure Date"
               value={trfFailureDate}
               onChange={(date) => setTrfFailureDate(date)}
+              format="DD/MM/YYYY"
               sx={{ mt: 1, mb: 1 }}
               slotProps={{ textField: { fullWidth: true } }}
             />
@@ -306,6 +307,7 @@ const GPFailureInformationModal = ({ open, handleClose, gpFailureData }) => {
               label="Information Date"
               value={dateOfInformation}
               onChange={(date) => setDateOfInformation(date)}
+              format="DD/MM/YYYY"
               sx={{ mt: 1, mb: 1 }}
               slotProps={{ textField: { fullWidth: true } }}
             />

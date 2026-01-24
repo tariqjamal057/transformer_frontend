@@ -211,6 +211,7 @@ const SupplyGPExpiredStatementFilter = ({ onFilteredData, data }) => {
               value={selectedDate}
               onChange={(newVal) => setSelectedDate(newVal)}
               slotProps={{ textField: { fullWidth: true } }}
+              format="DD/MM/YYYY"
             />
           </LocalizationProvider>
         </Grid>

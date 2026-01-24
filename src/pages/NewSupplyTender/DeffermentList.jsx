@@ -288,6 +288,7 @@ const DeffermentList = () => {
               label="Imposed Date"
               value={dayjs(editedImposedDate)}
               onChange={(date) => setEditedImposedDate(date)}
+              format="DD/MM/YYYY"
               sx={{ mt: 2, width: "100%" }}
             />
           </LocalizationProvider>
@@ -305,6 +306,7 @@ const DeffermentList = () => {
               label="Lifting Date"
               value={dayjs(editedLiftingDate)}
               onChange={(date) => setEditedLiftingDate(date)}
+              format="DD/MM/YYYY"
               sx={{ mt: 2, width: "100%" }}
             />
           </LocalizationProvider>

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useRef } from "react";
 import { FaPencilAlt } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
 import { Link } from "react-router-dom";
@@ -19,6 +19,11 @@ import {
   Box,
   Typography,
   InputAdornment,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
 } from "@mui/material";
 import { IoCloseSharp } from "react-icons/io5";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -70,6 +75,9 @@ const DeliverySchedule = () => {
   const [commencementDate, setCommencementDate] = useState(null);
   const [createdDate, setCreatedDate] = useState(null); // fixed backend date
   const [deliveryScheduleDate, setDeliveryScheduleDate] = useState(null);
+  const [deliverySchedule, setDeliverySchedule] = useState([]);
+  const [dateError, setDateError] = useState("");
+  const isInitialLoad = useRef(false);
 
   // New State for Paired Logic
   const [imposedLiftingPairs, setImposedLiftingPairs] = useState([]);
@@ -290,7 +298,7 @@ const DeliverySchedule = () => {
 
   useEffect(() => {
     if (commencementDays === "") {
-      setCommencementDate(null); // Clear if empty
+      if (commencementDate !== null) setCommencementDate(null);
       return;
     }
 
@@ -299,12 +307,98 @@ const DeliverySchedule = () => {
       if (!isNaN(days) && days > 0) {
         // Add days to createdDate
         const calculatedDate = dayjs(createdDate).add(days, "day");
-        setCommencementDate(calculatedDate);
+        if (
+          !commencementDate ||
+          !calculatedDate.isSame(commencementDate, "day")
+        ) {
+          setCommencementDate(calculatedDate);
+        }
       } else {
-        setCommencementDate(null);
+        if (commencementDate !== null) setCommencementDate(null);
       }
     }
   }, [commencementDays, createdDate]);
+
+  const commencementDateStr = commencementDate
+    ? dayjs(commencementDate).format("YYYY-MM-DD")
+    : "";
+  const deliveryScheduleDateStr = deliveryScheduleDate
+    ? dayjs(deliveryScheduleDate).format("YYYY-MM-DD")
+    : "";
+
+  // ✅ Generate monthly delivery schedule with auto quantity
+  useEffect(() => {
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      return;
+    }
+
+    setDateError("");
+    if (!commencementDate || !deliveryScheduleDate) return;
+
+    const start = dayjs(commencementDate);
+    const end = dayjs(deliveryScheduleDate);
+
+    if (!start.isBefore(end)) {
+      setDateError(
+        "Commencement Date (CP Date) must be before Delivery Schedule Date.",
+      );
+      setDeliverySchedule([]);
+      return;
+    }
+
+    // Calculate total quantity distribution
+    const totalQty = parseInt(totalQuantity) || 0;
+    const totalDays = end.diff(start, "day");
+    const perDayQty = totalDays > 0 ? totalQty / totalDays : 0;
+
+    let segments = [];
+    let currentStart = start;
+    let allocated = 0;
+
+    while (currentStart.isBefore(end)) {
+      let currentEnd = currentStart.add(30, "day");
+      if (currentEnd.isAfter(end)) {
+        currentEnd = end;
+      }
+
+      const segmentDays = currentEnd.diff(currentStart, "day");
+      let segmentQty = "";
+
+      if (totalQty > 0) {
+        segmentQty = Math.floor(perDayQty * segmentDays);
+        allocated += segmentQty;
+      }
+
+      segments.push({
+        start: currentStart.format("DD MMM YYYY"),
+        end: currentEnd.format("DD MMM YYYY"),
+        quantity: segmentQty,
+      });
+
+      currentStart = currentEnd;
+    }
+
+    // Adjust last segment for rounding errors
+    if (totalQty > 0 && segments.length > 0) {
+      const diff = totalQty - allocated;
+      const lastSeg = segments[segments.length - 1];
+      if (typeof lastSeg.quantity === "number") {
+        lastSeg.quantity += diff;
+      }
+    }
+
+    setDeliverySchedule(segments);
+  }, [commencementDateStr, deliveryScheduleDateStr, totalQuantity]);
+
+  // ✅ Handle manual quantity input
+  const handleQuantityChange = (index, value) => {
+    setDeliverySchedule((prev) =>
+      prev.map((item, i) =>
+        i === index ? { ...item, quantity: value } : item,
+      ),
+    );
+  };
 
   const handleEditClick = (item) => {
     setSelectedDelivery(item);
@@ -322,6 +416,9 @@ const DeliverySchedule = () => {
     setDeliveryScheduleDate(
       item.deliveryScheduleDate ? dayjs(item.deliveryScheduleDate) : null,
     );
+
+    setDeliverySchedule(item.deliverySchedule || []);
+    isInitialLoad.current = true;
 
     // Reconstruct pairs from separate lists
     const pairs = [];
@@ -360,6 +457,8 @@ const DeliverySchedule = () => {
     setCommencementDays("");
     setDeliveryScheduleDate(null);
     setCommencementDate(null);
+    setDeliverySchedule([]);
+    setDateError("");
 
     setImposedLiftingPairs([]);
     setCurrentImposedLetter("");
@@ -413,6 +512,20 @@ const DeliverySchedule = () => {
   });
 
   const handleSaveChanges = () => {
+    const sumOfQuantities = deliverySchedule.reduce(
+      (sum, item) => sum + (parseInt(item.quantity) || 0),
+      0,
+    );
+
+    if (totalQuantity && sumOfQuantities !== parseInt(totalQuantity)) {
+      setAlertBox({
+        open: true,
+        error: true,
+        msg: `Total quantity mismatch! Entered total = ${sumOfQuantities}, expected = ${totalQuantity}.`,
+      });
+      return;
+    }
+
     const dataToUpdate = {
       tnNumber: tnDetail,
       rating: rating ? parseInt(rating) : null,
@@ -445,6 +558,7 @@ const DeliverySchedule = () => {
       chalanDescription: chalanDescription,
       wound: wound,
       phase: phase,
+      deliverySchedule,
     };
     updateDeliverySchedule(dataToUpdate);
   };
@@ -848,6 +962,7 @@ const DeliverySchedule = () => {
               //minDate={dayjs(today)}
               value={loaDate} // always Day.js or null
               onChange={(date) => setLoaDate(date)}
+              format="DD/MM/YYYY"
               sx={{ mt: 2, width: "100%" }}
               slotProps={{ textField: { fullWidth: true } }}
             />
@@ -867,6 +982,7 @@ const DeliverySchedule = () => {
               //minDate={dayjs(today)}
               value={poDate} // always Day.js or null
               onChange={(date) => setPoDate(date)}
+              format="DD/MM/YYYY"
               sx={{ mt: 2, width: "100%" }}
               slotProps={{ textField: { fullWidth: true } }}
             />
@@ -892,6 +1008,7 @@ const DeliverySchedule = () => {
               minDate={createdDate || dayjs()} // Optional: CP can't be before createdDate
               value={commencementDate}
               readOnly
+              format="DD/MM/YYYY"
               //disabled
               sx={{ mt: 2, width: "100%" }}
               slotProps={{ textField: { fullWidth: true } }}
@@ -903,6 +1020,7 @@ const DeliverySchedule = () => {
               label="Delivery Schedule Date"
               value={deliveryScheduleDate}
               onChange={(date) => setDeliveryScheduleDate(date)}
+              format="DD/MM/YYYY"
               sx={{ mt: 2, width: "100%" }}
               slotProps={{ textField: { fullWidth: true } }}
             />
@@ -972,6 +1090,7 @@ const DeliverySchedule = () => {
                   value={currentImposedDate}
                   onChange={(date) => setCurrentImposedDate(date)}
                   minDate={minImposedDate}
+                  format="DD/MM/YYYY"
                   slotProps={{ textField: { size: "small", fullWidth: true } }}
                 />
               </LocalizationProvider>
@@ -1001,6 +1120,7 @@ const DeliverySchedule = () => {
                   value={currentLiftingDate}
                   onChange={(date) => setCurrentLiftingDate(date)}
                   minDate={minLiftingDate}
+                  format="DD/MM/YYYY"
                   slotProps={{ textField: { size: "small", fullWidth: true } }}
                 />
               </LocalizationProvider>
@@ -1071,6 +1191,65 @@ const DeliverySchedule = () => {
             margin="normal"
             sx={{ mt: 2 }}
           />
+
+          {/* Date Error Message */}
+          {dateError && (
+            <Typography color="error" sx={{ mt: 2, fontWeight: "bold" }}>
+              ⚠️ {dateError}
+            </Typography>
+          )}
+
+          {/* Delivery Schedule Table */}
+          {deliverySchedule.length > 0 && (
+            <Box
+              sx={{ mt: 4, p: 2, border: "1px solid #ccc", borderRadius: 2 }}
+            >
+              <Typography variant="h6" mb={2}>
+                Delivery Schedule Calculation
+              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Period</TableCell>
+                    <TableCell align="right">Quantity Per Month</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {deliverySchedule.map((item, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>
+                        {item.start} - {item.end}
+                      </TableCell>
+                      <TableCell align="right">
+                        <TextField
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) =>
+                            handleQuantityChange(idx, e.target.value)
+                          }
+                          size="small"
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow>
+                    <TableCell>
+                      <strong>Total</strong>
+                    </TableCell>
+                    <TableCell align="right">
+                      <strong>
+                        {deliverySchedule.reduce(
+                          (sum, item) => sum + (parseInt(item.quantity) || 0),
+                          0,
+                        )}{" "}
+                        / {totalQuantity}
+                      </strong>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </Box>
+          )}
         </DialogContent>
 
         <DialogActions>

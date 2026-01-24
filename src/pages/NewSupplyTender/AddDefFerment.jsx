@@ -81,6 +81,7 @@ const AddDeffermentDetails = () => {
                   minDate={today}
                   value={imposedDate}
                   onChange={setImposedDate}
+                  format="dd/MM/yyyy"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
@@ -100,6 +101,7 @@ const AddDeffermentDetails = () => {
                   minDate={today}
                   value={liftingDate}
                   onChange={setLiftingDate}
+                  format="dd/MM/yyyy"
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
