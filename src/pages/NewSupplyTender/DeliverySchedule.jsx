@@ -96,49 +96,75 @@ const DeliverySchedule = () => {
   const [filteredSchedules, setFilteredSchedules] = useState([]);
   const [bulkUploadModalOpen, setBulkUploadModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadErrors, setUploadErrors] = useState([]); // State for bulk upload errors
 
   const downloadSample = () => {
     const sampleData = [
       {
+        Company: "Sample Company",
+        Discom: "Sample Discom",
         tnNumber: "TN-001",
-        rating: 5,
-        loa: "LOA-001",
-        loaDate: new Date("2024-01-01").toISOString(),
-        po: "PO-001",
-        poDate: new Date("2024-01-01").toISOString(),
-        commencementDays: 30,
-        commencementDate: new Date("2024-01-31").toISOString(), // Note: This is usually calculated based on other dates.
-        deliveryScheduleDate: new Date("2024-03-01").toISOString(),
-        imposedLetters: JSON.stringify([
-          {
-            imposedLetterNo: "ILN001",
-            date: new Date("2025-01-01").toISOString(),
-          },
-        ]),
-        liftingLetters: JSON.stringify([
-          {
-            liftingLetterNo: "LLN001",
-            date: new Date("2025-01-01").toISOString(),
-          },
-        ]),
-        guaranteePeriodMonths: 12,
-        totalQuantity: 100,
-        deliverySchedule: JSON.stringify([
-          // Note: This is usually calculated.
-          {
-            start: new Date("2024-01-31").toISOString(),
-            end: new Date("2024-02-29").toISOString(),
-            quantity: 50,
-          },
-          {
-            start: new Date("2024-03-01").toISOString(),
-            end: new Date("2024-03-01").toISOString(),
-            quantity: 50,
-          },
-        ]),
-        chalanDescription: "Sample description",
+        rating: 100,
         wound: "COPPER",
         phase: "THREE",
+        loa: "LOA-001",
+        loaDate: "2024-01-15",
+        po: "PO-001",
+        poDate: "2024-01-20",
+        commencementDays: 10,
+        commencementDate: "2024-01-30",
+        deliveryScheduleDate: "2024-04-30",
+        guaranteePeriodMonths: 24,
+        totalQuantity: 300,
+        chalanDescription: "Sample Chalan Description for TN-001",
+        imposedLetterNo: "IL-01-A",
+        imposedDate: "2024-02-05",
+        liftingLetterNo: "LL-01-A",
+        liftingDate: "2024-02-15",
+        delivery_period_start: "2024-01-30",
+        delivery_period_end: "2024-02-28",
+        delivery_period_quantity: 100,
+      },
+      {
+        Company: "Sample Company",
+        Discom: "Sample Discom",
+        tnNumber: "TN-001",
+        imposedLetterNo: "IL-01-B",
+        imposedDate: "2024-03-01",
+        liftingLetterNo: "LL-01-B",
+        liftingDate: "2024-03-10",
+        delivery_period_start: "2024-02-29",
+        delivery_period_end: "2024-03-30",
+        delivery_period_quantity: 100,
+      },
+      {
+        Company: "Sample Company",
+        Discom: "Sample Discom",
+        tnNumber: "TN-001",
+        delivery_period_start: "2024-03-31",
+        delivery_period_end: "2024-04-30",
+        delivery_period_quantity: 100,
+      },
+      {
+        Company: "Another Company",
+        Discom: "Another Discom",
+        tnNumber: "TN-002",
+        rating: 50,
+        wound: "ALUMINIUM",
+        phase: "SINGLE",
+        loa: "LOA-002",
+        loaDate: "2024-02-01",
+        po: "PO-002",
+        poDate: "2024-02-05",
+        commencementDays: 15,
+        commencementDate: "2024-02-20",
+        deliveryScheduleDate: "2024-03-20",
+        guaranteePeriodMonths: 18,
+        totalQuantity: 50,
+        chalanDescription: "Sample Chalan Description for TN-002",
+        delivery_period_start: "2024-02-20",
+        delivery_period_end: "2024-03-20",
+        delivery_period_quantity: 50,
       },
     ];
     const worksheet = XLSX.utils.json_to_sheet(sampleData);
@@ -148,7 +174,7 @@ const DeliverySchedule = () => {
       type: "array",
     });
     const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-    saveAs(data, "DeliveryScheduleSampleData.xlsx");
+    saveAs(data, "DeliveryScheduleBulkSample.xlsx");
   };
 
   const { mutate: bulkUpload, isPending: isUploading } = useMutation({
@@ -160,7 +186,8 @@ const DeliverySchedule = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(["deliverySchedules"]);
       setBulkUploadModalOpen(false);
-      setSelectedFile(null); // Clear selected file on success
+      setSelectedFile(null);
+      setUploadErrors([]);
       setAlertBox({
         open: true,
         msg: "Bulk upload successful!",
@@ -168,16 +195,26 @@ const DeliverySchedule = () => {
       });
     },
     onError: (error) => {
-      setAlertBox({
-        open: true,
-        msg: error.message,
-        error: true,
-      });
+      let errors = [];
+      if (
+        error.response?.data?.details &&
+        Array.isArray(error.response.data.details)
+      ) {
+        errors = error.response.data.details;
+      } else {
+        const errorMessage =
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          "An unexpected error occurred.";
+        errors = [{ error: errorMessage }];
+      }
+      setUploadErrors(errors);
     },
   });
 
   const onDrop = (acceptedFiles) => {
     setSelectedFile(acceptedFiles[0]);
+    setUploadErrors([]); // Clear previous errors on new file drop
     //setBulkUploadModalOpen(true); // Open modal if not already open
   };
 
@@ -185,6 +222,7 @@ const DeliverySchedule = () => {
 
   const handleFileUpload = (e) => {
     setSelectedFile(e.target.files[0]);
+    setUploadErrors([]); // Clear previous errors on new file selection
     //setBulkUploadModalOpen(true); // Open modal if not already open
   };
 
@@ -478,8 +516,15 @@ const DeliverySchedule = () => {
     setBulkUploadModalOpen(false); // Close bulk upload modal if open
   };
 
+  const handleCloseBulkUploadModal = () => {
+    setBulkUploadModalOpen(false);
+    setSelectedFile(null);
+    setUploadErrors([]);
+  };
+
   const handleBulkUploadSubmit = () => {
     if (selectedFile) {
+      setUploadErrors([]);
       bulkUpload(selectedFile);
     } else {
       setAlertBox({
@@ -643,22 +688,10 @@ const DeliverySchedule = () => {
           )}
         </div>
 
-        <Dialog
-          open={bulkUploadModalOpen}
-          onClose={() => {
-            setBulkUploadModalOpen(false);
-            setSelectedFile(null); // Clear selected file when modal is closed
-          }}
-          fullWidth
-        >
+        <Dialog open={bulkUploadModalOpen} onClose={handleCloseBulkUploadModal} fullWidth>
           <DialogTitle className="d-flex justify-content-between align-items-center">
             Bulk Upload
-            <IconButton
-              onClick={() => {
-                setBulkUploadModalOpen(false);
-                setSelectedFile(null); // Clear selected file when modal is closed
-              }}
-            >
+            <IconButton onClick={handleCloseBulkUploadModal}>
               <IoCloseSharp />
             </IconButton>
           </DialogTitle>
@@ -680,15 +713,51 @@ const DeliverySchedule = () => {
                 <p>Drag 'n' drop some files here, or click to select files</p>
               )}
             </div>
+            {uploadErrors.length > 0 && (
+              <Box
+                sx={{
+                  mt: 2,
+                  p: 2,
+                  border: "1px solid",
+                  borderColor: "error.main",
+                  borderRadius: 1,
+                  maxHeight: "200px",
+                  overflowY: "auto",
+                  backgroundColor: "#ffebee",
+                }}
+              >
+                <Typography color="error" variant="h6" gutterBottom>
+                  Upload Failed
+                </Typography>
+                {uploadErrors.map((err, index) => (
+                  <Box key={index} sx={{ mb: 1 }}>
+                    <Typography color="error.main" variant="body2">
+                      <strong>
+                        - Row {err.row} (TN: {err.tnNumber}):
+                      </strong>
+                      {Array.isArray(err.errors) ? (
+                        <ul
+                          style={{
+                            margin: 0,
+                            paddingLeft: "20px",
+                            fontSize: "0.8rem",
+                          }}
+                        >
+                          {err.errors.map((e, i) => (
+                            <li key={i}>{e}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span style={{ marginLeft: "8px" }}>{err.error}</span>
+                      )}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
           </DialogContent>
           <DialogActions>
-            <Button
-              onClick={() => {
-                setBulkUploadModalOpen(false);
-                setSelectedFile(null); // Clear selected file when modal is closed
-              }}
-              variant="outlined"
-            >
+            <Button onClick={handleCloseBulkUploadModal} variant="outlined">
               Cancel
             </Button>
             <Button
