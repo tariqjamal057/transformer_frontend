@@ -1,38 +1,60 @@
 import React from "react";
 
-export default function PdfTemplate() {
+export default function PdfTemplate({ item }) {
+  console.log("Item:", item);
+  console.log("Final Inspection:", item?.finalInspection);
+
+  // Helper function to format dates
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString("en-GB");
+  };
+
+  // Find the specific consignee's info from the final inspection data
+  const consigneeInfo = item?.finalInspection?.consignees?.find(
+    (fic) => fic.consigneeId === item.consigneeId,
+  );
+
+  console.log("Consignee Info:", consigneeInfo);
+
+  // Use the specific consignee's quantity if available, otherwise fallback to the total inspected quantity
+  const consigneeQuantity =
+    consigneeInfo?.quantity || item?.finalInspection?.inspectedQuantity || "N/A";
+
+
+  // Map the dynamic 'item' prop to the formData structure
   const formData = {
-    challanNo: "KI/259",
-    challanDate: "19-12-2025",
-    consigneeName: "KALPANA INDUSTRIES",
-    consigneeAddress: "F-11 INDUSTRIAL AREA,",
-    consigneeCity: "JHUN JHUNU-333 001",
-    consigneePhone: "PHONE: 250070, 250395",
-    consignorName: "The Assistant Controller of Stores,",
-    consignorCompany: "Jodhpur Vidyut Vitran Nigam Ltd.,",
-    consignorCity: "Ratangarh",
-    panNo: "AABFK3333R",
-    gstNo: "08AABFK3333R1Z0",
-    poNumber: "JDVVNL/SE (MM&C)/JU/E1A1/TN-1966/PO.14806/D.5895",
-    poDate: "10-09-2024",
-    lorryNo: "RJ-18, GB-4567",
-    driverName: "Prakash Ji",
-    grNo: "",
-    grDate: "",
-    materialDesc:
-      "KI Make 16 KVA, Single Phase 11/√3/0.240 KV Aluminium Wound Energy Efficiency Level-1 completely self protected Distribution Transformer with Inbuilt circuit breaker and all fittings and accessories and first filling of transformer oil, confirming to technical specification as per GTP. TN-1966 and schedule of GTP having BIS Marking as IS 1180 (PART I)2014 Amendment no.04",
-    bearingNo: "14821 to 14874",
-    quantity: "54 Nos.",
-    inspector: "Shri Manoj Nayak",
-    inspectorTitle: "Assistant Engineer (O&M)",
-    inspectorCompany: "Jodhpur Vidyut Vitran Nigam Limited",
-    inspectorLocation: "Lohawat",
-    asOnDate: "30-11-2025",
-    diNo: "JDVVNL/SE (MM&C)/JU/E1AI/TN-1966/D.7513",
-    diDate: "10-12-2025",
-    receiptMaterialDesc:
-      "16 KVA Single Phase 11/√3/0.240 KV Aluminium wound Energy Efficiency Level-1 Distribution Transformer Complete with all accessories fittings, first filling of transformers oil as per BIS Marking SI. No. - 14821 to 14874",
-    receiptQuantity: "54 Nos.",
+    challanNo: item?.challanNo || "N/A",
+    challanDate: formatDate(item?.challanCreatedAt),
+    consigneeName: item?.supplyTender?.company?.name || "N/A",
+    consigneeAddress: item?.supplyTender?.company?.address || "N/A",
+    consigneeCity: "", // City is part of the address, kept for structure
+    consigneePhone: `PHONE: ${item?.supplyTender?.company?.phone || "N/A"}`,
+    consignorName: item?.consignorName || "N/A",
+    consignorCompany: item?.consignee?.name || "N/A", // 'To' field seems to be the consignee
+    consignorCity: item?.consignee?.address || "N/A",
+    panNo: "N/A", // PAN No. not available in the data model
+    gstNo: item?.consignorGST || "N/A",
+    poNumber: item?.finalInspection?.deliverySchedule?.po || "N/A",
+    poDate: formatDate(item?.finalInspection?.deliverySchedule?.poDate),
+    lorryNo: item?.lorryNo || "N/A",
+    driverName: item?.truckDriverName || "N/A",
+    grNo: "", // GR No. not in model
+    grDate: "", // GR Date not in model
+    materialDesc: item?.materialDescription?.description || "N/A",
+    bearingNo: `${item?.subSerialNumberFrom || "N/A"} to ${
+      item?.subSerialNumberTo || "N/A"
+    }`,
+    quantity: `${consigneeQuantity} Nos.`,
+    inspector: item?.finalInspection?.inspectionOfficers?.join(", ") || "N/A",
+    inspectorTitle: "Assistant Engineer (O&M)", // Static data
+    inspectorCompany: "Jodhpur Vidyut Vitran Nigam Limited", // Static data
+    inspectorLocation: "Lohawat", // Static data
+    asOnDate: formatDate(item?.finalInspection?.inspectionDate),
+    diNo: item?.finalInspection?.diNo || "N/A",
+    diDate: formatDate(item?.finalInspection?.diDate),
+    receiptMaterialDesc: item?.materialDescription?.description || "N/A",
+    receiptQuantity: `${consigneeQuantity} Nos.`,
   };
 
   return (

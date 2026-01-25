@@ -59,7 +59,8 @@ const AddGPFailureInformation = () => {
       navigate("/GPFailureInformation-list");
     },
     onError: (error) => {
-      setAlertBox({ open: true, msg: error.message, error: true });
+      console.log(error);
+      setAlertBox({ open: true, msg: error?.response?.data?.message ?  error?.response?.data?.message: error.message, error: true });
     },
   });
 

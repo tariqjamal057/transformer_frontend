@@ -13,13 +13,13 @@ const Companies = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-    useEffect(() => {
-      setIsHideSidebarAndHeader(true);
-      window.scrollTo(0, 0);
-      return () => {
-        setIsHideSidebarAndHeader(false);
-      };
-    }, [setIsHideSidebarAndHeader]);
+  useEffect(() => {
+    setIsHideSidebarAndHeader(true);
+    window.scrollTo(0, 0);
+    return () => {
+      setIsHideSidebarAndHeader(false);
+    };
+  }, [setIsHideSidebarAndHeader]);
 
   const { data: companies, isLoading } = useQuery({
     queryKey: ["companies"],
@@ -39,15 +39,27 @@ const Companies = () => {
 
   const handleNext = async () => {
     if (!selectedCompany) {
-      setAlertBox({open: true, msg: "Please select a company first!", error: true});
+      setAlertBox({
+        open: true,
+        msg: "Please select a company first!",
+        error: true,
+      });
       return;
     }
     localStorage.setItem("companyId", selectedCompany);
     try {
-      const response = await api.post("/auth/select-company", { companyId: selectedCompany });
-      navigate("/discom", { state: { supplyTenders: response.data.supplyTenders } });
+      const response = await api.post("/auth/select-company", {
+        companyId: selectedCompany,
+      });
+      navigate("/discom", {
+        state: { supplyTenders: response.data.supplyTenders },
+      });
     } catch (error) {
-      setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
+      setAlertBox({
+        open: true,
+        msg: error.response?.data?.message || "An error occurred",
+        error: true,
+      });
     }
   };
 
@@ -56,10 +68,18 @@ const Companies = () => {
     onSuccess: () => {
       queryClient.invalidateQueries("companies");
       setShowModal(false);
-      setAlertBox({open: true, msg: "Company added successfully!", error: false});
+      setAlertBox({
+        open: true,
+        msg: "Company added successfully!",
+        error: false,
+      });
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
+      setAlertBox({
+        open: true,
+        msg: error.response?.data?.message || "An error occurred",
+        error: true,
+      });
     },
   });
 
@@ -68,10 +88,18 @@ const Companies = () => {
     onSuccess: () => {
       queryClient.invalidateQueries("companies");
       setShowModal(false);
-      setAlertBox({open: true, msg: "Company updated successfully!", error: false});
+      setAlertBox({
+        open: true,
+        msg: "Company updated successfully!",
+        error: false,
+      });
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
+      setAlertBox({
+        open: true,
+        msg: error.response?.data?.message || "An error occurred",
+        error: true,
+      });
     },
   });
 
@@ -101,7 +129,16 @@ const Companies = () => {
     setNewCompanyPhoneNo(company.phone);
     setNewCompanyGST(company.gstNo);
     setNewCompanyEmail(company.email);
-    v (company.logo ? `${import.meta.env.VITE_IMAGE_BASE_URL}${company.logo.replace(/\\/g, '/')}` : null);
+    setNewCompanyLogo(
+      company.logo
+        ? `${import.meta.env.VITE_IMAGE_BASE_URL}${company.logo.replace(/\\/g, "/")}`
+        : null,
+    );
+    setPreviewLogo(
+      company.logo
+        ? `${import.meta.env.VITE_IMAGE_BASE_URL}${company.logo.replace(/\\/g, "/")}`
+        : null,
+    );
     setShowModal(true);
   };
 
@@ -109,10 +146,18 @@ const Companies = () => {
     mutationFn: (id) => api.delete(`/companies/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries("companies");
-      setAlertBox({open: true, msg: "Company deleted successfully!", error: false});
+      setAlertBox({
+        open: true,
+        msg: "Company deleted successfully!",
+        error: false,
+      });
     },
     onError: (error) => {
-      setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
+      setAlertBox({
+        open: true,
+        msg: error.response?.data?.message || "An error occurred",
+        error: true,
+      });
     },
   });
 
@@ -126,8 +171,7 @@ const Companies = () => {
     setNewCompanyLogo(null);
     setPreviewLogo(null);
     setShowModal(true);
-  }
-
+  };
 
   return (
     <div className="container-fluid vh-100">
@@ -173,22 +217,24 @@ const Companies = () => {
                   onClick={() => setSelectedCompany(company.id)} // Select but don't navigate
                 >
                   {/* Select company on click */}
-                  <div
-                    className="d-flex align-items-center justify-content-between gap-3 flex-grow-1"
-                  >
+                  <div className="d-flex align-items-center justify-content-between gap-3 flex-grow-1">
                     <span className="fw-bold">{company.name}</span>
                     <img
-                      src={company.logo ? `${import.meta.env.VITE_IMAGE_BASE_URL}${company.logo.replace(/\\/g, '/')}` : companyLogo}
+                      src={
+                        company.logo
+                          ? `${import.meta.env.VITE_IMAGE_BASE_URL}${company.logo.replace(/\\/g, "/")}`
+                          : companyLogo
+                      }
                       alt="logo"
                       style={{ width: 130, height: 80 }}
                     />
                   </div>
-                  {/* <div>
+                  <div style={{ marginLeft: 12 }}>
                     <button
                       className="btn btn-primary btn-sm me-2"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleEdit(company)
+                        handleEdit(company);
                       }}
                     >
                       <MdEdit />
@@ -197,12 +243,12 @@ const Companies = () => {
                       className="btn btn-danger btn-sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteCompany(company.id)
+                        deleteCompany(company.id);
                       }}
                     >
                       <MdDelete />
                     </button>
-                  </div> */}
+                  </div>
                 </div>
               ))
             )}
@@ -282,7 +328,9 @@ const Companies = () => {
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">{editingCompany ? "Edit Company" : "Add New Company"}</h5>
+                <h5 className="modal-title">
+                  {editingCompany ? "Edit Company" : "Add New Company"}
+                </h5>
                 <button
                   type="button"
                   className="btn-close"
@@ -306,13 +354,13 @@ const Companies = () => {
                     <input
                       type="text"
                       inputMode="numeric"
-                      maxLength="10"
+                      maxLength="13"
                       className="form-control"
                       required
                       value={newCompanyphoneNo}
                       onChange={(e) => {
                         const numericValue = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters
-                        setNewCompanyPhoneNo(numericValue.slice(0, 10)); // Limit to 10 digits
+                        setNewCompanyPhoneNo(numericValue.slice(0, 13)); // Limit to 10 digits
                       }}
                     />
                   </div>
@@ -376,8 +424,18 @@ const Companies = () => {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-success" disabled={addCompanyMutation.isLoading || updateCompanyMutation.isLoading}>
-                    {addCompanyMutation.isLoading || updateCompanyMutation.isLoading ? 'Saving...' : 'Save Company'}
+                  <button
+                    type="submit"
+                    className="btn btn-success"
+                    disabled={
+                      addCompanyMutation.isLoading ||
+                      updateCompanyMutation.isLoading
+                    }
+                  >
+                    {addCompanyMutation.isLoading ||
+                    updateCompanyMutation.isLoading
+                      ? "Saving..."
+                      : "Save Company"}
                   </button>
                 </div>
               </form>

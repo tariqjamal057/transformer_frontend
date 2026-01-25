@@ -50,7 +50,7 @@ const SupplyTenders = () => {
       setShowModal(false);
       setNewTenderName("");
       setNewTenderNo("");
-      setAlertBox({open: true, msg: "Supply Tender added successfully!", error: false});
+      setAlertBox({open: true, msg: "Supply Discom added successfully!", error: false});
     },
     onError: (error) => {
       setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
@@ -66,7 +66,7 @@ const SupplyTenders = () => {
     mutationFn: (id) => api.delete(`/supply-tenders/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries(["supplyTenders", companyId]);
-      setAlertBox({open: true, msg: "Supply Tender deleted successfully!", error: false});
+      setAlertBox({open: true, msg: "Supply discom deleted successfully!", error: false});
     },
     onError: (error) => {
       setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
@@ -75,7 +75,7 @@ const SupplyTenders = () => {
 
   const handleNext = async () => {
     if (!selectedSupplyTender) {
-      setAlertBox({open: true, msg: "Please select a Supply Tender first!", error: true});
+      setAlertBox({open: true, msg: "Please select a Supply discom first!", error: true});
       return;
     }
     try {
@@ -94,7 +94,7 @@ const SupplyTenders = () => {
         {/* Left Side */}
         <div className="col-md-6 d-flex flex-column justify-content-center align-items-center p-4">
           <h4 className="fw-bold mb-4 text-center">
-            INFORMATION OF SUPPLY TENDERS
+            INFORMATION OF SUPPLY DISCOMS
           </h4>
 
           <div
@@ -198,7 +198,7 @@ const SupplyTenders = () => {
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Add New Supply Tender</h5>
+                <h5 className="modal-title">Add New Supply Discom</h5>
                 <button
                   type="button"
                   className="btn-close"
@@ -208,7 +208,7 @@ const SupplyTenders = () => {
               <form onSubmit={handleSubmit}>
                 <div className="modal-body">
                   <div className="mb-3">
-                    <label className="form-label">Supply Tender Name</label>
+                    <label className="form-label">Supply Discom Name</label>
                     <input
                       type="text"
                       className="form-control"
@@ -227,7 +227,7 @@ const SupplyTenders = () => {
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-success" disabled={addTenderMutation.isLoading}>
-                    {addTenderMutation.isLoading ? 'Adding...' : 'Add Tender'}
+                    {addTenderMutation.isLoading ? 'Adding...' : 'Add Discom'}
                   </button>
                 </div>
               </form>
