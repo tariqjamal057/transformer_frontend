@@ -20,7 +20,8 @@ import {
   DialogTitle, // Added for modal
   DialogContent, // Added for modal
   DialogActions, // Added for modal
-  IconButton, // Added for modal close button
+  IconButton,
+  Grid, // Added for modal close button
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
@@ -58,8 +59,10 @@ const ActivityLogsList = () => {
     queryFn: () => {
       let url = `/activity-logs?page=${currentPage}`;
       if (filterType) url += `&type=${filterType}`;
-      if (filterStartDate) url += `&startDate=${filterStartDate.format("YYYY-MM-DD")}`;
-      if (filterEndDate) url += `&endDate=${filterEndDate.format("YYYY-MM-DD")}`;
+      if (filterStartDate)
+        url += `&startDate=${filterStartDate.format("YYYY-MM-DD")}`;
+      if (filterEndDate)
+        url += `&endDate=${filterEndDate.format("YYYY-MM-DD")}`;
       return api.get(url).then((res) => res.data);
     },
     placeholderData: { items: [], totalPages: 1 },
@@ -75,27 +78,52 @@ const ActivityLogsList = () => {
   };
 
   const formatValue = (key, value, indent = 0) => {
-    const paddingLeft = 0; // Adjust padding for nested items
+    console.log("key  ", key);
+    const paddingLeft = indent * 10; // Adjust padding for nested items
 
     if (value === null || value === undefined) {
-      return key ? <div style={{ paddingLeft }}>{key}: <span style={{ color: 'gray' }}>N/A</span></div> : <span style={{ color: 'gray' }}>N/A</span>;
+      return key ? (
+        <div style={{ paddingLeft }}>
+          {key}: <span style={{ color: "gray" }}>N/A</span>
+        </div>
+      ) : (
+        <span style={{ color: "gray" }}>N/A</span>
+      );
     }
-    
+
     // Check if value is a valid ISO date string
     const dateValue = dayjs(value);
     // Check if it's a string that could be an ISO date and is valid
-    if (typeof value === 'string' && dateValue.isValid() && value.includes('T') && value.includes('Z')) {
-      return key ? <div style={{ paddingLeft }}>{key}: {dateValue.format('DD/MM/YYYY HH:mm:ss')}</div> : <div>{dateValue.format('DD/MM/YYYY HH:mm:ss')}</div>;
+    if (
+      typeof value === "string" &&
+      dateValue.isValid() &&
+      value.includes("T") &&
+      value.includes("Z")
+    ) {
+      return key ? (
+        <div style={{ paddingLeft }}>
+          {key}: {dateValue.format("DD/MM/YYYY HH:mm:ss")}
+        </div>
+      ) : (
+        <div>{dateValue.format("DD/MM/YYYY HH:mm:ss")}</div>
+      );
     }
 
-    if (typeof value === 'object' && !Array.isArray(value)) {
+    if (typeof value === "object" && !Array.isArray(value)) {
       // Handle nested objects
       const entries = Object.entries(value);
-      if (entries.length === 0) return key ? <div style={{ paddingLeft }}>{key}: <span style={{ color: 'gray' }}>{"{}"}</span></div> : <span style={{ color: 'gray' }}>{"{}"}</span>;
+      if (entries.length === 0)
+        return key ? (
+          <div style={{ paddingLeft }}>
+            {key}: <span style={{ color: "gray" }}>{"{}"}</span>
+          </div>
+        ) : (
+          <span style={{ color: "gray" }}>{"{}"}</span>
+        );
       return (
         <div key={key} style={{ paddingLeft }}>
           {/* {key && <strong>{key}:</strong>} Only render key if it exists */}
-          <ul style={{ listStyle: 'none', margin: 0, paddingLeft: '10px' }}>
+          <ul style={{ listStyle: "none", margin: 0, paddingLeft: "10px" }}>
             {entries.map(([subKey, subValue]) => (
               <li key={subKey}>{formatValue(subKey, subValue, indent + 1)}</li>
             ))}
@@ -105,15 +133,24 @@ const ActivityLogsList = () => {
     }
     if (Array.isArray(value)) {
       // Handle arrays
-      if (value.length === 0) return key ? <div style={{ paddingLeft }}>{key}: <span style={{ color: 'gray' }}>[]</span></div> : <span style={{ color: 'gray' }}>[]</span>;
+      if (value.length === 0)
+        return key ? (
+          <div style={{ paddingLeft }}>
+            {key}: <span style={{ color: "gray" }}>[]</span>
+          </div>
+        ) : (
+          <span style={{ color: "gray" }}>[]</span>
+        );
       return (
         <div key={key} style={{ paddingLeft }}>
           {key && <strong>{key}:</strong>} {/* Only render key if it exists */}
-          <ul style={{ listStyle: 'none', margin: 0, paddingLeft: '10px' }}>
+          <ul style={{ listStyle: "none", margin: 0, paddingLeft: "10px" }}>
             {value.map((item, idx) => (
               <li key={idx}>
                 {/* Here's the change: if item is object, pass null as key to formatValue */}
-                {typeof item === 'object' ? formatValue(null, item, indent + 1) : String(item)}
+                {typeof item === "object"
+                  ? formatValue(null, item, indent + 1)
+                  : String(item)}
               </li>
             ))}
           </ul>
@@ -121,16 +158,38 @@ const ActivityLogsList = () => {
       );
     }
     // For primitive types (string, number, boolean)
-    return key ? <div style={{ paddingLeft }}>{key}: {String(value)}</div> : <div>{String(value)}</div>;
+    return key ? (
+      <div style={{ paddingLeft }}>
+        {key}: {String(value)}
+      </div>
+    ) : (
+      <div>{String(value)}</div>
+    );
   };
 
   const formatJsonData = (jsonData) => {
+    let listData = false;
+    let listLength = 0;
+    if (Array.isArray(jsonData)) {
+      listData = true;
+      listLength = jsonData.length;
+    }
+
     if (!jsonData) return "-";
     try {
-      const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
-      if (typeof data === 'object' && data !== null) {
+      const data =
+        typeof jsonData === "string" ? JSON.parse(jsonData) : jsonData;
+      if (typeof data === "object" && data !== null) {
         return Object.entries(data).map(([key, value]) => (
-          <div key={key} >{formatValue(key, value)}</div>
+          <div
+            key={key}
+            style={{
+              padding: listData && listLength > 1 ? "10px 0 10px 0" : "",
+              borderBottom: listData && listLength > 1 ? "1px solid #000" : "",
+            }}
+          >
+            {formatValue(key, value)}
+          </div>
         ));
       }
       return String(jsonData);
@@ -144,48 +203,55 @@ const ActivityLogsList = () => {
       return {
         before: "-",
         after: (
-            <Button
-                variant="outlined"
-                size="small"
-                onClick={() => {
-                    setCurrentViewData(after); // 'after' is the raw JSON data here
-                    setIsViewModalOpen(true);
-                }}
-            >
-                View Data
-            </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => {
+              setCurrentViewData(after); // 'after' is the raw JSON data here
+              setIsViewModalOpen(true);
+              console.log(after);
+            }}
+          >
+            View Data
+          </Button>
         ),
       };
     } else if (type === "DELETE") {
       return {
         before: formatJsonData(before),
-        after: <span style={{color: 'red'}}>Record Deleted</span>,
+        after: <span style={{ color: "red" }}>Record Deleted</span>,
       };
     } else if (type === "UPDATE") {
-      const beforeData = typeof before === 'string' && before ? JSON.parse(before) : before;
-      const afterData = typeof after === 'string' && after ? JSON.parse(after) : after;
-      
+      const beforeData =
+        typeof before === "string" && before ? JSON.parse(before) : before;
+      const afterData =
+        typeof after === "string" && after ? JSON.parse(after) : after;
+
       const changes = { before: [], after: [] };
 
       if (!beforeData && !afterData) {
         return { before: "-", after: "-" };
       }
 
-      const allKeys = new Set([...Object.keys(beforeData || {}), ...Object.keys(afterData || {})]);
+      const allKeys = new Set([
+        ...Object.keys(beforeData || {}),
+        ...Object.keys(afterData || {}),
+      ]);
 
       allKeys.forEach((key) => {
+        if (key === "updatedAt") return;
         const beforeValue = beforeData ? beforeData[key] : undefined;
         const afterValue = afterData ? afterData[key] : undefined;
 
         // Deep comparison for objects/arrays or stringify for comparison
         if (JSON.stringify(beforeValue) !== JSON.stringify(afterValue)) {
           changes.before.push(
-            <div key={`b-${key}`} style={{ color: 'red' }}>
+            <div key={`b-${key}`} style={{ color: "red" }}>
               {formatValue(key, beforeValue)}
             </div>,
           );
           changes.after.push(
-            <div key={`a-${key}`} style={{ color: 'green' }}>
+            <div key={`a-${key}`} style={{ color: "green" }}>
               {formatValue(key, afterValue)}
             </div>,
           );
@@ -204,39 +270,64 @@ const ActivityLogsList = () => {
       <div className="right-content w-100">
         <div className="card shadow border-0 w-100 flex-row p-4 align-items-center">
           <h5 className="mb-0">Activity Logs</h5>
-
-          <div className="d-flex align-items-center gap-3 ms-auto">
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>Action Type</InputLabel>
-              <Select
-                value={filterType}
-                label="Action Type"
-                onChange={(e) => setFilterType(e.target.value)}
-              >
-                <MenuItem value="">All</MenuItem>
-                <MenuItem value="CREATE">Create</MenuItem>
-                <MenuItem value="UPDATE">Update</MenuItem>
-                <MenuItem value="DELETE">Delete</MenuItem>
-              </Select>
-            </FormControl>
-
-            <DatePicker
-              label="Start Date"
-              value={filterStartDate}
-              onChange={(date) => setFilterStartDate(date)}
-              format="DD/MM/YYYY"
-              slotProps={{ textField: { size: "small" } }}
-            />
-            <DatePicker
-              label="End Date"
-              value={filterEndDate}
-              onChange={(date) => setFilterEndDate(date)}
-              format="DD/MM/YYYY"
-              slotProps={{ textField: { size: "small" } }}
-            />
-          </div>
         </div>
-        
+        <div className="card shadow border-0 p-3 mb-3">
+          {" "}
+          {/* New wrapper div for filters */}
+          <Grid container spacing={3} columns={{ xs: 2, sm: 4 }}>
+            {" "}
+            {/* Mimic row g-3 align-items-end */}
+            <Grid item size={1}>
+              {" "}
+              {/* Mimic col-md-3 */}
+              <FormControl fullWidth size="small">
+                <InputLabel>Action Type</InputLabel>
+                <Select
+                  value={filterType}
+                  label="Action Type"
+                  onChange={(e) => setFilterType(e.target.value)}
+                >
+                  <MenuItem value="">All</MenuItem>
+                  <MenuItem value="CREATE">Create</MenuItem>
+                  <MenuItem value="UPDATE">Update</MenuItem>
+                  <MenuItem value="DELETE">Delete</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item size={1}>
+              <DatePicker
+                label="Start Date"
+                value={filterStartDate}
+                onChange={(date) => setFilterStartDate(date)}
+                format="DD/MM/YYYY"
+                slotProps={{ textField: { fullWidth: true, size: "small" } }}
+              />
+            </Grid>
+            <Grid item size={1}>
+              <DatePicker
+                label="End Date"
+                value={filterEndDate}
+                onChange={(date) => setFilterEndDate(date)}
+                format="DD/MM/YYYY"
+                slotProps={{ textField: { fullWidth: true, size: "small" } }}
+              />
+            </Grid>
+            <Grid item size={1}>
+              <Button
+                variant="outlined"
+                color="secondary"
+                fullWidth
+                onClick={() => {
+                  setFilterStartDate(null);
+                  setFilterEndDate(null);
+                  setFilterType(""); // Reset filter type as well
+                }}
+              >
+                Reset Filters
+              </Button>
+            </Grid>
+          </Grid>
+        </div>
         <div className="card shadow border-0 p-3 mt-4">
           <div className="table-responsive">
             <Table className="table table-bordered table-striped align-middle text-nowrap">
@@ -252,99 +343,109 @@ const ActivityLogsList = () => {
                 </TableRow>
               </TableHead>
               <TableBody className="text-center">
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center">
-                    <CircularProgress />
-                  </TableCell>
-                </TableRow>
-              ) : isError ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" color="error">
-                    Error fetching data.
-                  </TableCell>
-                </TableRow>
-              ) : activityLogs?.items?.length > 0 ? (
-                activityLogs.items.map((log, index) => {
-                  const changes = renderChanges(
-                    log.before,
-                    log.after,
-                    log.type,
-                  );
-                  return (
-                    <TableRow key={log.id}>
-                      <TableCell>
-                        # {(activityLogs.currentPage - 1) * 10 + index + 1}
-                      </TableCell>
-                      <TableCell>{log.type}</TableCell>
-                      <TableCell>{log.modelName}</TableCell>
-                      <TableCell>
-                        <div>{log.doneByUser?.name || "N/A"}</div>
-                        <div className="text-muted small">
-                          ({log.doneByUser?.role || "N/A"})
-                        </div>
-                      </TableCell>
-                      <TableCell>{changes.before}</TableCell>
-                      <TableCell>{changes.after}</TableCell>
-                      <TableCell>
-                        {log.createdAt
-                          ? dayjs(log.createdAt).format("DD/MM/YYYY HH:mm:ss")
-                          : "N/A"}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} align="center">
-                    No activity logs found.
-                  </TableCell>
-                </TableRow>
-              )}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                    {activityLogs?.totalPages > 1 && (
-                      <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-                                    <ResponsivePagination
-                                      current={currentPage}
-                                      total={activityLogs.totalPages}
-                                      onPageChange={handlePageChange}
-                                    />
-                                  </Box>
-                                )}      </div>
-                              <Dialog open={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} fullWidth maxWidth="md">
-                                <DialogTitle>
-                                    Full Record Details
-                                    <IconButton
-                                        aria-label="close"
-                                        onClick={() => setIsViewModalOpen(false)}
-                                        sx={{
-                                            position: 'absolute',
-                                            right: 8,
-                                            top: 8,
-                                            color: (theme) => theme.palette.grey[500],
-                                        }}
-                                    >
-                                        <IoCloseSharp />
-                                    </IconButton>
-                                </DialogTitle>
-                                <DialogContent dividers>
-                                    <Box sx={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
-                                        {currentViewData ? (
-                                            formatJsonData(currentViewData)
-                                        ) : (
-                                            <Typography>No data to display.</Typography>
-                                        )}
-                                    </Box>
-                                </DialogContent>
-                                <DialogActions>
-                                    <Button onClick={() => setIsViewModalOpen(false)}>Close</Button>
-                                </DialogActions>
-                            </Dialog>
-                            </LocalizationProvider>
-                          );
-                        };
-                        
-                        export default ActivityLogsList;
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">
+                      <CircularProgress />
+                    </TableCell>
+                  </TableRow>
+                ) : isError ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center" color="error">
+                      Error fetching data.
+                    </TableCell>
+                  </TableRow>
+                ) : activityLogs?.items?.length > 0 ? (
+                  activityLogs.items.map((log, index) => {
+                    const changes = renderChanges(
+                      log.before,
+                      log.after,
+                      log.type,
+                    );
+                    return (
+                      <TableRow key={log.id}>
+                        <TableCell>
+                          # {(activityLogs.currentPage - 1) * 10 + index + 1}
+                        </TableCell>
+                        <TableCell>
+                          {Array.isArray(log.after)
+                            ? `BULK ${log.type}`
+                            : log.type}
+                        </TableCell>
+                        <TableCell>{log.modelName}</TableCell>
+                        <TableCell>
+                          <div>{log.doneByUser?.name || "N/A"}</div>
+                          <div className="text-muted small">
+                            ({log.doneByUser?.role || "N/A"})
+                          </div>
+                        </TableCell>
+                        <TableCell>{changes.before}</TableCell>
+                        <TableCell>{changes.after}</TableCell>
+                        <TableCell>
+                          {log.createdAt
+                            ? dayjs(log.createdAt).format("DD/MM/YYYY HH:mm:ss")
+                            : "N/A"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">
+                      No activity logs found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+        {activityLogs?.totalPages > 1 && (
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+            <ResponsivePagination
+              current={currentPage}
+              total={activityLogs.totalPages}
+              onPageChange={handlePageChange}
+            />
+          </Box>
+        )}{" "}
+      </div>
+      <Dialog
+        open={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>
+          Full Record Details
+          <IconButton
+            aria-label="close"
+            onClick={() => setIsViewModalOpen(false)}
+            sx={{
+              position: "absolute",
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <IoCloseSharp />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ whiteSpace: "pre-wrap", fontFamily: "monospace" }}>
+            {currentViewData ? (
+              formatJsonData(currentViewData)
+            ) : (
+              <Typography>No data to display.</Typography>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsViewModalOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    </LocalizationProvider>
+  );
+};
+
+export default ActivityLogsList;
