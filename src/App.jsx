@@ -64,6 +64,7 @@ import NewGPTranformers from "./pages/MisReports/NewGPTransformers";
 import NewGPSummary from "./pages/MisReports/NewGPSummary";
 import SupplyGPExpiredStatement from "./pages/MisReports/SupplyGPExpiredStatement";
 import GPExtendedWarrantyInformation from "./pages/MisReports/GPExtendedWarrantyInformation";
+import ActivityLogsList from "./pages/ActivityLogs/ActivityLogsList"; // New: Activity Logs List Component
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import { permissionMapping } from "./data/permission";
@@ -526,6 +527,11 @@ const AppContent = () => {
               element={
                 <PrivateRoute element={<GPExtendedWarrantyInformation />} />
               }
+            />
+            <Route
+              exact
+              path={permissionMapping.ActivityLogsList}
+              element={<PrivateRoute element={<ActivityLogsList />} />}
             />
           </Routes>
         </div>

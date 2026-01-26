@@ -49,6 +49,7 @@ export const defaultPermissions = {
   DIReceivedReport: "/di-received",
   ProductionPlanningReport: "/production-planning",
   GPTransformerReport: "/new-gp-transformers",
+  ActivityLogsList: "/activity-logs",
 };
 
 export const permissionMapping = {...defaultPermissions, ...subAdminPermission};
