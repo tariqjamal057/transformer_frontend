@@ -205,7 +205,7 @@ const NominationDone = () => {
                         </TableCell>
                         <TableCell>{row.companyName}</TableCell>
                         <TableCell>{row.discom}</TableCell>
-                        <TableCell>{row.deliverySchedule.tnNumber}</TableCell>
+                        <TableCell>{row.deliverySchedule?.tnNumber}</TableCell>
                         <TableCell>
                           {row.deliverySchedule.rating} KVA{" "}
                           {row.deliverySchedule.phase}

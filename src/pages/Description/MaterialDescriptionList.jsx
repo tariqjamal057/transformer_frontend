@@ -56,9 +56,11 @@ const MaterialDescriptionList = () => {
   const downloadSample = () => {
     const sampleData = [
       {
+        Company: "Sample Company",
+        Discom: "Sample Discom",
         name: "Sample Material",
         phase: "THREE",
-        rating: "500KVA",
+        rating: "500",
         wound: "COPPER",
         description: "This is a sample description.",
       },

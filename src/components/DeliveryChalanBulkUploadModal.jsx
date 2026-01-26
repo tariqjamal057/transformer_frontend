@@ -33,7 +33,7 @@ const sampleHeaders = [
     lorryNo: "MH-01-1234",
     challanDescription: "Delivery of transformers",
     materialDescriptionId: "clz... (example)",
-    challanCreatedAt: "2024-01-01",
+    challanCreatedAt: "01/01/2024",
   },
 ];
 

@@ -48,8 +48,8 @@ export default function PdfTemplate({ item }) {
     quantity: `${consigneeQuantity} Nos.`,
     inspector: item?.finalInspection?.inspectionOfficers?.join(", ") || "N/A",
     inspectorTitle: "Assistant Engineer (O&M)", // Static data
-    inspectorCompany: "Jodhpur Vidyut Vitran Nigam Limited", // Static data
-    inspectorLocation: "Lohawat", // Static data
+    inspectorCompany: item?.supplyTender?.company?.name || "N/A",
+    inspectorLocation: item?.supplyTender?.company?.address || "N/A",
     asOnDate: formatDate(item?.finalInspection?.inspectionDate),
     diNo: item?.finalInspection?.diNo || "N/A",
     diDate: formatDate(item?.finalInspection?.diDate),

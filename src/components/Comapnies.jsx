@@ -239,7 +239,7 @@ const Companies = () => {
                     >
                       <MdEdit />
                     </button>
-                    <button
+                    {/* <button
                       className="btn btn-danger btn-sm"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -247,7 +247,7 @@ const Companies = () => {
                       }}
                     >
                       <MdDelete />
-                    </button>
+                    </button> */}
                   </div>
                 </div>
               ))

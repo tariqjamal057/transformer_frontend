@@ -53,6 +53,8 @@ const ConsigneeList = () => {
   const downloadSample = () => {
     const sampleData = [
       {
+        Company: "Sample Company",
+        Discom: "Sample Discom",
         name: "John Doe",
         address: "123 Main St, Anytown, USA",
         gstNo: "22AAAAA0000A1Z5",
