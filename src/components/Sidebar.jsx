@@ -8,7 +8,7 @@ import { FaUserShield } from "react-icons/fa";
 import { LuInspectionPanel } from "react-icons/lu";
 import { TbTruckDelivery } from "react-icons/tb";
 import { RiFileDamageFill } from "react-icons/ri";
-import { MdSmsFailed } from "react-icons/md";
+import { MdSmsFailed, MdHistory } from "react-icons/md";
 import { IoDocuments } from "react-icons/io5";
 
 const Sidebar = () => {
@@ -294,6 +294,24 @@ const Sidebar = () => {
                   <IoDocuments />
                 </span>
                 Offer Letter & Sealing Statement
+              </Button>
+            </Link>
+          </li>
+        )}
+        {hasPermission("ActivityLogsList") && (
+          <li>
+            <Link
+              to="/activity-logs"
+              onClick={handleCloseSidebarOnMobile}
+            >
+              <Button
+                className={`w-100 ${activeTab === 8 ? "active" : ""}`}
+                onClick={() => setActiveTab(8)}
+              >
+                <span className="icon">
+                  <MdHistory />
+                </span>
+                Activity Logs
               </Button>
             </Link>
           </li>
