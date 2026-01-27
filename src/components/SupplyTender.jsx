@@ -4,7 +4,7 @@ import transformer3 from "../assets/transformer3.jpg";
 import { MyContext } from "../App";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../services/api";
-import { MdDelete } from "react-icons/md";
+import { MdDelete, MdEdit } from "react-icons/md";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const SupplyTenders = () => {
@@ -14,6 +14,7 @@ const SupplyTenders = () => {
   const navigate = useNavigate();
   const [supplytenders, setSupplyTenders] = useState([]);
   const [selectedSupplyTender, setSelectedSupplyTender] = useState(null);
+  const [editingTender, setEditingTender] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [newTenderName, setNewTenderName] = useState("");
   const [newTenderNo, setNewTenderNo] = useState("");
@@ -57,9 +58,27 @@ const SupplyTenders = () => {
     },
   });
 
+  const updateTenderMutation = useMutation({
+    mutationFn: ({ id, data }) => api.put(`/supply-tenders/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["supplyTenders", companyId]);
+      setShowModal(false);
+      setNewTenderName("");
+      setEditingTender(null);
+      setAlertBox({ open: true, msg: "Supply Discom updated successfully!", error: false });
+    },
+    onError: (error) => {
+      setAlertBox({ open: true, msg: error.response?.data?.message || "An error occurred", error: true });
+    },
+  });
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    addTenderMutation.mutate({ name: newTenderName, tenderNo: newTenderNo, companyId, tenderDate: new Date() });
+    if (editingTender) {
+      updateTenderMutation.mutate({ id: editingTender.id, data: { name: newTenderName } });
+    } else {
+      addTenderMutation.mutate({ name: newTenderName, tenderNo: newTenderNo, companyId, tenderDate: new Date() });
+    }
   };
 
   const { mutate: deleteTender } = useMutation({
@@ -86,6 +105,18 @@ const SupplyTenders = () => {
     } catch (error) {
       setAlertBox({open: true, msg: error.response?.data?.message || "An error occurred", error: true});
     }
+  };
+
+  const handleEdit = (tender) => {
+    setEditingTender(tender);
+    setNewTenderName(tender.name);
+    setShowModal(true);
+  };
+
+  const openAddModal = () => {
+    setEditingTender(null);
+    setNewTenderName("");
+    setShowModal(true);
   };
 
   return (
@@ -138,6 +169,17 @@ const SupplyTenders = () => {
                   >
                     {item.name}
                   </div>
+                  <div style={{ marginLeft: 12 }}>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(item);
+                      }}
+                    >
+                      <MdEdit />
+                    </button>
+                  </div>
                   {/* <button
                     className="btn btn-danger btn-sm"
                     onClick={(e) => {
@@ -155,7 +197,7 @@ const SupplyTenders = () => {
           <div className="d-flex gap-3 mt-5">
             <button
               className="btn btn-secondary px-5 py-2 rounded-pill"
-              onClick={() => setShowModal(true)}
+              onClick={openAddModal}
             >
               ADD
             </button>
@@ -198,7 +240,7 @@ const SupplyTenders = () => {
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Add New Supply Discom</h5>
+                <h5 className="modal-title">{editingTender ? "Edit Supply Discom" : "Add New Supply Discom"}</h5>
                 <button
                   type="button"
                   className="btn-close"
@@ -226,8 +268,12 @@ const SupplyTenders = () => {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-success" disabled={addTenderMutation.isLoading}>
-                    {addTenderMutation.isLoading ? 'Adding...' : 'Add Discom'}
+                  <button type="submit" className="btn btn-success" disabled={addTenderMutation.isLoading || updateTenderMutation.isLoading}>
+                    {addTenderMutation.isLoading || updateTenderMutation.isLoading
+                      ? "Saving..."
+                      : editingTender
+                      ? "Update Discom"
+                      : "Add Discom"}
                   </button>
                 </div>
               </form>
