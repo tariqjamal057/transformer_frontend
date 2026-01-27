@@ -17,6 +17,8 @@ import {
   Checkbox,
   ListItemText,
   OutlinedInput,
+  Box,
+  Typography,
 } from "@mui/material";
 import { IoCloseSharp } from "react-icons/io5";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -45,6 +47,7 @@ const SubAdminList = () => {
 
   const [bulkUploadModalOpen, setBulkUploadModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadErrors, setUploadErrors] = useState([]); // State for bulk upload errors
 
   const allAccessPages = Object.keys(defaultPermissions);
   const subAdminRoles = ["OWNER", "MANAGER", "DATA_FEEDER", "SUPERVISOR"];
@@ -65,16 +68,41 @@ const SubAdminList = () => {
   const downloadSample = () => {
     const sampleData = [
       {
+        Company: "Sample Company A",
+        Discom: "Sample Discom X",
         name: "John Doe",
         loginId: "john.doe",
         number: "1234567890",
         password: "password123",
         role: "MANAGER",
-        pages: JSON.stringify([allAccessPages[0], allAccessPages[1]]),
+        pages: "DeliveryScheduleCreate, DeliveryScheduleList, ConsigneeList",
+      },
+      {
+        Company: "Sample Company B",
+        Discom: "Sample Discom Y",
+        name: "Jane Smith",
+        loginId: "jane.smith",
+        number: "9876543210",
+        password: "securepassword",
+        role: "DATA_FEEDER",
+        pages: "FinalInspectionCreate, FinalInspectionList",
       },
     ];
-    const worksheet = XLSX.utils.json_to_sheet(sampleData);
-    const workbook = { Sheets: { Sheet1: worksheet }, SheetNames: ["Sheet1"] };
+
+    const mainWorksheet = XLSX.utils.json_to_sheet(sampleData);
+
+    // Create a second sheet for permissions reference
+    const permissionsData = allAccessPages.map(p => ({ "Available Permissions": p }));
+    const permissionsWorksheet = XLSX.utils.json_to_sheet(permissionsData);
+
+    const workbook = {
+      Sheets: {
+        "User Data": mainWorksheet, // Renamed Sheet1 for clarity
+        "Available Permissions": permissionsWorksheet, // New sheet
+      },
+      SheetNames: ["User Data", "Available Permissions"], // Updated sheet names
+    };
+
     const excelBuffer = XLSX.write(workbook, {
       bookType: "xlsx",
       type: "array",
@@ -93,15 +121,30 @@ const SubAdminList = () => {
       queryClient.invalidateQueries(["subadmins"]);
       setBulkUploadModalOpen(false);
       setSelectedFile(null);
+      setUploadErrors([]); // Clear errors on success
       setAlertBox({ open: true, msg: "Bulk upload successful!", error: false });
     },
     onError: (error) => {
-      setAlertBox({ open: true, msg: error.message, error: true });
+      let errors = [];
+      if (
+        error.response?.data?.details &&
+        Array.isArray(error.response.data.details)
+      ) {
+        errors = error.response.data.details;
+      } else {
+        const errorMessage =
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          "An unexpected error occurred.";
+        errors = [{ error: errorMessage }]; // Fallback for generic errors
+      }
+      setUploadErrors(errors); // Set state with structured errors
     },
   });
 
   const onDrop = (acceptedFiles) => {
     setSelectedFile(acceptedFiles[0]);
+    setUploadErrors([]); // Clear previous errors on new file drop
   };
 
   const { getRootProps, getInputProps } = useDropzone({ onDrop });
@@ -239,6 +282,7 @@ const SubAdminList = () => {
           onClose={() => {
             setBulkUploadModalOpen(false);
             setSelectedFile(null);
+            setUploadErrors([]); // Clear errors on modal close
           }}
           fullWidth
         >
@@ -248,6 +292,7 @@ const SubAdminList = () => {
               onClick={() => {
                 setBulkUploadModalOpen(false);
                 setSelectedFile(null);
+                setUploadErrors([]); // Clear errors on icon click close
               }}
             >
               <IoCloseSharp />
@@ -273,6 +318,48 @@ const SubAdminList = () => {
                 <p>Drag 'n' drop a file here, or click to select a file</p>
               )}
             </div>
+            {uploadErrors.length > 0 && (
+              <Box
+                sx={{
+                  mt: 2,
+                  p: 2,
+                  border: "1px solid",
+                  borderColor: "error.main",
+                  borderRadius: 1,
+                  maxHeight: "200px",
+                  overflowY: "auto",
+                  backgroundColor: "#ffebee",
+                }}
+              >
+                <Typography color="error" variant="h6" gutterBottom>
+                  Upload Failed
+                </Typography>
+                {uploadErrors.map((err, index) => (
+                  <Box key={index} sx={{ mb: 1 }}>
+                    <Typography color="error.main" variant="body2">
+                      <strong>
+                        - Row {err.row} (Login ID: {err.loginId}):
+                      </strong>
+                      {Array.isArray(err.errors) ? (
+                        <ul
+                          style={{
+                            margin: 0,
+                            paddingLeft: "20px",
+                            fontSize: "0.8rem",
+                          }}
+                        >
+                          {err.errors.map((e, i) => (
+                            <li key={i}>{e}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span style={{ marginLeft: "8px" }}>{err.error}</span>
+                      )}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
           </DialogContent>
           <DialogActions>
             <Button

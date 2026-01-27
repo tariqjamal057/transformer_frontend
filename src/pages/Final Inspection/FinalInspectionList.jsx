@@ -1,5 +1,11 @@
 import { useContext, useEffect, useState } from "react";
-import { Button, InputAdornment, TextField } from "@mui/material";
+import {
+  Box,
+  Button,
+  InputAdornment,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { Link } from "react-router-dom";
 import { FaPencilAlt, FaTrash } from "react-icons/fa";
 import SearchIcon from "@mui/icons-material/Search";
@@ -35,6 +41,7 @@ const FinalInspectionList = () => {
 
   const [bulkUploadModalOpen, setBulkUploadModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadErrors, setUploadErrors] = useState([]); // State for bulk upload errors
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -67,34 +74,187 @@ const FinalInspectionList = () => {
   const downloadSample = () => {
     const sampleData = [
       {
-        deliveryScheduleId: "enter_a_real_delivery_schedule_id_here",
+        Company: "Sample Company A",
+        Discom: "Sample Discom X",
+        TNNumber: "TN-001",
         serialNumberFrom: 101,
-        serialNumberTo: 110,
-        offerDate: new Date().toISOString(),
-        offeredQuantity: 10,
-        inspectionDate: new Date().toISOString(),
-        inspectedQuantity: 10,
-        inspectionOfficers: JSON.stringify(["Officer A", "Officer B"]),
+        serialNumberTo: 105,
+        offerDate: "2024-01-10",
+        offeredQuantity: 5,
+        inspectionDate: "2024-01-15",
+        inspectedQuantity: 5,
         diNo: "DI-12345",
-        diDate: new Date().toISOString(),
+        diDate: "2024-01-16",
         warranty: "60 Months",
         nominationLetterNo: "NL-001",
-        nominationDate: new Date().toISOString(),
-        consignees: JSON.stringify([
-          {
-            consigneeId: "enter_a_real_consignee_id_here",
-            quantity: 10,
-            subSerialNumber: "101-110",
-          },
-        ]),
-        sealingDetails: JSON.stringify([
-          { trfSiNo: "101", polySealNo: "PS-A" },
-          { trfSiNo: "102", polySealNo: "PS-B" },
-        ]),
+        nominationDate: "2024-01-14",
+        inspectionOfficer: "Officer A",
+        ConsigneeName: "Consignee Alpha",
+        ConsigneeQuantity: 3,
+        ConsigneeSubSerialNumber: "101-103",
+        TRFSINo: "101",
+        PolySealNo: "PS-001",
+      },
+      {
+        Company: "", // Empty for subsequent rows in the same group
+        Discom: "", // Empty
+        TNNumber: "", // Empty
+        serialNumberFrom: "", // Empty
+        serialNumberTo: "", // Empty
+        offerDate: "", // Empty
+        offeredQuantity: "", // Empty
+        inspectionDate: "", // Empty
+        inspectedQuantity: "", // Empty
+        diNo: "", // Empty
+        diDate: "", // Empty
+        warranty: "", // Empty
+        nominationLetterNo: "", // Empty
+        nominationDate: "", // Empty
+        inspectionOfficer: "Officer B",
+        ConsigneeName: "Consignee Beta",
+        ConsigneeQuantity: 2,
+        ConsigneeSubSerialNumber: "104-105",
+        TRFSINo: "102",
+        PolySealNo: "PS-002",
+      },
+      {
+        Company: "Sample Company B",
+        Discom: "Sample Discom Y",
+        TNNumber: "TN-002",
+        serialNumberFrom: 201,
+        serialNumberTo: 202,
+        offerDate: "2024-02-01",
+        offeredQuantity: 2,
+        inspectionDate: "2024-02-05",
+        inspectedQuantity: 2,
+        diNo: "DI-67890",
+        diDate: "2024-02-06",
+        warranty: "36 Months",
+        inspectionOfficer: "Officer Gamma",
+        ConsigneeName: "Consignee Delta",
+        ConsigneeQuantity: 2,
+        ConsigneeSubSerialNumber: "201-202",
+        TRFSINo: "201",
+        PolySealNo: "PS-003",
       },
     ];
-    const worksheet = XLSX.utils.json_to_sheet(sampleData);
-    const workbook = { Sheets: { Sheet1: worksheet }, SheetNames: ["Sheet1"] };
+
+    const mainWorksheet = XLSX.utils.json_to_sheet(sampleData);
+
+    // Create an instruction sheet
+    const instructionsData = [
+      {
+        "Field Name": "Company",
+        Description: "Name of the Company (e.g., Sample Company A)",
+        Required: "Yes",
+      },
+      {
+        "Field Name": "Discom",
+        Description: "Name of the Supply Tender (e.g., Sample Discom X)",
+        Required: "Yes",
+      },
+      {
+        "Field Name": "TNNumber",
+        Description: "Tender Number from Delivery Schedule",
+        Required: "Yes",
+      },
+      {
+        "Field Name": "serialNumberFrom",
+        Description: "Starting serial number (e.g., 101)",
+        Required: "Yes",
+      },
+      {
+        "Field Name": "serialNumberTo",
+        Description: "Ending serial number (e.g., 105)",
+        Required: "Yes",
+      },
+      {
+        "Field Name": "offeredQuantity",
+        Description: "Quantity offered (number)",
+        Required: "Yes",
+      },
+      {
+        "Field Name": "inspectionOfficers",
+        Description: "Name of an inspection officer. Add one per row.",
+        Required: "Yes (at least one)",
+      },
+      {
+        "Field Name": "ConsigneeName",
+        Description:
+          "Name of a consignee. All 3 consignee fields are required together.",
+        Required: "Yes",
+      },
+      {
+        "Field Name": "ConsigneeQuantity",
+        Description:
+          "Quantity for this consignee. All 3 consignee fields are required together.",
+        Required: "Yes",
+      },
+      {
+        "Field Name": "ConsigneeSubSerialNumber",
+        Description:
+          "Sub serial number for this consignee (e.g., 101-103). All 3 consignee fields are required together.",
+        Required: "Yes",
+      },
+      {
+        "Field Name": "TRFSINo",
+        Description:
+          "TRF SI No for sealing. Both TRF SI No and Poly Seal No are required together. Add one per row.",
+        Required: "Yes",
+      },
+      {
+        "Field Name": "PolySealNo",
+        Description:
+          "Poly Seal No for sealing. Both TRF SI No and Poly Seal No are required together. Add one per row.",
+        Required: "Yes",
+      },
+      // ... other fields and their descriptions
+      {
+        "Field Name": "offerDate",
+        Description: "Date of offer (YYYY-MM-DD)",
+        Required: "Yes",
+      },
+      {
+        "Field Name": "inspectionDate",
+        Description: "Date of inspection (YYYY-MM-DD)",
+        Required: "Yes",
+      },
+      {
+        "Field Name": "diNo",
+        Description: "DI Number",
+        Required: "No",
+      },
+      {
+        "Field Name": "diDate",
+        Description: "DI Date (YYYY-MM-DD)",
+        Required: "No",
+      },
+      {
+        "Field Name": "warranty",
+        Description: "Warranty period (e.g., 60 Months)",
+        Required: "No",
+      },
+      {
+        "Field Name": "nominationLetterNo",
+        Description: "Nomination Letter Number",
+        Required: "No",
+      },
+      {
+        "Field Name": "nominationDate",
+        Description: "Nomination Date (YYYY-MM-DD)",
+        Required: "No",
+      },
+    ];
+    const instructionsWorksheet = XLSX.utils.json_to_sheet(instructionsData);
+
+    const workbook = {
+      Sheets: {
+        "Final Inspection Data": mainWorksheet,
+        Instructions: instructionsWorksheet,
+      },
+      SheetNames: ["Final Inspection Data", "Instructions"],
+    };
+
     const excelBuffer = XLSX.write(workbook, {
       bookType: "xlsx",
       type: "array",
@@ -113,15 +273,30 @@ const FinalInspectionList = () => {
       queryClient.invalidateQueries(["finalInspections"]);
       setBulkUploadModalOpen(false);
       setSelectedFile(null);
+      setUploadErrors([]); // Clear errors on success
       setAlertBox({ open: true, msg: "Bulk upload successful!", error: false });
     },
     onError: (error) => {
-      setAlertBox({ open: true, msg: error.message, error: true });
+      let errors = [];
+      if (
+        error.response?.data?.details &&
+        Array.isArray(error.response.data.details)
+      ) {
+        errors = error.response.data.details;
+      } else {
+        const errorMessage =
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          "An unexpected error occurred.";
+        errors = [{ error: errorMessage }]; // Fallback for generic errors
+      }
+      setUploadErrors(errors); // Set state with structured errors
     },
   });
 
   const onDrop = (acceptedFiles) => {
     setSelectedFile(acceptedFiles[0]);
+    setUploadErrors([]); // Clear previous errors on new file drop
   };
 
   const { getRootProps, getInputProps } = useDropzone({ onDrop });
@@ -226,6 +401,7 @@ const FinalInspectionList = () => {
           onClose={() => {
             setBulkUploadModalOpen(false);
             setSelectedFile(null);
+            setUploadErrors([]); // Clear errors on modal close
           }}
           fullWidth
         >
@@ -235,6 +411,7 @@ const FinalInspectionList = () => {
               onClick={() => {
                 setBulkUploadModalOpen(false);
                 setSelectedFile(null);
+                setUploadErrors([]); // Clear errors on icon click close
               }}
             >
               <IoCloseSharp />
@@ -260,6 +437,48 @@ const FinalInspectionList = () => {
                 <p>Drag 'n' drop a file here, or click to select a file</p>
               )}
             </div>
+            {uploadErrors.length > 0 && (
+              <Box
+                sx={{
+                  mt: 2,
+                  p: 2,
+                  border: "1px solid",
+                  borderColor: "error.main",
+                  borderRadius: 1,
+                  maxHeight: "200px",
+                  overflowY: "auto",
+                  backgroundColor: "#ffebee",
+                }}
+              >
+                <Typography color="error" variant="h6" gutterBottom>
+                  Upload Failed
+                </Typography>
+                {uploadErrors.map((err, index) => (
+                  <Box key={index} sx={{ mb: 1 }}>
+                    <Typography color="error.main" variant="body2">
+                      <strong>
+                        - Row {err.row} (Key: {err.key}):
+                      </strong>
+                      {Array.isArray(err.errors) ? (
+                        <ul
+                          style={{
+                            margin: 0,
+                            paddingLeft: "20px",
+                            fontSize: "0.8rem",
+                          }}
+                        >
+                          {err.errors.map((e, i) => (
+                            <li key={i}>{e}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span style={{ marginLeft: "8px" }}>{err.error}</span>
+                      )}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
           </DialogContent>
           <DialogActions>
             <Button
