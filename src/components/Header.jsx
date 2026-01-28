@@ -93,6 +93,39 @@ const Header = () => {
             )}
 
             <div className="col-sm-7 d-flex align-items-center justify-content-start part3 ms-auto">
+              {/* Back to company/discom selection */}
+              {localStorage.getItem("selectedSupplyTenderId") && (
+                <button
+                  className="btn p-2 me-3"
+                  style={{
+                    background: "linear-gradient(45deg, #1976d2, #42a5f5)",
+                    color: "white",
+                    fontWeight: "bold",
+                    fontSize: "1rem",
+                    borderRadius: "30px",
+                    boxShadow: "0 6px 15px rgba(0,0,0,0.2)",
+                    transition: "all 0.3s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    whiteSpace: "nowrap", // Prevent text wrapping
+                  }}
+                  onClick={() => {
+                    localStorage.removeItem("selectedSupplyTenderId");
+                    navigate("/companies");
+                  }}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.transform = "scale(1.05)")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.transform = "scale(1)")
+                  }
+                >
+                  <Assessment />
+                  Change Company/Discom
+                </button>
+              )}
+
               {/* 🌟 MIS Reports Button */}
               <button
                 className="btn p-2 "
@@ -117,7 +150,7 @@ const Header = () => {
                 }
               >
                 <Assessment />
-                 MIS Reports
+                MIS Reports
               </button>
 
               {windowWidth <992 && <Button className="rounded-circle me-3 ms-3 hide" onClick={()=>openNav()}><IoMenu/></Button> }

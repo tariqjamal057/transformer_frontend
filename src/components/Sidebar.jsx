@@ -105,21 +105,6 @@ const Sidebar = () => {
           </li>
         )}
 
-        {hasPermission("SubAdminList") && (
-          <li>
-            <Link to="/subadmin-list" onClick={handleCloseSidebarOnMobile}>
-              <Button
-                className={`w-100 ${activeTab === 2 ? "active" : ""}`}
-                onClick={() => setActiveTab(2)}
-              >
-                <span className="icon">
-                  <FaUserShield />
-                </span>
-                Create Users
-              </Button>
-            </Link>
-          </li>
-        )}
 
         {hasPermission("FinalInspectionList") && (
           <li>
@@ -312,6 +297,21 @@ const Sidebar = () => {
                   <MdHistory />
                 </span>
                 Activity Logs
+              </Button>
+            </Link>
+          </li>
+        )}
+        {hasPermission("SubAdminList") && (
+          <li>
+            <Link to="/subadmin-list" onClick={handleCloseSidebarOnMobile}>
+              <Button
+                className={`w-100 ${activeTab === 2 ? "active" : ""}`}
+                onClick={() => setActiveTab(2)}
+              >
+                <span className="icon">
+                  <FaUserShield />
+                </span>
+                Create Users
               </Button>
             </Link>
           </li>

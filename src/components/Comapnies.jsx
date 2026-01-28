@@ -239,15 +239,21 @@ const Companies = () => {
                     >
                       <MdEdit />
                     </button>
-                    {/* <button
+                    <button
                       className="btn btn-danger btn-sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteCompany(company.id);
+                        if (
+                          window.confirm(
+                            "Are you sure you want to delete this company?"
+                          )
+                        ) {
+                          deleteCompany(company.id);
+                        }
                       }}
                     >
                       <MdDelete />
-                    </button> */}
+                    </button>
                   </div>
                 </div>
               ))

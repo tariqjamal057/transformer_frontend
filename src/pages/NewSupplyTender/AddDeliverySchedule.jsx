@@ -78,13 +78,13 @@ const AddDeliverySchedule = () => {
 
   // Auto calculate CP Date based on commencement days
   useEffect(() => {
-    if (commencementDays && parseInt(commencementDays) > 0) {
-      const calculatedDate = today.add(parseInt(commencementDays), "day");
+    if (commencementDays && parseInt(commencementDays) > 0 && poDate) {
+      const calculatedDate = dayjs(poDate).add(parseInt(commencementDays), "day");
       setCommencementDate(calculatedDate);
     } else {
       setCommencementDate(null);
     }
-  }, [commencementDays]);
+  }, [commencementDays, poDate]);
 
   // Add imposed letter to array
   const handleAddImposedLetter = () => {

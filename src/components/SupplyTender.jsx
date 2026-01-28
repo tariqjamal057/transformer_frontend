@@ -171,7 +171,7 @@ const SupplyTenders = () => {
                   </div>
                   <div style={{ marginLeft: 12 }}>
                     <button
-                      className="btn btn-primary btn-sm"
+                      className="btn btn-primary btn-sm me-2"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleEdit(item);
@@ -179,16 +179,22 @@ const SupplyTenders = () => {
                     >
                       <MdEdit />
                     </button>
-                  </div>
-                  {/* <button
-                    className="btn btn-danger btn-sm"
-                    onClick={(e) => {
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={(e) => {
                         e.stopPropagation();
-                        deleteTender(item.id);
-                    }}
-                  >
-                    <MdDelete />
-                  </button> */}
+                        if (
+                          window.confirm(
+                            "Are you sure you want to delete this supply tender?"
+                          )
+                        ) {
+                          deleteTender(item.id);
+                        }
+                      }}
+                    >
+                      <MdDelete />
+                    </button>
+                  </div>
                 </div>
               ))
             )}

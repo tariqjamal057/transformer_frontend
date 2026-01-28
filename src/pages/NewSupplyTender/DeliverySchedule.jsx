@@ -374,11 +374,11 @@ const DeliverySchedule = () => {
       return;
     }
 
-    if (commencementDays && createdDate) {
+    if (commencementDays && poDate) {
       const days = parseInt(commencementDays);
       if (!isNaN(days) && days > 0) {
-        // Add days to createdDate
-        const calculatedDate = dayjs(createdDate).add(days, "day");
+        // Add days to poDate
+        const calculatedDate = dayjs(poDate).add(days, "day");
         if (
           !commencementDate ||
           !calculatedDate.isSame(commencementDate, "day")
@@ -389,7 +389,7 @@ const DeliverySchedule = () => {
         if (commencementDate !== null) setCommencementDate(null);
       }
     }
-  }, [commencementDays, createdDate]);
+  }, [commencementDays, poDate]);
 
   const commencementDateStr = commencementDate
     ? dayjs(commencementDate).format("YYYY-MM-DD")
