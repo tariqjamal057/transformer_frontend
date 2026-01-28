@@ -500,8 +500,8 @@ const SubAdminList = () => {
             margin="normal"
             value={editedNumber}
             onChange={(e) => {
-              const numericValue = e.target.value.replace(/\D/g, "");
-              setEditedNumber(numericValue.slice(0, 10));
+              const numericValue = e.target.value;
+              setEditedNumber(numericValue);
             }}
           />
           <FormControl fullWidth margin="normal">

@@ -86,7 +86,7 @@ const Signup = () => {
                   className="form-control"
                   value={number}
                   onChange={(e) =>
-                    setNumber(e.target.value.replace(/\D/g, "").slice(0, 10))
+                    setNumber(e.target.value)
                   }
                   required
                 />

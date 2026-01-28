@@ -359,14 +359,12 @@ const Companies = () => {
                     <label className="form-label">Company Phone No</label>
                     <input
                       type="text"
-                      inputMode="numeric"
-                      maxLength="13"
                       className="form-control"
                       required
                       value={newCompanyphoneNo}
                       onChange={(e) => {
-                        const numericValue = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters
-                        setNewCompanyPhoneNo(numericValue.slice(0, 13)); // Limit to 10 digits
+                        const numericValue = e.target.value; // Remove non-numeric characters
+                        setNewCompanyPhoneNo(numericValue); // Limit to 10 digits
                       }}
                     />
                   </div>

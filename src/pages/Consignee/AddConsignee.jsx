@@ -100,8 +100,8 @@ const AddConsignee = () => {
                 className="form-control"
                 value={phone}
                 onChange={(e) => {
-                  const numericValue = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters
-                  setPhone(numericValue.slice(0, 10)); // Limit to 10 digits
+                  const numericValue = e.target.value; // Remove non-numeric characters
+                  setPhone(numericValue); // Limit to 10 digits
                 }}
               />
             </Grid>
