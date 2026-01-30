@@ -257,8 +257,54 @@ const DeliveryChalanList = () => {
                       </td>
 
                       {/* Sub Serial No */}
-                      <td>
-                        {item.subSerialNumberFrom} TO {item.subSerialNumberTo}
+                      <td className="text-start">
+                        {(() => {
+                          const fi = item.finalInspection;
+                          if (!fi || !fi.consignees || !fi.consignees.length) {
+                            return item.subSerialNumberFrom &&
+                              item.subSerialNumberTo
+                              ? `${item.subSerialNumberFrom} TO ${item.subSerialNumberTo}`
+                              : "N/A";
+                          }
+
+                          const consigneeAllocation = fi.consignees.find(
+                            (c) => c.consigneeId === item.consigneeId,
+                          );
+
+                          if (
+                            !consigneeAllocation ||
+                            !consigneeAllocation.subSnNumber
+                          ) {
+                            return item.subSerialNumberFrom &&
+                              item.subSerialNumberTo
+                              ? `${item.subSerialNumberFrom} TO ${item.subSerialNumberTo}`
+                              : "N/A";
+                          }
+
+                          let serialsStr = consigneeAllocation.subSnNumber;
+                          const mappings = fi.repaired_transformer_mapping;
+
+                          if (mappings && mappings.length > 0) {
+                            mappings.forEach((mapping) => {
+                              const newSrNoRange = `${mapping.newSrNo} TO ${mapping.newSrNo}`;
+                              if (serialsStr.includes(newSrNoRange)) {
+                                serialsStr = serialsStr.replace(
+                                  newSrNoRange,
+                                  mapping.oldSrNo,
+                                );
+                              }
+                            });
+                          }
+
+                          const finalStr = serialsStr
+                            .replace(/ TO /g, "-")
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean)
+                            .join(", ");
+
+                          return finalStr;
+                        })()}
                       </td>
 
                       {/* Inspection Officers */}

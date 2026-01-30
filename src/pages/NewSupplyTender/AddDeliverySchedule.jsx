@@ -334,7 +334,7 @@ const AddDeliverySchedule = () => {
 
             <Grid item size={1}>
               <DatePicker
-                label="Delivery Schedule Date"
+                label="Delivery Schedule End Date"
                 minDate={today}
                 value={deliveryScheduleDate}
                 onChange={(date) =>

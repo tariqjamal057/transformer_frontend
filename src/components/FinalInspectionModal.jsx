@@ -75,6 +75,17 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     placeholderData: [],
   });
 
+  const { data: totalInspectedQuantityData } = useQuery({
+    queryKey: ["totalInspectedQuantity"],
+    queryFn: () =>
+      api
+        .get(
+          `/final-inspections/total-inspected-quantity`,
+        )
+        .then((res) => res.data.totalInspectedQuantity),
+    placeholderData: 0,
+  });
+
   const [tnDetail, setTnDetail] = useState("");
   const [serialNumberFrom, setSerialNumberFrom] = useState("");
   const [serialNumberTo, setSerialNumberTo] = useState("");
@@ -132,7 +143,6 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       setOfferedQuantity(inspectionData.offeredQuantity);
       setSelectedInspectionOfficer(inspectionData.inspectionOfficers || []);
 
-      setTotal(inspectionData.total || "");
       setDiNo(inspectionData.diNo || "");
       setDiDate(inspectionData.diDate ? dayjs(inspectionData.diDate) : null);
       setWarranty(
@@ -147,6 +157,17 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       setConsigneeList(inspectionData.consignees || []);
     }
   }, [inspectionData]);
+
+  // New useEffect to handle total state
+  useEffect(() => {
+    if (inspectionData && inspectionData.total !== undefined && inspectionData.total !== null) {
+      setTotal(inspectionData.total); // Use existing total from inspectionData if present
+    } else if (totalInspectedQuantityData !== undefined) {
+      setTotal(totalInspectedQuantityData); // Otherwise, use fetched total
+    } else {
+      setTotal(""); // Default empty if no data
+    }
+  }, [inspectionData, totalInspectedQuantityData]);
 
   useEffect(() => {
     if (damagedTransformers) {
@@ -407,6 +428,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
         repairedTransformerIds: c.repairedTransformerIds || [],
       })),
       sealingDetails,
+      grandTotal: total ? parseInt(total, 10) : null,
     };
     updateFinalInspection(updatedData);
   };
@@ -553,7 +575,20 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
               fullWidth
               type="number"
               value={inspectedQuantity}
-              onChange={(e) => setInspectedQuantity(e.target.value)}
+              onChange={(e) => {
+                setInspectedQuantity(e.target.value);
+                const currentInspected = parseInt(e.target.value, 10);
+                let baseTotal = totalInspectedQuantityData;
+                if (inspectionData?.id && inspectionData?.inspectedQuantity) {
+                  baseTotal = baseTotal - inspectionData.inspectedQuantity;
+                }
+
+                if (!isNaN(currentInspected)) {
+                  setTotal(baseTotal + currentInspected);
+                } else {
+                  setTotal(baseTotal);
+                }
+              }}
               sx={{ mt: 2 }}
             />
 
@@ -593,7 +628,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
           />
 
           <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel>Sub Serial No</InputLabel>
+            <InputLabel>Serial No</InputLabel>
             <Select
               multiple
               input={<OutlinedInput label="Sub Serial No" />}

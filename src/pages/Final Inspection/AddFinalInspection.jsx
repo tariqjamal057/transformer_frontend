@@ -93,7 +93,24 @@ const AddFinalInspection = () => {
     placeholderData: [],
   });
 
+  const { data: totalInspectedQuantityData } = useQuery({
+    queryKey: ["totalInspectedQuantity"],
+    queryFn: () =>
+      api
+        .get(
+          `/final-inspections/total-inspected-quantity`,
+        )
+        .then((res) => res.data.totalInspectedQuantity),
+    placeholderData: 0,
+  });
+
   const [availableTransformers, setAvailableTransformers] = useState([]); // Initialize with empty array
+
+  useEffect(() => {
+    if (totalInspectedQuantityData !== undefined) {
+      setTotal(totalInspectedQuantityData);
+    }
+  }, [totalInspectedQuantityData]);
 
   useEffect(() => {
     if (damagedTransformers) {
@@ -371,6 +388,7 @@ const AddFinalInspection = () => {
         oldSrNo: String(item.oldSrNo),
       })),
       status: "Active",
+      grandTotal: total ? parseInt(total, 10) : null,
     };
 
     addFinalInspectionMutation.mutate(data);
@@ -556,7 +574,15 @@ const AddFinalInspection = () => {
                   type="number"
                   fullWidth
                   value={inspectedQuantity}
-                  onChange={(e) => setInspectedQuantity(e.target.value)}
+                  onChange={(e) => {
+                    setInspectedQuantity(e.target.value);
+                    const currentInspected = parseInt(e.target.value, 10);
+                    if (!isNaN(currentInspected)) {
+                      setTotal(totalInspectedQuantityData + currentInspected);
+                    } else {
+                      setTotal(totalInspectedQuantityData);
+                    }
+                  }}
                 />
               </Grid>
 
@@ -649,7 +675,7 @@ const AddFinalInspection = () => {
                     <TableRow>
                       <TableCell>Consignee</TableCell>
                       <TableCell>Quantity</TableCell>
-                      <TableCell>Sub Serial No.</TableCell>
+                      <TableCell>Serial No.</TableCell>
                       {/* <TableCell>Repaired Transformers</TableCell> */}
                       <TableCell>Action</TableCell>
                     </TableRow>

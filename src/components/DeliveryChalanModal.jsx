@@ -59,13 +59,65 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
       api.get("/material-descriptions?all=true").then((res) => res.data),
   });
 
-  const [selectedTN, setSelectedTN] = useState("");
-  const [selectedRecord, setSelectedRecord] = useState(null);
+  const { data: deliverySchedules } = useQuery({
+    queryKey: ["allDeliverySchedules"],
+    queryFn: () =>
+      api.get("/delivery-schedules?all=true").then((res) => res.data),
+    placeholderData: [],
+  });
+
+  const { data: deliveryChallansAll } = useQuery({
+    queryKey: ["deliveryChallansAll"],
+    queryFn: () =>
+      api.get("/delivery-challans?all=true").then((res) => res.data),
+    placeholderData: [],
+  });
 
   const [selectedTransformers, setSelectedTransformers] = useState([]);
   const [availableSubSerialNumbers, setAvailableSubSerialNumbers] = useState(
     [],
   );
+
+  const [selectedTN, setSelectedTN] = useState("");
+  const [selectedRecord, setSelectedRecord] = useState(null);
+
+  const [selectedDeliveryScheduleId, setSelectedDeliveryScheduleId] =
+    useState("");
+  const [filteredFinalInspections, setFilteredFinalInspections] = useState([]);
+  const [selectedFinalInspectionId, setSelectedFinalInspectionId] =
+    useState("");
+
+  // Filter final inspections based on selected delivery schedule, excluding those already used by other challans
+  useEffect(() => {
+    if (selectedDeliveryScheduleId && finalInspections && deliveryChallansAll) {
+      const usedFinalInspectionIds = new Set(
+        deliveryChallansAll
+          .filter(
+            (dc) =>
+              dc.finalInspection?.deliveryScheduleId ===
+                selectedDeliveryScheduleId &&
+              dc.finalInspectionId !== deliveryChalanData?.finalInspectionId, // Exclude current challan's final inspection
+          )
+          .map((dc) => dc.finalInspectionId),
+      );
+
+      const filtered = finalInspections.filter(
+        (fi) =>
+          fi.deliveryScheduleId === selectedDeliveryScheduleId &&
+          !usedFinalInspectionIds.has(fi.id),
+      );
+      setFilteredFinalInspections(filtered);
+    } else if (finalInspections) {
+      setFilteredFinalInspections(finalInspections);
+    } else {
+      setFilteredFinalInspections([]);
+    }
+  }, [
+    selectedDeliveryScheduleId,
+    finalInspections,
+    deliveryChallansAll,
+    deliveryChalanData,
+  ]);
 
   // Auto-fill fields
   const [diNo, setDiNo] = useState("");
@@ -77,43 +129,109 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
   const [chalanDescription, setChalanDescription] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
 
-  const handleTNChange = (tnNumber) => {
-    setSelectedTN(tnNumber);
-    const record = finalInspections.find(
-      (item) => item?.id === tnNumber,
+  const handleDeliveryScheduleChange = (deliveryScheduleId) => {
+    setSelectedDeliveryScheduleId(deliveryScheduleId);
+    setSelectedFinalInspectionId(""); // Reset final inspection when TN changes
+    setSelectedRecord(null); // Reset selectedRecord
+
+    // Reset other fields
+    setDiNo("");
+    setDiDate(null);
+    setInspectionDate(null);
+    setInspectionOfficers("");
+    setPoNo("");
+    setPoDate(null);
+    setChalanDescription("");
+    setSerialNumber("");
+    setAvailableConsignees([]);
+    setSelectedConsigneeId("");
+    setConsigneeAddress("");
+    setConsigneeGSTNo("");
+    setSelectedTransformers([]);
+    setAvailableSubSerialNumbers([]);
+  };
+
+  const handleFinalInspectionChange = (finalInspectionId) => {
+    setSelectedFinalInspectionId(finalInspectionId);
+    const record = finalInspections?.find(
+      (item) => item?.id === finalInspectionId,
     );
 
     if (record) {
       setSelectedRecord(record);
-      setDiNo(record.diNo);
-      setDiDate(dayjs(record.diDate));
-      setInspectionDate(dayjs(record.inspectionDate));
-      setInspectionOfficers(record.inspectionOfficers.join(", "));
-      setPoNo(record.deliverySchedule.po);
-      setPoDate(dayjs(record.deliverySchedule.poDate));
+
+      // auto-filled fields
+      setDiNo(record.diNo || "");
+      setDiDate(record.diDate ? dayjs(record.diDate) : null);
+      setInspectionDate(
+        record.inspectionDate ? dayjs(record.inspectionDate) : null,
+      );
+      setInspectionOfficers(record.inspectionOfficers.join(", ") || "");
+      setPoNo(record.deliverySchedule?.po || "");
+      setPoDate(
+        record.deliverySchedule?.poDate
+          ? dayjs(record.deliverySchedule.poDate)
+          : null,
+      );
+      setChalanDescription(record.deliverySchedule?.chalanDescription || "");
       setSerialNumber(
         record.snNumber ||
-          `${record.serialNumberFrom} TO ${record.serialNumberTo}`,
+          `${record.serialNumberFrom} TO ${record.serialNumberTo}` ||
+          "",
       );
-      setChalanDescription(record.deliverySchedule.description);
 
-      setAvailableConsignees(record.consignees || []);
+      // Consignee population
+      if (record.consignees && deliveryChallansAll) {
+        const usedConsigneeIds = new Set(
+          deliveryChallansAll
+            .filter(
+              (dc) =>
+                dc.finalInspectionId === finalInspectionId &&
+                dc.consigneeId !== deliveryChalanData?.consigneeId, // Exclude current challan's consignee
+            )
+            .map((dc) => dc.consigneeId),
+        );
+        const filteredConsignees = record.consignees.filter(
+          (c) => !usedConsigneeIds.has(c.consigneeId),
+        );
+        setAvailableConsignees(filteredConsignees);
+      } else {
+        setAvailableConsignees(record.consignees || []);
+      }
       setSelectedConsigneeId("");
       setConsigneeAddress("");
       setConsigneeGSTNo("");
-      setSelectedTransformers([]);
 
-      if (record.repaired_transformer_srno) {
-        const subSerialNumbers = record.repaired_transformer_mapping.map(
-          (srNoIst) => ({
-            id: srNoIst.oldSrNo,
-            serialNo: srNoIst.oldSrNo,
-          }),
-        );
+      // Sub-serial number population
+      setSelectedTransformers([]);
+      if (record.serialNumberFrom && record.serialNumberTo) {
+        const from = parseInt(record.serialNumberFrom, 10);
+        const to = parseInt(record.serialNumberTo, 10);
+        const subSerialNumbers = [];
+        for (let i = from; i <= to; i++) {
+          subSerialNumbers.push({ id: String(i), serialNo: String(i) });
+        }
         setAvailableSubSerialNumbers(subSerialNumbers);
       } else {
         setAvailableSubSerialNumbers([]);
       }
+    } else {
+      // Reset all fields if no record is found or selection is cleared
+      setSelectedRecord(null);
+      setDiNo("");
+      setDiDate(null);
+      setInspectionDate(null);
+      setInspectionOfficers("");
+      setPoNo("");
+      setPoDate(null);
+      setChalanDescription("");
+      setSerialNumber("");
+      setAvailableConsignees([]);
+      setSelectedConsigneeId("");
+      setConsigneeAddress("");
+      setConsigneeGSTNo("");
+      setSelectedTransformers([]);
+      setAvailableSubSerialNumbers([]);
     }
   };
 
@@ -147,10 +265,12 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
     const selectedId = event.target.value;
     setSelectedConsigneeId(selectedId);
 
-    const record = consignees.find((item) => item.id === selectedId);
+    const record = availableConsignees.find(
+      (item) => item.consigneeId === selectedId,
+    );
     if (record) {
-      setConsigneeAddress(record.address);
-      setConsigneeGSTNo(record.gstNo);
+      setConsigneeAddress(record.consigneeAddress);
+      setConsigneeGSTNo(record.consigneeGstNo);
     } else {
       setConsigneeAddress("");
       setConsigneeGSTNo("");
@@ -176,7 +296,10 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
 
   const { mutate: updateChallan, isLoading } = useMutation({
     mutationFn: (updatedChallan) =>
-      api.put(`/delivery-challans/${deliveryChalanData.id}`, updatedChallan),
+      api.put(
+        `/delivery-challans/${deliveryChalanData.id}`,
+        updatedChallan,
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries(["deliveryChallans"]);
       handleClose();
@@ -186,23 +309,18 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Find the selected consignee to get subSnNumber
-    const selectedConsignee = availableConsignees.find(
-      (c) => c.consigneeId === selectedConsigneeId
-    );
-
     let subSerialNumberFrom = null;
     let subSerialNumberTo = null;
 
-    if (selectedConsignee && selectedConsignee.subSnNumber) {
-      const [from, to] = selectedConsignee.subSnNumber.split(" TO ");
-      subSerialNumberFrom = from ? String(from) : null;
-      subSerialNumberTo = to ? String(to) : null;
+    if (selectedTransformers.length > 0) {
+      const numericSerials = selectedTransformers.map((n) => parseInt(n, 10));
+      subSerialNumberFrom = String(Math.min(...numericSerials));
+      subSerialNumberTo = String(Math.max(...numericSerials));
     }
 
     const data = {
       finalInspectionId:
-        selectedRecord?.id || deliveryChalanData.finalInspection.id,
+        selectedRecord?.id || deliveryChalanData.finalInspectionId,
       challanNo,
       subSerialNumberFrom,
       subSerialNumberTo,
@@ -218,7 +336,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
       challanDescription: chalanDescription,
       supplyTenderId:
         selectedRecord?.deliverySchedule?.supplyTenderId ||
-        deliveryChalanData.finalInspection.deliverySchedule.supplyTenderId,
+        deliveryChalanData.supplyTenderId,
     };
 
     updateChallan(data);
@@ -229,33 +347,53 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
     if (
       deliveryChalanData &&
       deliveryChalanData.finalInspection &&
-      finalInspections
+      finalInspections &&
+      deliverySchedules &&
+      deliveryChallansAll
     ) {
-      const fi = finalInspections.find(
-        (f) => f.id === deliveryChalanData.finalInspectionId,
-      );
-      const ds = fi?.deliverySchedule;
+      const fi = deliveryChalanData.finalInspection;
+      const ds = fi.deliverySchedule;
       if (!fi || !ds) return;
 
+      setSelectedDeliveryScheduleId(ds.id);
+      setSelectedFinalInspectionId(fi.id);
       setSelectedRecord(fi);
 
-      // 🔹 TN & Serial Numbers
-      setSelectedTN(ds?.tnNumber || "");
       setSerialNumber(
         fi.snNumber || `${fi.serialNumberFrom} TO ${fi.serialNumberTo}`,
       );
 
-      // 🔹 Consignees & Sub-serials
-      const consigneesFromFI = fi.consignees || [];
-      setAvailableConsignees(consigneesFromFI);
+      // Consignees & Sub-serials
+      if (fi.consignees && deliveryChallansAll) {
+        const usedConsigneeIds = new Set(
+          deliveryChallansAll
+            .filter(
+              (dc) =>
+                dc.finalInspectionId === fi.id &&
+                dc.consigneeId !== deliveryChalanData.consigneeId, // Exclude current challan's consignee
+            )
+            .map((dc) => dc.consigneeId),
+        );
+        const filteredConsignees = fi.consignees.filter(
+          (c) => !usedConsigneeIds.has(c.consigneeId),
+        );
+        setAvailableConsignees(filteredConsignees);
+      } else {
+        setAvailableConsignees(fi.consignees || []);
+      }
       setSelectedConsigneeId(deliveryChalanData.consigneeId);
 
-      if (fi.repaired_transformer_srno) {
-        const subSerialNumbers = fi.repaired_transformer_srno.map((srNo) => ({
-          id: srNo,
-          serialNo: srNo,
-        }));
+      // Sub-serial population
+      if (fi.repaired_transformer_srno && fi.repaired_transformer_mapping) {
+        const subSerialNumbers = fi.repaired_transformer_mapping.map(
+          (srNoIst) => ({
+            id: srNoIst.oldSrNo,
+            serialNo: srNoIst.oldSrNo,
+          }),
+        );
         setAvailableSubSerialNumbers(subSerialNumbers);
+      } else {
+        setAvailableSubSerialNumbers([]);
       }
 
       const subSerialFrom = deliveryChalanData.subSerialNumberFrom;
@@ -268,42 +406,40 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
         setSelectedTransformers(selected);
       }
 
-      // 🔹 DI Details
       setDiNo(fi.diNo || "");
       setDiDate(fi.diDate ? dayjs(fi.diDate) : null);
 
-      // 🔹 Inspection
       setInspectionDate(fi.inspectionDate ? dayjs(fi.inspectionDate) : null);
       setInspectionOfficers(fi.inspectionOfficers.join(", ") || []);
 
-      // 🔹 PO Details
       setPoNo(ds.po || "");
       setPoDate(ds.poDate ? dayjs(ds.poDate) : null);
 
-      // 🔹 Challan
       setChallanNo(deliveryChalanData.challanNo || "");
       setChalanDescription(ds.chalanDescription || "");
+      setSelectedMaterialCode(deliveryChalanData.materialDescriptionId || "");
       setMaterialDescription(
         deliveryChalanData.materialDescription?.description || "",
       );
-      setSelectedMaterialCode(deliveryChalanData.materialDescriptionId || "");
 
-      // 🔹 Consignor
       setConsignorName(deliveryChalanData.consignorName || "");
       setConsignorAddress(deliveryChalanData.consignorAddress || "");
       setConsignorPhoneNo(deliveryChalanData.consignorPhone || "");
       setConsignorGSTNo(deliveryChalanData.consignorGST || "");
       setConsignorEmail(deliveryChalanData.consignorEmail || "");
 
-      // 🔹 Consignee
       setConsigneeAddress(deliveryChalanData.consignee?.address || "");
       setConsigneeGSTNo(deliveryChalanData.consignee?.gstNo || "");
 
-      // 🔹 Transport Details
       setLorryNo(deliveryChalanData.lorryNo || "");
       setDriverName(deliveryChalanData.truckDriverName || "");
     }
-  }, [deliveryChalanData, consignees, finalInspections]);
+  }, [
+    deliveryChalanData,
+    finalInspections,
+    deliverySchedules,
+    deliveryChallansAll,
+  ]);
 
   return (
     <Modal open={open} onClose={handleClose}>
@@ -321,36 +457,40 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
           </IconButton>
         </Stack>
 
-        <Box mt={2}>
+        <Box mt={2} component="form" onSubmit={handleSubmit}>
           {/* TN Dropdown */}
 
           <TextField
             select
             fullWidth
             label="Select TN Number"
-            value={selectedTN}
-            onChange={(e) => handleTNChange(e.target.value)}
+            value={selectedDeliveryScheduleId}
+            onChange={(e) => handleDeliveryScheduleChange(e.target.value)}
             sx={{ mt: 2 }}
           >
-            {finalInspections?.map((tn) => (
-              <MenuItem
-                key={tn?.id}
-                value={tn?.id}
-              >
-                {tn.deliverySchedule?.tnNumber}
+            {deliverySchedules?.map((ds) => (
+              <MenuItem key={ds?.id} value={ds?.id}>
+                {ds?.tnNumber}
               </MenuItem>
             ))}
           </TextField>
 
-          {/* Serial Number */}
-
+          {/* Serial Number Dropdown */}
           <TextField
+            select
             fullWidth
-            label="Serial Number"
-            value={serialNumber}
+            label="Select Serial Number"
+            value={selectedFinalInspectionId}
+            onChange={(e) => handleFinalInspectionChange(e.target.value)}
+            disabled={!selectedDeliveryScheduleId}
             sx={{ mt: 2 }}
-            InputProps={{ readOnly: true }}
-          />
+          >
+            {filteredFinalInspections?.map((fi) => (
+              <MenuItem key={fi?.id} value={fi?.id}>
+                {fi?.serialNumberFrom} TO {fi?.serialNumberTo}
+              </MenuItem>
+            ))}
+          </TextField>
 
           <FormControl fullWidth sx={{ mt: 2 }}>
             <InputLabel>Sub Serial No</InputLabel>
@@ -359,16 +499,10 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
               value={selectedTransformers}
               onChange={(e) => setSelectedTransformers(e.target.value)}
               input={<OutlinedInput label="Sub Serial No" />}
-              renderValue={(selected) =>
-                selected
-                  .map(
-                    (id) =>
-                      availableSubSerialNumbers.find((s) => s.id === id)
-                        ?.serialNo || "",
-                  )
-                  .join(", ")
+              renderValue={(selected) => selected.join(", ")}
+              disabled={
+                !selectedFinalInspectionId || !availableSubSerialNumbers?.length
               }
-              disabled={!selectedTN || !availableSubSerialNumbers?.length}
             >
               {availableSubSerialNumbers?.map((s) => (
                 <MenuItem key={s.id} value={s.id}>
@@ -394,8 +528,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
               value={diDate}
               //disabled
               format="DD/MM/YYYY"
-              slotProps={{ textField: { fullWidth: true } }}
-              sx={{ mt: 2 }}
+              slotProps={{ textField: { fullWidth: true, sx: { mt: 2 } } }}
             />
           </LocalizationProvider>
 
@@ -406,8 +539,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
               value={inspectionDate}
               //disabled
               format="DD/MM/YYYY"
-              slotProps={{ textField: { fullWidth: true } }}
-              sx={{ mt: 2 }}
+              slotProps={{ textField: { fullWidth: true, sx: { mt: 2 } } }}
             />
           </LocalizationProvider>
 
@@ -438,8 +570,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
               label="PO Date"
               value={poDate}
               format="DD/MM/YYYY"
-              slotProps={{ textField: { fullWidth: true } }}
-              sx={{ mt: 2 }}
+              slotProps={{ textField: { fullWidth: true, sx: { mt: 2 } } }}
             />
           </LocalizationProvider>
 
@@ -512,6 +643,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
             value={selectedConsigneeId}
             onChange={handleConsigneeChange}
             sx={{ mt: 2 }}
+            disabled={!selectedFinalInspectionId}
           >
             {availableConsignees?.map((item) => (
               <MenuItem key={item.consigneeId} value={item.consigneeId}>
@@ -572,7 +704,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
             rows={4}
             label="Delivery Challan Description"
             value={chalanDescription}
-            readOnly
+            InputProps={{ readOnly: true }}
             margin="normal"
             sx={{ mt: 2 }}
           />
@@ -611,8 +743,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
             rows={4}
             label="Description Of Material"
             value={materialDescription}
-            readOnly
-            //onChange={(e) => setMaterialDescription(e.target.value)}
+            InputProps={{ readOnly: true }}
             margin="normal"
             sx={{ mt: 2 }}
           />
@@ -621,7 +752,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
             <Button
               variant="contained"
               size="large"
-              onClick={handleSubmit}
+              type="submit"
               disabled={isLoading}
             >
               {isLoading ? "Saving..." : "Save Changes"}

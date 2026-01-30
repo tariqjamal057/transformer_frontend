@@ -816,7 +816,7 @@ const DeliverySchedule = () => {
                   <th>PO DETAILS</th>
                   <th>LOA DETAILS</th>
                   <th>CP DATE & DAYS</th>
-                  <th>DELIVERY SCHEDULE</th>
+                  <th>DELIVERY SCHEDULE END DATE</th>
                   <th>CREATED AT</th>
                   <th>IMPOSED LETTER LIST</th>
                   <th>LIFTING LETTER LIST</th>
@@ -1124,7 +1124,7 @@ const DeliverySchedule = () => {
 
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
-              label="Delivery Schedule Date"
+              label="Delivery Schedule End Date"
               value={deliveryScheduleDate}
               onChange={(date) => setDeliveryScheduleDate(date)}
               format="DD/MM/YYYY"

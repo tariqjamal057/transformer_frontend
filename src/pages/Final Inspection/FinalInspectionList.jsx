@@ -522,6 +522,7 @@ const FinalInspectionList = () => {
                   <th>Inspected Quantity</th>
                   <th>Total</th>
                   <th>DI No & Date</th>
+                  <th>Consignee Detail</th>
                   <th>Warranty Period</th>
                   {hasPermission("FinalInspectionUpdate") && <th>Action</th>}
                 </tr>
@@ -583,12 +584,38 @@ const FinalInspectionList = () => {
                         {format(new Date(item.inspectionDate), "dd MMM yyyy")}
                       </td>
                       <td>{item.inspectedQuantity}</td>
-                      <td>{item.total || "-"}</td>
+                      <td>{item.grandTotal || 0}</td>
                       <td>
                         <div className="fw-semibold">{item.diNo}</div>
                         <div className="text-muted small">
                           {format(new Date(item.diDate), "dd MMM yyyy")}
                         </div>
+                      </td>
+                      <td className="text-start">
+                        {item.consignees && item.consignees.length > 0 ? (
+                          <>
+                            {item.consignees.map((consignee, idx) => (
+                              <div
+                                key={idx}
+                                
+                              >
+                                <strong>Consignee:</strong>{" "}
+                                {consignee.consigneeName}
+                                <br />
+                                <strong>Serial No:</strong>{" "}
+                                {consignee.subSnNumber}
+                                <br />
+                                <strong>Quantity:</strong> {consignee.quantity}
+                                <br />
+                                {idx !== item.consignees.length - 1 && (
+                                  <hr className="my-2" />
+                                )}
+                              </div>
+                            ))}
+                          </>
+                        ) : (
+                          "-"
+                        )}
                       </td>
                       <td>
                         {item.deliverySchedule?.guaranteePeriodMonths} Months

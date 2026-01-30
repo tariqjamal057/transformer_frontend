@@ -43,6 +43,10 @@ const AddDeliveryChalan = () => {
   const [poDate, setPoDate] = useState(null);
   const [chalanDescription, setChalanDescription] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
+  const [selectedTransformers, setSelectedTransformers] = useState([]);
+  const [availableSubSerialNumbers, setAvailableSubSerialNumbers] = useState(
+    [],
+  );
 
   const { data: finalInspections } = useQuery({
     queryKey: ["finalInspections"],
@@ -61,6 +65,26 @@ const AddDeliveryChalan = () => {
       api.get("/material-descriptions?all=true").then((res) => res.data),
   });
 
+  const { data: deliveryChallansAll } = useQuery({
+    queryKey: ["deliveryChallansAll"],
+    queryFn: () => api.get("/delivery-challans?all=true").then((res) => res.data),
+    placeholderData: [],
+  });
+
+  const { data: deliverySchedules } = useQuery({
+    queryKey: ["allDeliverySchedules"],
+    queryFn: () =>
+      api.get("/delivery-schedules?all=true").then((res) => res.data),
+    placeholderData: [],
+  });
+
+  const [selectedFinalInspectionId, setSelectedFinalInspectionId] = useState("");
+
+  const [selectedDeliveryScheduleId, setSelectedDeliveryScheduleId] = useState(
+    "",
+  );
+  const [filteredFinalInspections, setFilteredFinalInspections] = useState([]);
+
   const companyId = localStorage.getItem("companyId");
 
   const { data: companyDetails } = useQuery({
@@ -72,33 +96,104 @@ const AddDeliveryChalan = () => {
     enabled: !!companyId,
   });
 
-  const handleTNChange = (tnNumber) => {
-    setSelectedTN(tnNumber);
-    const record = finalInspections.find((item) => item?.id === tnNumber);
+  // Filter final inspections based on selected delivery schedule
+  useEffect(() => {
+    if (selectedDeliveryScheduleId && finalInspections && deliveryChallansAll) {
+      const usedFinalInspectionIds = new Set(
+        deliveryChallansAll
+          .filter(
+            (dc) =>
+              dc.finalInspection?.deliveryScheduleId ===
+              selectedDeliveryScheduleId,
+          )
+          .map((dc) => dc.finalInspectionId),
+      );
+
+      const filtered = finalInspections.filter(
+        (fi) =>
+          fi.deliveryScheduleId === selectedDeliveryScheduleId &&
+          !usedFinalInspectionIds.has(fi.id),
+      );
+      setFilteredFinalInspections(filtered);
+    } else {
+      setFilteredFinalInspections(finalInspections || []);
+    }
+  }, [selectedDeliveryScheduleId, finalInspections, deliveryChallansAll]);
+
+  const handleTNChange = (deliveryScheduleId) => {
+    setSelectedDeliveryScheduleId(deliveryScheduleId);
+    setSelectedFinalInspectionId(""); // Reset final inspection when TN changes
+    // Reset all other fields
+    setSelectedRecord(null);
+    setDiNo("");
+    setDiDate(null);
+    setInspectionDate(null);
+    setInspectionOfficers("");
+    setPoNo("");
+    setPoDate(null);
+    setChalanDescription("");
+    setSerialNumber("");
+    setAvailableConsignees([]);
+    setConsigneeId("");
+    setConsigneeAddress("");
+    setConsigneeGSTNo("");
+    setSelectedTransformers([]);
+    setAvailableSubSerialNumbers([]);
+  };
+
+  const handleFinalInspectionChange = (finalInspectionId) => {
+    setSelectedFinalInspectionId(finalInspectionId);
+    const record = finalInspections?.find(
+      (item) => item?.id === finalInspectionId,
+    );
 
     if (record) {
       setSelectedRecord(record);
 
       // auto-filled fields
-      setDiNo(record.diNo);
-      setDiDate(dayjs(record.diDate));
-      setInspectionDate(dayjs(record.inspectionDate));
-      setInspectionOfficers(record.inspectionOfficers.join(", "));
-      setPoNo(record.deliverySchedule.po);
-      setPoDate(dayjs(record.deliverySchedule.poDate));
+      setDiNo(record.diNo || "");
+      setDiDate(record.diDate ? dayjs(record.diDate) : null);
+      setInspectionDate(
+        record.inspectionDate ? dayjs(record.inspectionDate) : null,
+      );
+      setInspectionOfficers(record.inspectionOfficers.join(", ") || "");
+      setPoNo(record.deliverySchedule?.po || "");
+      setPoDate(
+        record.deliverySchedule?.poDate
+          ? dayjs(record.deliverySchedule.poDate)
+          : null,
+      );
+      setChalanDescription(record.deliverySchedule?.chalanDescription || "");
       setSerialNumber(
         record.snNumber ||
-          `${record.serialNumberFrom} TO ${record.serialNumberTo}`,
+          `${record.serialNumberFrom} TO ${record.serialNumberTo}` ||
+          "",
       );
-      setChalanDescription(record.deliverySchedule.chalanDescription);
 
-      setAvailableConsignees(record.consignees || []);
-      setConsigneeId("");
+      // Consignee population
+      if (record.consignees && deliveryChallansAll) {
+        const usedConsigneeIds = new Set(
+          deliveryChallansAll
+            .filter((dc) => dc.finalInspectionId === finalInspectionId)
+            .map((dc) => dc.consigneeId),
+        );
+        const filteredConsignees = record.consignees.filter(
+          (c) => !usedConsigneeIds.has(c.consigneeId),
+        );
+        setAvailableConsignees(filteredConsignees);
+      } else {
+        setAvailableConsignees(record.consignees || []);
+      }
+      setConsigneeId(""); // Reset selected consignee
       setConsigneeAddress("");
       setConsigneeGSTNo("");
+
+      // Sub-serial number population
       setSelectedTransformers([]);
-      console.log("record", record.repaired_transformer_srno);
-      if (record.repaired_transformer_srno) {
+      if (
+        record.repaired_transformer_srno &&
+        record.repaired_transformer_mapping
+      ) {
         const subSerialNumbers = record.repaired_transformer_mapping.map(
           (srNoIst) => ({
             id: srNoIst.oldSrNo,
@@ -109,14 +204,27 @@ const AddDeliveryChalan = () => {
       } else {
         setAvailableSubSerialNumbers([]);
       }
+    } else {
+      // Reset all fields if no record is found or selection is cleared
+      setSelectedRecord(null);
+      setDiNo("");
+      setDiDate(null);
+      setInspectionDate(null);
+      setInspectionOfficers("");
+      setPoNo("");
+      setPoDate(null);
+      setChalanDescription("");
+      setSerialNumber("");
+      setAvailableConsignees([]);
+      setConsigneeId("");
+      setConsigneeAddress("");
+      setConsigneeGSTNo("");
+      setSelectedTransformers([]);
+      setAvailableSubSerialNumbers([]);
     }
   };
 
   const [challanNo, setChallanNo] = useState("");
-  const [selectedTransformers, setSelectedTransformers] = useState([]);
-  const [availableSubSerialNumbers, setAvailableSubSerialNumbers] = useState(
-    [],
-  );
 
   const [consignorName, setConsignorName] = useState("");
   const [consignorAddress, setConsignorAddress] = useState("");
@@ -194,18 +302,13 @@ const AddDeliveryChalan = () => {
     e.preventDefault();
     if (!selectedRecord) return;
 
-    // Find the selected consignee to get subSnNumber
-    const selectedConsignee = availableConsignees.find(
-      (c) => c.consigneeId === consigneeId,
-    );
-
     let subSerialNumberFrom = null;
     let subSerialNumberTo = null;
 
-    if (selectedConsignee && selectedConsignee.subSnNumber) {
-      const [from, to] = selectedConsignee.subSnNumber.split(" TO ");
-      subSerialNumberFrom = from ? String(from) : null;
-      subSerialNumberTo = to ? String(to) : null;
+    if (selectedTransformers.length > 0) {
+      const numericSerials = selectedTransformers.map((n) => parseInt(n, 10));
+      subSerialNumberFrom = String(Math.min(...numericSerials));
+      subSerialNumberTo = String(Math.max(...numericSerials));
     }
 
     const data = {
@@ -245,28 +348,35 @@ const AddDeliveryChalan = () => {
                   select
                   fullWidth
                   label="Select TN Number"
-                  value={selectedTN}
+                  value={selectedDeliveryScheduleId}
                   onChange={(e) => handleTNChange(e.target.value)}
                 >
-                  {finalInspections?.map((tn) => (
-                    <MenuItem key={tn?.id} value={tn?.id}>
-                      {tn?.deliverySchedule?.tnNumber}
+                  {deliverySchedules?.map((ds) => (
+                    <MenuItem key={ds?.id} value={ds?.id}>
+                      {ds?.tnNumber}
                     </MenuItem>
                   ))}
                 </TextField>
               </Grid>
 
-              {/* Serial Number */}
+              {/* Serial Number Dropdown */}
               <Grid item size={1}>
                 <TextField
+                  select
                   fullWidth
-                  label="Serial Number"
-                  value={serialNumber}
-                  InputProps={{ readOnly: true }}
-                />
+                  label="Select Serial Number"
+                  value={selectedFinalInspectionId}
+                  onChange={(e) => handleFinalInspectionChange(e.target.value)}
+                  disabled={!selectedDeliveryScheduleId}
+                >
+                  {filteredFinalInspections?.map((fi) => (
+                    <MenuItem key={fi?.id} value={fi?.id}>
+                      {fi?.serialNumberFrom} TO {fi?.serialNumberTo}
+                    </MenuItem>
+                  ))}
+                </TextField>
               </Grid>
 
-              {/* ✅ Sub Serail No */}
               <Grid item size={1}>
                 <FormControl fullWidth>
                   <InputLabel>Sub Serial No</InputLabel>
@@ -275,16 +385,11 @@ const AddDeliveryChalan = () => {
                     value={selectedTransformers}
                     onChange={(e) => setSelectedTransformers(e.target.value)}
                     input={<OutlinedInput label="Sub Serial No" />}
-                    renderValue={(selected) =>
-                      selected
-                        .map(
-                          (id) =>
-                            availableSubSerialNumbers.find((s) => s.id === id)
-                              ?.serialNo || "",
-                        )
-                        .join(", ")
+                    renderValue={(selected) => selected.join(", ")}
+                    disabled={
+                      !selectedFinalInspectionId ||
+                      !availableSubSerialNumbers?.length
                     }
-                    disabled={!selectedTN || !availableSubSerialNumbers?.length}
                   >
                     {availableSubSerialNumbers?.map((s) => (
                       <MenuItem key={s.id} value={s.id}>

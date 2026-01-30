@@ -10,6 +10,42 @@ export default function PdfTemplate({ item }) {
     return new Date(dateString).toLocaleDateString("en-GB");
   };
 
+  const getDisplayedSerials = (item) => {
+    const fi = item.finalInspection;
+
+    const consigneeAllocation = fi?.consignees?.find(
+      (c) => c.consigneeId === item.consigneeId,
+    );
+
+    if (!consigneeAllocation || !consigneeAllocation.subSnNumber) {
+      if (item.subSerialNumberFrom && item.subSerialNumberTo) {
+        return `${item.subSerialNumberFrom} TO ${item.subSerialNumberTo}`;
+      }
+      return "N/A";
+    }
+
+    let serialsStr = consigneeAllocation.subSnNumber;
+    const mappings = fi.repaired_transformer_mapping;
+
+    if (mappings && mappings.length > 0) {
+      mappings.forEach((mapping) => {
+        const newSrNoRange = `${mapping.newSrNo} TO ${mapping.newSrNo}`;
+        if (serialsStr.includes(newSrNoRange)) {
+          serialsStr = serialsStr.replace(newSrNoRange, mapping.oldSrNo);
+        }
+      });
+    }
+
+    const finalStr = serialsStr
+      .replace(/ TO /g, "-")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(", ");
+
+    return finalStr;
+  };
+
   // Find the specific consignee's info from the final inspection data
   const consigneeInfo = item?.finalInspection?.consignees?.find(
     (fic) => fic.consigneeId === item.consigneeId,
@@ -20,7 +56,6 @@ export default function PdfTemplate({ item }) {
   // Use the specific consignee's quantity if available, otherwise fallback to the total inspected quantity
   const consigneeQuantity =
     consigneeInfo?.quantity || item?.finalInspection?.inspectedQuantity || "N/A";
-
 
   // Map the dynamic 'item' prop to the formData structure
   const formData = {
@@ -42,9 +77,7 @@ export default function PdfTemplate({ item }) {
     grNo: "", // GR No. not in model
     grDate: "", // GR Date not in model
     materialDesc: item?.materialDescription?.description || "N/A",
-    bearingNo: `${item?.subSerialNumberFrom || "N/A"} to ${
-      item?.subSerialNumberTo || "N/A"
-    }`,
+    bearingNo: getDisplayedSerials(item),
     quantity: `${consigneeQuantity} Nos.`,
     inspector: item?.finalInspection?.inspectionOfficers?.join(", ") || "N/A",
     inspectorTitle: "Assistant Engineer (O&M)", // Static data
