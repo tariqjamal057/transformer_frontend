@@ -123,7 +123,7 @@ const DeliveryChalanList = () => {
 
     // Wait for rendering to finish
     setTimeout(async () => {
-      const canvas = await html2canvas(element, { scale: 2 });
+      const canvas = await html2canvas(element, { useCORS: true, scale: 2 });
       const imgData = canvas.toDataURL("image/png");
 
       const pdf = new jsPDF("p", "mm", "a4");

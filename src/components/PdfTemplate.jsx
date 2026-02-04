@@ -49,11 +49,12 @@ export default function PdfTemplate({ item }) {
     challanDate: formatDate(item?.challanCreatedAt),
     consigneeName: item?.supplyTender?.company?.name || "N/A",
     consigneeAddress: item?.supplyTender?.company?.address || "N/A",
-    consigneeCity: "", // City is part of the address, kept for structure
+    companyImage: item?.supplyTender?.company?.logo ? `${import.meta.env.VITE_IMAGE_BASE_URL}${item.supplyTender.company.logo.replace(/\\/g, "/")}` : null,
     consigneePhone: `PHONE: ${item?.supplyTender?.company?.phone || "N/A"}`,
     consignorName: item?.consignorName || "N/A",
     consignorCompany: item?.consignee?.name || "N/A", // 'To' field seems to be the consignee
     consignorCity: item?.consignee?.address || "N/A",
+    consignorPhone: item?.consignee?.phone || "",
     panNo: "N/A", // PAN No. not available in the data model
     gstNo: item?.consignorGST || "N/A",
     poNumber: item?.finalInspection?.deliverySchedule?.po || "N/A",
@@ -134,11 +135,17 @@ export default function PdfTemplate({ item }) {
         {/* Row 3: Consignee (left) and Consignor (right) */}
         <div className="row g-0 bottom-border">
           <div className="col-6 px-3 py-2">
-            <div className="fw-bold small">{formData.consigneeName}</div>
-            <div className="extra-small-text mt-1 lh-sm">
-              {formData.consigneeAddress}
-              <br />
-              {formData.consigneePhone}
+            <div className="d-flex items-start">
+              <div style={{width: '70%'}}>
+                <div className="fw-bold small">{formData.consigneeName}</div>
+                <div className="extra-small-text mt-1 lh-sm">
+                  {formData.consigneeAddress}
+                  <br />
+                  {formData.consigneePhone}
+                </div>
+              </div>
+              <div style={{width: '30%'}} className="d-flex justify-content-center align-items-center">
+                {formData.companyImage && <img src={formData.companyImage} alt="logo" style={{width: '100%', height: '50px'}} />}</div>
             </div>
           </div>
           <div className="col-6 px-3 py-2 left-border">
@@ -146,9 +153,9 @@ export default function PdfTemplate({ item }) {
             <div className="extra-small-text lh-sm">
               {formData.consignorName}
               <br />
-              {formData.consignorCompany}
-              <br />
               {formData.consignorCity}
+              <br />
+              {formData.consignorPhone}
             </div>
           </div>
         </div>
@@ -262,7 +269,7 @@ export default function PdfTemplate({ item }) {
         {/* Row 9: Certificate Section */}
         <div className="px-3 py-2 border-top-0">
           <div className="text-end extra-small-text mb-2">
-            <span className="fw-semibold">For {formData.consigneeName}</span>
+            <span className="fw-semibold">For {formData.consignorCompany}</span>
           </div>
 
           <div className="text-center mb-2">
@@ -317,9 +324,7 @@ export default function PdfTemplate({ item }) {
             <div className="text-end">
               {formData.consignorName}
               <br />
-              {formData.consignorCompany}
-              <br />
-              {formData.consignorCity}
+              {formData.consigneeAddress}
             </div>
           </div>
         </div>
