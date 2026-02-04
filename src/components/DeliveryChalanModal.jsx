@@ -204,17 +204,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
 
       // Sub-serial number population
       setSelectedTransformers([]);
-      if (record.serialNumberFrom && record.serialNumberTo) {
-        const from = parseInt(record.serialNumberFrom, 10);
-        const to = parseInt(record.serialNumberTo, 10);
-        const subSerialNumbers = [];
-        for (let i = from; i <= to; i++) {
-          subSerialNumbers.push({ id: String(i), serialNo: String(i) });
-        }
-        setAvailableSubSerialNumbers(subSerialNumbers);
-      } else {
-        setAvailableSubSerialNumbers([]);
-      }
+      setAvailableSubSerialNumbers([]);
     } else {
       // Reset all fields if no record is found or selection is cleared
       setSelectedRecord(null);
@@ -265,15 +255,28 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
     const selectedId = event.target.value;
     setSelectedConsigneeId(selectedId);
 
-    const record = availableConsignees.find(
-      (item) => item.consigneeId === selectedId,
-    );
-    if (record) {
-      setConsigneeAddress(record.consigneeAddress);
-      setConsigneeGSTNo(record.consigneeGstNo);
+    const fullConsignee = consignees.find((item) => item.id === selectedId);
+    if (fullConsignee) {
+      setConsigneeAddress(fullConsignee.address);
+      setConsigneeGSTNo(fullConsignee.gstNo);
     } else {
       setConsigneeAddress("");
       setConsigneeGSTNo("");
+    }
+
+    // Find the consignee details from within the selected final inspection
+    const consigneeFromInspection = availableConsignees.find(c => c.consigneeId === selectedId);
+    
+    if (consigneeFromInspection && consigneeFromInspection.repairedTransformerIds) {
+      const repairedSerials = consigneeFromInspection.repairedTransformerIds.map(sr => ({
+        id: sr,
+        serialNo: sr,
+      }));
+      setAvailableSubSerialNumbers(repairedSerials);
+      setSelectedTransformers(repairedSerials.map(s => s.id)); // Pre-select all
+    } else {
+      setAvailableSubSerialNumbers([]);
+      setSelectedTransformers([]);
     }
   };
 
@@ -384,28 +387,30 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
       setSelectedConsigneeId(deliveryChalanData.consigneeId);
 
       // Sub-serial population
-      if (fi.repaired_transformer_srno && fi.repaired_transformer_mapping) {
-        const subSerialNumbers = fi.repaired_transformer_mapping.map(
-          (srNoIst) => ({
-            id: srNoIst.oldSrNo,
-            serialNo: srNoIst.oldSrNo,
-          }),
-        );
-        setAvailableSubSerialNumbers(subSerialNumbers);
+      const consigneeFromInspection = fi.consignees?.find(c => c.consigneeId === deliveryChalanData.consigneeId);
+      if (consigneeFromInspection && consigneeFromInspection.repairedTransformerIds) {
+        const repairedSerials = consigneeFromInspection.repairedTransformerIds.map(sr => ({
+          id: sr,
+          serialNo: sr,
+        }));
+        setAvailableSubSerialNumbers(repairedSerials);
+        setSelectedTransformers(repairedSerials.map(s => s.id)); // Pre-select all
       } else {
         setAvailableSubSerialNumbers([]);
+        setSelectedTransformers([]);
       }
 
-      const subSerialFrom = deliveryChalanData.subSerialNumberFrom;
-      const subSerialTo = deliveryChalanData.subSerialNumberTo;
-      if (subSerialFrom && subSerialTo) {
-        const selected = [];
-        for (let i = parseInt(subSerialFrom); i <= parseInt(subSerialTo); i++) {
-          selected.push(String(i));
-        }
-        setSelectedTransformers(selected);
-      }
-
+      // This logic is now replaced by the above
+      // const subSerialFrom = deliveryChalanData.subSerialNumberFrom;
+      // const subSerialTo = deliveryChalanData.subSerialNumberTo;
+      // if (subSerialFrom && subSerialTo) {
+      //   const selected = [];
+      //   for (let i = parseInt(subSerialFrom); i <= parseInt(subSerialTo); i++) {
+      //     selected.push(String(i));
+      //   }
+      //   setSelectedTransformers(selected);
+      // }
+      
       setDiNo(fi.diNo || "");
       setDiDate(fi.diDate ? dayjs(fi.diDate) : null);
 
@@ -500,9 +505,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
               onChange={(e) => setSelectedTransformers(e.target.value)}
               input={<OutlinedInput label="Sub Serial No" />}
               renderValue={(selected) => selected.join(", ")}
-              disabled={
-                !selectedFinalInspectionId || !availableSubSerialNumbers?.length
-              }
+              disabled
             >
               {availableSubSerialNumbers?.map((s) => (
                 <MenuItem key={s.id} value={s.id}>

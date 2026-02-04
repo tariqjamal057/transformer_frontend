@@ -197,6 +197,7 @@ const DeliveryChalanList = () => {
                   <th>PO Number / Date</th>
                   <th>Challan No</th>
                   <th>Transformer Info</th>
+                  <th>Serial No</th>
                   <th>Sub Serial No</th>
                   <th>Inspection Officers</th>
                   <th>Inspection Date</th>
@@ -245,7 +246,7 @@ const DeliveryChalanList = () => {
                         </div>
                         <div>
                           <strong>Serial No:</strong>{" "}
-                          {item.finalInspection.snNumber}
+                          {item.finalInspection.serialNumberFrom} - {item.finalInspection.serialNumberTo}
                         </div>
                         <div>
                           <strong>DI No:</strong> {item.finalInspection.diNo}
@@ -256,55 +257,14 @@ const DeliveryChalanList = () => {
                         </div>
                       </td>
 
+                      {/* Serial No */}
+                      <td>
+                        {item.finalInspection?.consignees?.find(c => c.consigneeId === item.consigneeId)?.subSnNumber || 'N/A'}
+                      </td>
+
                       {/* Sub Serial No */}
-                      <td className="text-start">
-                        {(() => {
-                          const fi = item.finalInspection;
-                          if (!fi || !fi.consignees || !fi.consignees.length) {
-                            return item.subSerialNumberFrom &&
-                              item.subSerialNumberTo
-                              ? `${item.subSerialNumberFrom} TO ${item.subSerialNumberTo}`
-                              : "N/A";
-                          }
-
-                          const consigneeAllocation = fi.consignees.find(
-                            (c) => c.consigneeId === item.consigneeId,
-                          );
-
-                          if (
-                            !consigneeAllocation ||
-                            !consigneeAllocation.subSnNumber
-                          ) {
-                            return item.subSerialNumberFrom &&
-                              item.subSerialNumberTo
-                              ? `${item.subSerialNumberFrom} TO ${item.subSerialNumberTo}`
-                              : "N/A";
-                          }
-
-                          let serialsStr = consigneeAllocation.subSnNumber;
-                          const mappings = fi.repaired_transformer_mapping;
-
-                          if (mappings && mappings.length > 0) {
-                            mappings.forEach((mapping) => {
-                              const newSrNoRange = `${mapping.newSrNo} TO ${mapping.newSrNo}`;
-                              if (serialsStr.includes(newSrNoRange)) {
-                                serialsStr = serialsStr.replace(
-                                  newSrNoRange,
-                                  mapping.oldSrNo,
-                                );
-                              }
-                            });
-                          }
-
-                          const finalStr = serialsStr
-                            .replace(/ TO /g, "-")
-                            .split(",")
-                            .map((s) => s.trim())
-                            .filter(Boolean)
-                            .join(", ");
-
-                          return finalStr;
-                        })()}
+                      <td>
+                        {(item.finalInspection?.consignees?.find(c => c.consigneeId === item.consigneeId)?.repairedTransformerIds || []).join(', ') || ''}
                       </td>
 
                       {/* Inspection Officers */}

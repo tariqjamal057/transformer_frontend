@@ -8,6 +8,13 @@ import {
   Autocomplete,
   Button,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Checkbox,
+  ListItemText,
+  OutlinedInput,
 } from "@mui/material";
 import dayjs from "dayjs";
 import { DatePicker } from "@mui/x-date-pickers";
@@ -199,17 +206,26 @@ export default function DamagedTransformerPage() {
 
               {/* TRFSI Number Dropdown */}
               <Grid item size={1}>
-                <Autocomplete
-                  multiple
-                  options={trfsiOptions || []}
-                  getOptionLabel={(option) => option.toString()}
-                  value={selectedTrfsiNo}
-                  onChange={(_, newValue) => setSelectedTrfsiNo(newValue)}
-                  disabled={!selectedSr}
-                  renderInput={(params) => (
-                    <TextField {...params} label="Select TRFSI Number" />
-                  )}
-                />
+                <FormControl fullWidth disabled={!selectedSr}>
+                  <InputLabel id="trfsi-multiple-checkbox-label">
+                    Select TRFSI Number
+                  </InputLabel>
+                  <Select
+                    labelId="trfsi-multiple-checkbox-label"
+                    multiple
+                    value={selectedTrfsiNo}
+                    onChange={(e) => setSelectedTrfsiNo(e.target.value)}
+                    input={<OutlinedInput label="Select TRFSI Number" />}
+                    renderValue={(selected) => selected.join(", ")}
+                  >
+                    {(trfsiOptions || []).map((option) => (
+                      <MenuItem key={option} value={option}>
+                        <Checkbox checked={selectedTrfsiNo.indexOf(option) > -1} />
+                        <ListItemText primary={option.toString()} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </Grid>
 
               {/* Auto-filled fields */}

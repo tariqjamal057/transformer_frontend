@@ -514,6 +514,7 @@ const FinalInspectionList = () => {
                   <th>Phase</th>
                   <th>Wound</th>
                   <th>Offered Sr. No.</th>
+                  <th>Sr. No.</th>
                   <th>Sub Sr. No.</th>
                   <th>Inspection Officers</th>
                   <th>Nomination Letter No</th>
@@ -553,7 +554,16 @@ const FinalInspectionList = () => {
                       <td>
                         {item.consignees?.map((consignee, idx) => (
                           <div key={idx} className="mb-1">
-                            {consignee.subSnNumber}
+                            {consignee.subSnNumber || ""}
+                          </div>
+                        ))}
+                      </td>
+                      <td>
+                        {item.consignees?.map((consignee, idx) => (
+                          <div key={idx} className="mb-1">
+                            {(
+                              consignee?.repairedTransformerIds || []
+                            ).join(", ") || ""}
                           </div>
                         ))}
                       </td>
@@ -603,7 +613,12 @@ const FinalInspectionList = () => {
                                 {consignee.consigneeName}
                                 <br />
                                 <strong>Serial No:</strong>{" "}
-                                {consignee.subSnNumber}
+                                {consignee.subSnNumber || "-"}
+                                <br />
+                                <strong>Sub Serial No:</strong>{" "}
+                                {(
+                                  consignee.repairedTransformerIds || []
+                                ).join(", ") || "-"}
                                 <br />
                                 <strong>Quantity:</strong> {consignee.quantity}
                                 <br />

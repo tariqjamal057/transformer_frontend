@@ -285,51 +285,52 @@ const AddFinalInspection = () => {
       return;
     }
 
+    const requestedQty = parseInt(consigneeQuantity);
     const totalNewAvailable = to - from + 1;
     const totalRepairedAvailable = repairedTransformerSrno.length;
-    const totalAvailable = totalNewAvailable + totalRepairedAvailable;
 
     const totalDistributed = consigneeList.reduce(
       (sum, c) => sum + c.quantity,
       0,
     );
-    const newTotal = totalDistributed + parseInt(consigneeQuantity);
 
-    if (newTotal > totalAvailable) {
+    if (totalDistributed + requestedQty > totalNewAvailable + totalRepairedAvailable) {
       setAlertBox({
         open: true,
-        msg: "Quantity exceeds available transformers!",
+        msg: "Quantity exceeds total available transformers!",
         error: true,
       });
       return;
     }
 
-    // Calculate continuous sub serial number range
-    const startSn = from + totalDistributed;
-    const endSn = startSn + parseInt(consigneeQuantity) - 1;
-    const subSnNumber = `${startSn} TO ${endSn}`;
-
-    // Determine how many new and repaired transformers are assigned to this consignee
-    const totalNewDistributed = consigneeList.reduce(
+    // Calculate already distributed quantities
+    const newDistributed = consigneeList.reduce(
       (sum, c) => sum + (c.newQuantity || 0),
       0,
     );
-    const totalRepairedDistributed = consigneeList.reduce(
+    const repairedDistributed = consigneeList.reduce(
       (sum, c) => sum + (c.repairedQuantity || 0),
       0,
     );
 
-    const remainingNew = Math.max(0, totalNewAvailable - totalNewDistributed);
-    const newQtyForThisConsignee = Math.min(
-      parseInt(consigneeQuantity),
-      remainingNew,
-    );
-    const repairedQtyForThisConsignee =
-      parseInt(consigneeQuantity) - newQtyForThisConsignee;
+    const remainingNewQty = totalNewAvailable - newDistributed;
+    
+    // Determine allocation for this consignee
+    const newQtyForThis = Math.min(requestedQty, remainingNewQty);
+    const repairedQtyForThis = requestedQty - newQtyForThis;
 
+    // Get the sub-serial number range for new transformers
+    let subSnNumber = null;
+    if (newQtyForThis > 0) {
+      const startSn = from + newDistributed;
+      const endSn = startSn + newQtyForThis - 1;
+      subSnNumber = `${startSn} TO ${endSn}`;
+    }
+
+    // Get the assigned repaired transformer serial numbers
     const assignedRepairedIds = repairedTransformerSrno.slice(
-      totalRepairedDistributed,
-      totalRepairedDistributed + repairedQtyForThisConsignee,
+      repairedDistributed,
+      repairedDistributed + repairedQtyForThis,
     );
 
     const selectedConsigneeObj = consignees.find(
@@ -339,10 +340,10 @@ const AddFinalInspection = () => {
     const newConsignee = {
       consigneeId: selectedConsignee,
       consigneeName: selectedConsigneeObj?.name,
-      quantity: parseInt(consigneeQuantity),
-      newQuantity: newQtyForThisConsignee,
-      repairedQuantity: repairedQtyForThisConsignee,
-      subSnNumber,
+      quantity: requestedQty,
+      newQuantity: newQtyForThis,
+      repairedQuantity: repairedQtyForThis,
+      subSnNumber: subSnNumber,
       repairedTransformerIds: assignedRepairedIds,
     };
 
@@ -676,7 +677,7 @@ const AddFinalInspection = () => {
                       <TableCell>Consignee</TableCell>
                       <TableCell>Quantity</TableCell>
                       <TableCell>Serial No.</TableCell>
-                      {/* <TableCell>Repaired Transformers</TableCell> */}
+                      <TableCell>Sub-Serial No.</TableCell>
                       <TableCell>Action</TableCell>
                     </TableRow>
                   </TableHead>
@@ -690,19 +691,10 @@ const AddFinalInspection = () => {
                           }
                         </TableCell>
                         <TableCell>{c.quantity}</TableCell>
-                        <TableCell>{c.subSnNumber}</TableCell>
-                        {/* <TableCell>
-                          {c.repairedTransformerIds?.length > 0
-                            ? c.repairedTransformerIds
-                                .map(
-                                  (t_id) =>
-                                    damagedTransformers.find(
-                                      (dt) => dt.id === t_id,
-                                    )?.serialNo,
-                                )
-                                .join(", ")
-                            : "—"}
-                        </TableCell> */}
+                        <TableCell>{c.subSnNumber || "—"}</TableCell>
+                        <TableCell>
+                          {(c.repairedTransformerIds || []).join(", ") || "—"}
+                        </TableCell>
                         <TableCell>
                           <Button
                             color="error"

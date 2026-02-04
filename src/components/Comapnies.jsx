@@ -47,6 +47,13 @@ const Companies = () => {
       return;
     }
     localStorage.setItem("companyId", selectedCompany);
+
+    // Find the full company object and store it
+    const companyToStore = companies.find(c => c.id === selectedCompany);
+    if (companyToStore) {
+      localStorage.setItem("selectedCompany", JSON.stringify(companyToStore));
+    }
+
     try {
       const response = await api.post("/auth/select-company", {
         companyId: selectedCompany,

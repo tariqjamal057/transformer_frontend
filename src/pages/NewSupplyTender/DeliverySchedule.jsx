@@ -404,64 +404,119 @@ const DeliverySchedule = () => {
       isInitialLoad.current = false;
       return;
     }
-
+  
     setDateError("");
-    if (!commencementDate || !deliveryScheduleDate) return;
-
-    const start = dayjs(commencementDate);
-    const end = dayjs(deliveryScheduleDate);
-
-    if (!start.isBefore(end)) {
-      setDateError(
-        "Commencement Date (CP Date) must be before Delivery Schedule Date.",
-      );
+    if (!commencementDate || !deliveryScheduleDate) {
       setDeliverySchedule([]);
       return;
     }
-
-    // Calculate total quantity distribution
+  
+    const start = dayjs(commencementDate);
+    const end = dayjs(deliveryScheduleDate);
+  
+    if (!start.isBefore(end)) {
+      setDateError("Commencement Date (CP Date) must be before Delivery Schedule Date.");
+      setDeliverySchedule([]);
+      return;
+    }
+  
+    // Store old quantities by start date
+    const oldQuantities = deliverySchedule.reduce((acc, seg) => {
+      acc[seg.start] = seg.quantity;
+      return acc;
+    }, {});
+  
+    let totalDeffermentDays = 0;
+    const validPairs = imposedLiftingPairs.filter(p => p.imposedDate && p.liftingDate && dayjs(p.liftingDate).isAfter(dayjs(p.imposedDate)));
+    validPairs.forEach(pair => {
+      totalDeffermentDays += dayjs(pair.liftingDate).diff(dayjs(pair.imposedDate), 'day');
+    });
+  
+    const effectiveEndDate = end.add(totalDeffermentDays, 'day');
     const totalQty = parseInt(totalQuantity) || 0;
-    const totalDays = end.diff(start, "day");
-    const perDayQty = totalDays > 0 ? totalQty / totalDays : 0;
-
+    const totalDeliveryDays = effectiveEndDate.diff(start, 'day') - totalDeffermentDays;
+    const perDayQty = totalDeliveryDays > 0 ? totalQty / totalDeliveryDays : 0;
+  
     let segments = [];
     let currentStart = start;
-    let allocated = 0;
-
-    while (currentStart.isBefore(end)) {
-      let currentEnd = currentStart.add(30, "day");
-      if (currentEnd.isAfter(end)) {
-        currentEnd = end;
+    let allocatedQty = 0;
+  
+    while (currentStart.isBefore(effectiveEndDate)) {
+      let isDeferred = false;
+      for (const pair of validPairs) {
+        const imposed = dayjs(pair.imposedDate);
+        const lifting = dayjs(pair.liftingDate);
+        if (currentStart.isSame(imposed) || (currentStart.isAfter(imposed) && currentStart.isBefore(lifting))) {
+          currentStart = lifting.add(1, 'day');
+          isDeferred = true;
+          break;
+        }
       }
-
-      const segmentDays = currentEnd.diff(currentStart, "day");
-      let segmentQty = "";
-
+      if (isDeferred) continue;
+  
+      let segmentEndDate = currentStart.add(30, 'day');
+  
+      // Check for intersections with the next deferment period
+      let nextImposedDate = null;
+      for (const pair of validPairs) {
+        const imposed = dayjs(pair.imposedDate);
+        if (imposed.isAfter(currentStart) && (!nextImposedDate || imposed.isBefore(nextImposedDate))) {
+          nextImposedDate = imposed;
+        }
+      }
+  
+      if (nextImposedDate && segmentEndDate.isAfter(nextImposedDate)) {
+        segmentEndDate = nextImposedDate.subtract(1, 'day');
+      }
+  
+      if (segmentEndDate.isAfter(effectiveEndDate)) {
+        segmentEndDate = effectiveEndDate;
+      }
+  
+      const segmentDays = segmentEndDate.diff(currentStart, 'day') + 1;
+      let segmentQty = 0;
       if (totalQty > 0) {
         segmentQty = Math.floor(perDayQty * segmentDays);
-        allocated += segmentQty;
+        allocatedQty += segmentQty;
       }
-
+      
+      const formattedStart = currentStart.format("DD MMM YYYY");
       segments.push({
-        start: currentStart.format("DD MMM YYYY"),
-        end: currentEnd.format("DD MMM YYYY"),
-        quantity: segmentQty,
+        start: formattedStart,
+        end: segmentEndDate.format("DD MMM YYYY"),
+        quantity: oldQuantities[formattedStart] || segmentQty,
       });
-
-      currentStart = currentEnd;
+  
+      currentStart = segmentEndDate.add(1, 'day');
+      if (!currentStart.isBefore(effectiveEndDate)) break;
     }
-
-    // Adjust last segment for rounding errors
+    
+    // Distribute remaining quantity due to rounding
     if (totalQty > 0 && segments.length > 0) {
-      const diff = totalQty - allocated;
-      const lastSeg = segments[segments.length - 1];
-      if (typeof lastSeg.quantity === "number") {
-        lastSeg.quantity += diff;
-      }
+      const remainingQty = totalQty - segments.reduce((sum, seg) => sum + (parseInt(seg.quantity, 10) || 0), 0);
+      const lastSegment = segments[segments.length-1];
+      lastSegment.quantity = (parseInt(lastSegment.quantity, 10) || 0) + remainingQty;
     }
 
+    // A special case for when a new month is added at the end
+    const finalCalculatedQty = segments.reduce((sum, seg) => sum + (parseInt(seg.quantity, 10) || 0), 0);
+    if(totalQty > finalCalculatedQty) {
+      const lastSegment = segments[segments.length - 1];
+      lastSegment.quantity = (parseInt(lastSegment.quantity, 10) || 0) + (totalQty - finalCalculatedQty);
+    } else if (finalCalculatedQty > totalQty) {
+       const overQty = finalCalculatedQty - totalQty;
+       for(let i = segments.length - 1; i >= 0; i--) {
+         const seg = segments[i];
+         const currentQty = parseInt(seg.quantity, 10) || 0;
+         if (currentQty >= overQty) {
+           seg.quantity = currentQty - overQty;
+           break;
+         }
+       }
+    }
+  
     setDeliverySchedule(segments);
-  }, [commencementDateStr, deliveryScheduleDateStr, totalQuantity]);
+  }, [commencementDate, deliveryScheduleDate, totalQuantity, imposedLiftingPairs]);
 
   // ✅ Handle manual quantity input
   const handleQuantityChange = (index, value) => {

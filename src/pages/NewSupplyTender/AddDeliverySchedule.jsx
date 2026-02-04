@@ -48,13 +48,12 @@ const AddDeliverySchedule = () => {
   const [wound, setWound] = useState("");
   const [phase, setPhase] = useState("");
 
-  const [imposedLetterList, setImposedLetterList] = useState([]);
-  const [imposedLetter, setImposedLetter] = useState("");
-  const [imposedDate, setImposedDate] = useState(null);
-
-  const [liftingLetterList, setLiftingLetterList] = useState([]);
-  const [liftingLetter, setLiftingLetter] = useState("");
-  const [liftingDate, setLiftingDate] = useState(null);
+  // New State for Paired Logic
+  const [imposedLiftingPairs, setImposedLiftingPairs] = useState([]);
+  const [currentImposedLetter, setCurrentImposedLetter] = useState("");
+  const [currentImposedDate, setCurrentImposedDate] = useState(null);
+  const [currentLiftingLetter, setCurrentLiftingLetter] = useState("");
+  const [currentLiftingDate, setCurrentLiftingDate] = useState(null);
 
   const [guranteeInMonth, setGuranteeInMonth] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
@@ -88,46 +87,51 @@ const AddDeliverySchedule = () => {
 
   // Add imposed letter to array
   const handleAddImposedLetter = () => {
-    if (!imposedLetter || !imposedDate) return; // simple validation
+    if (!currentImposedLetter || !currentImposedDate) return; // simple validation
 
     const newItem = {
-      imposedLetterNo: imposedLetter,
-      date: dayjs(imposedDate).format("YYYY-MM-DD"),
+      imposedLetterNo: currentImposedLetter,
+      imposedDate: currentImposedDate,
+      liftingLetterNo: null,
+      liftingDate: null,
     };
 
-    setImposedLetterList((prev) => [...prev, newItem]);
-    setImposedLetter(""); // clear input
-    setImposedDate(null); // clear date
+    setImposedLiftingPairs((prev) => [...prev, newItem]);
+    setCurrentImposedLetter(""); // clear input
+    setCurrentImposedDate(null); // clear date
   };
 
-  // Remove imposed letter from array
-  const handleRemoveImposedLetter = (index) => {
-    setImposedLetterList((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  // Add imposed letter to array
+  // Add lifting letter to array
   const handleAddLiftingLetter = () => {
-    if (!liftingLetter || !liftingDate) return; // simple validation
+    if (!currentLiftingLetter || !currentLiftingDate) return; // simple validation
 
-    const newItem = {
-      liftingLetterNo: liftingLetter,
-      date: dayjs(liftingDate).format("YYYY-MM-DD"),
-    };
+    const updatedPairs = [...imposedLiftingPairs];
+    const lastIndex = updatedPairs.length - 1;
 
-    setLiftingLetterList((prev) => [...prev, newItem]);
-    setLiftingLetter(""); // clear input
-    setLiftingDate(null); // clear date
+    if (lastIndex >= 0) {
+      updatedPairs[lastIndex] = {
+        ...updatedPairs[lastIndex],
+        liftingLetterNo: currentLiftingLetter,
+        liftingDate: currentLiftingDate,
+      };
+      setImposedLiftingPairs(updatedPairs);
+      setCurrentLiftingLetter(""); // clear input
+      setCurrentLiftingDate(null); // clear date
+    }
   };
 
-  // Remove imposed letter from array
-  const handleRemoveLiftingLetter = (index) => {
-    setLiftingLetterList((prev) => prev.filter((_, i) => i !== index));
+  // Remove pair
+  const handleRemovePair = (index) => {
+    setImposedLiftingPairs((prev) => prev.filter((_, i) => i !== index));
   };
 
   // ✅ Generate monthly delivery schedule (dates only, no auto quantity)
   useEffect(() => {
     setDateError("");
-    if (!commencementDate || !deliveryScheduleDate) return;
+    if (!commencementDate || !deliveryScheduleDate) {
+      setDeliverySchedule([]);
+      return;
+    }
 
     const start = dayjs(commencementDate);
     const end = dayjs(deliveryScheduleDate);
@@ -138,26 +142,83 @@ const AddDeliverySchedule = () => {
       return;
     }
 
+    const oldQuantities = deliverySchedule.reduce((acc, seg) => {
+      acc[seg.start] = seg.quantity;
+      return acc;
+    }, {});
+
+    let totalDeffermentDays = 0;
+    const validPairs = imposedLiftingPairs.filter(p => p.imposedDate && p.liftingDate && dayjs(p.liftingDate).isAfter(dayjs(p.imposedDate)));
+    validPairs.forEach(pair => {
+      totalDeffermentDays += dayjs(pair.liftingDate).diff(dayjs(pair.imposedDate), 'day');
+    });
+
+    const effectiveEndDate = end.add(totalDeffermentDays, 'day');
+    const totalQty = parseInt(totalQuantity) || 0;
+    const totalDeliveryDays = effectiveEndDate.diff(start, 'day') - totalDeffermentDays;
+    const perDayQty = totalDeliveryDays > 0 ? totalQty / totalDeliveryDays : 0;
+
     let segments = [];
     let currentStart = start;
+    let allocatedQty = 0;
 
-    while (currentStart.isBefore(end)) {
-      let currentEnd = currentStart.add(30, "day");
-      if (currentEnd.isAfter(end)) {
-        currentEnd = end;
+    while (currentStart.isBefore(effectiveEndDate)) {
+      let isDeferred = false;
+      for (const pair of validPairs) {
+        const imposed = dayjs(pair.imposedDate);
+        const lifting = dayjs(pair.liftingDate);
+        if (currentStart.isSame(imposed) || (currentStart.isAfter(imposed) && currentStart.isBefore(lifting))) {
+          currentStart = lifting.add(1, 'day');
+          isDeferred = true;
+          break;
+        }
+      }
+      if (isDeferred) continue;
+
+      let segmentEndDate = currentStart.add(30, 'day');
+
+      let nextImposedDate = null;
+      for (const pair of validPairs) {
+        const imposed = dayjs(pair.imposedDate);
+        if (imposed.isAfter(currentStart) && (!nextImposedDate || imposed.isBefore(nextImposedDate))) {
+          nextImposedDate = imposed;
+        }
       }
 
+      if (nextImposedDate && segmentEndDate.isAfter(nextImposedDate)) {
+        segmentEndDate = nextImposedDate.subtract(1, 'day');
+      }
+
+      if (segmentEndDate.isAfter(effectiveEndDate)) {
+        segmentEndDate = effectiveEndDate;
+      }
+
+      const segmentDays = segmentEndDate.diff(currentStart, 'day') + 1;
+      let segmentQty = 0;
+      if (totalQty > 0) {
+        segmentQty = Math.floor(perDayQty * segmentDays);
+        allocatedQty += segmentQty;
+      }
+
+      const formattedStart = currentStart.format("DD MMM YYYY");
       segments.push({
-        start: currentStart.format("DD MMM YYYY"),
-        end: currentEnd.format("DD MMM YYYY"),
-        quantity: "", // leave empty for manual entry
+        start: formattedStart,
+        end: segmentEndDate.format("DD MMM YYYY"),
+        quantity: oldQuantities[formattedStart] || segmentQty,
       });
 
-      currentStart = currentEnd;
+      currentStart = segmentEndDate.add(1, 'day');
+      if (!currentStart.isBefore(effectiveEndDate)) break;
     }
 
+    if (totalQty > 0 && segments.length > 0) {
+      const remainingQty = totalQty - segments.reduce((sum, seg) => sum + (parseInt(seg.quantity, 10) || 0), 0);
+      const lastSegment = segments[segments.length - 1];
+      lastSegment.quantity = (parseInt(lastSegment.quantity, 10) || 0) + remainingQty;
+    }
+    
     setDeliverySchedule(segments);
-  }, [commencementDate, deliveryScheduleDate]);
+  }, [commencementDate, deliveryScheduleDate, totalQuantity, imposedLiftingPairs]);
 
   // ✅ Handle manual quantity input
   const handleQuantityChange = (index, value) => {
@@ -193,8 +254,18 @@ const AddDeliverySchedule = () => {
       commencementDays: commencementDays ? parseInt(commencementDays) : null,
       commencementDate: commencementDate ? dayjs(commencementDate).toISOString() : null,
       deliveryScheduleDate: deliveryScheduleDate ? dayjs(deliveryScheduleDate).toISOString() : null,
-      imposedLetters: imposedLetterList,
-      liftingLetters: liftingLetterList,
+      imposedLetters: imposedLiftingPairs
+        .filter((p) => p.imposedLetterNo)
+        .map((p) => ({
+          imposedLetterNo: p.imposedLetterNo,
+          date: p.imposedDate ? dayjs(p.imposedDate).format("YYYY-MM-DD") : null,
+        })),
+      liftingLetters: imposedLiftingPairs
+        .filter((p) => p.liftingLetterNo)
+        .map((p) => ({
+          liftingLetterNo: p.liftingLetterNo,
+          date: p.liftingDate ? dayjs(p.liftingDate).format("YYYY-MM-DD") : null,
+        })),
       guaranteePeriodMonths: guranteeInMonth ? parseInt(guranteeInMonth) : null,
       totalQuantity: totalQuantity ? parseInt(totalQuantity) : null,
       deliverySchedule,
@@ -361,121 +432,107 @@ const AddDeliverySchedule = () => {
               />
             </Grid>
 
-            {/* Imposed Letter */}
-            <Grid item size={1}>
-              <TextField
-                label="Defferment Imposed Letter No"
-                fullWidth
-                value={imposedLetter}
-                onChange={(e) => setImposedLetter(e.target.value)}
-              />
-            </Grid>
 
-            <Grid item size={1}>
-              <Box display="flex" gap={1}>
-                <DatePicker
-                  label="Defferment Imposed Date"
-                  minDate={
-                    commencementDate ? commencementDate.add(1, "day") : today
-                  }
-                  value={imposedDate}
-                  onChange={(date) => setImposedDate(date ? dayjs(date) : null)}
-                  format="DD/MM/YYYY"
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-                <Button variant="contained" onClick={handleAddImposedLetter}>
-                  Add
-                </Button>
-              </Box>
-            </Grid>
-
-            {/* Show List of imposed */}
-            {imposedLetterList && (
-              <Grid item size={2}>
-                <Box display="flex" flexWrap="wrap" gap={1}>
-                  {imposedLetterList.map((item, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "6px",
-                        borderBottom: "1px solid #ccc",
-                      }}
-                    >
-                      <span>
-                        {item.imposedLetterNo} - {item.date}
-                      </span>
-                      <Button
-                        color="error"
-                        size="small"
-                        onClick={() => handleRemoveImposedLetter(index)}
-                      >
-                        <CancelIcon />
-                      </Button>
-                    </div>
-                  ))}
+            {/* Deferment Pairs Logic */}
+            <Grid item size={2}>
+              <Typography variant="subtitle1" fontWeight="bold" mt={2}>
+                Defferment Details
+              </Typography>
+              {imposedLiftingPairs.map((pair, index) => (
+                <Box
+                  key={index}
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  p={1}
+                  border={1}
+                  borderColor="grey.300"
+                  borderRadius={1}
+                  mb={1}
+                  bgcolor={pair.liftingLetterNo ? "#f1f8e9" : "#fff3e0"}
+                >
+                  <Box>
+                    <Typography variant="body2">
+                      <strong>Imposed:</strong> {pair.imposedLetterNo} (
+                      {pair.imposedDate ? dayjs(pair.imposedDate).format("DD MMM YYYY") : ""})
+                    </Typography>
+                    {pair.liftingLetterNo && (
+                      <Typography variant="body2">
+                        <strong>Lifting:</strong> {pair.liftingLetterNo} (
+                        {pair.liftingDate ? dayjs(pair.liftingDate).format("DD MMM YYYY") : ""})
+                      </Typography>
+                    )}
+                  </Box>
+                  <Button color="error" size="small" onClick={() => handleRemovePair(index)}>
+                    <CancelIcon />
+                  </Button>
                 </Box>
-              </Grid>
-            )}
-
-            {/* Lifting Letter */}
-            <Grid item size={1}>
-              <TextField
-                label="Defferment Lifting Letter No"
-                fullWidth
-                value={liftingLetter}
-                onChange={(e) => setLiftingLetter(e.target.value)}
-              />
+              ))}
             </Grid>
 
-            <Grid item size={1}>
-              <Box display="flex" gap={1}>
-                <DatePicker
-                  label="Defferment Lifting Date"
-                  minDate={imposedDate ? imposedDate.add(1, "day") : today}
-                  value={liftingDate}
-                  onChange={(date) => setLiftingDate(date ? dayjs(date) : null)}
-                  format="DD/MM/YYYY"
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-                <Button variant="contained" onClick={handleAddLiftingLetter}>
-                  Add
-                </Button>
-              </Box>
-            </Grid>
+            {/* Conditional Add Imposed/Lifting Inputs */}
+            {(() => {
+              const showAddImposed = imposedLiftingPairs.length === 0 || imposedLiftingPairs[imposedLiftingPairs.length - 1].liftingLetterNo;
+              const showAddLifting = imposedLiftingPairs.length > 0 && !imposedLiftingPairs[imposedLiftingPairs.length - 1].liftingLetterNo;
 
-            {/* Show List of lifting */}
-            {liftingLetterList && (
-              <Grid item size={2}>
-                <Box display="flex" flexWrap="wrap" gap={1}>
-                  {liftingLetterList.map((item, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "6px",
-                        borderBottom: "1px solid #ccc",
-                      }}
-                    >
-                      <span>
-                        {item.liftingLetterNo} - {item.date}
-                      </span>
-                      <Button
-                        color="error"
-                        size="small"
-                        onClick={() => handleRemoveLiftingLetter(index)}
-                      >
-                        <CancelIcon />
-                      </Button>
-                    </div>
-                  ))}
-                </Box>
-              </Grid>
-            )}
+              return (
+                <>
+                  {showAddImposed && (
+                    <>
+                      <Grid item size={1}>
+                        <TextField
+                          label="Defferment Imposed Letter No"
+                          fullWidth
+                          value={currentImposedLetter}
+                          onChange={(e) => setCurrentImposedLetter(e.target.value)}
+                        />
+                      </Grid>
+                      <Grid item size={1}>
+                        <Box display="flex" gap={1}>
+                          <DatePicker
+                            label="Defferment Imposed Date"
+                            value={currentImposedDate}
+                            onChange={(date) => setCurrentImposedDate(date ? dayjs(date) : null)}
+                            format="DD/MM/YYYY"
+                            slotProps={{ textField: { fullWidth: true } }}
+                          />
+                          <Button variant="contained" onClick={handleAddImposedLetter}>
+                            Add
+                          </Button>
+                        </Box>
+                      </Grid>
+                    </>
+                  )}
+                  {showAddLifting && (
+                    <>
+                      <Grid item size={1}>
+                        <TextField
+                          label="Defferment Lifting Letter No"
+                          fullWidth
+                          value={currentLiftingLetter}
+                          onChange={(e) => setCurrentLiftingLetter(e.target.value)}
+                        />
+                      </Grid>
+                      <Grid item size={1}>
+                        <Box display="flex" gap={1}>
+                          <DatePicker
+                            label="Defferment Lifting Date"
+                            value={currentLiftingDate}
+                            onChange={(date) => setCurrentLiftingDate(date ? dayjs(date) : null)}
+                            format="DD/MM/YYYY"
+                            slotProps={{ textField: { fullWidth: true } }}
+                          />
+                          <Button variant="contained" color="success" onClick={handleAddLiftingLetter}>
+                            Add
+                          </Button>
+                        </Box>
+                      </Grid>
+                    </>
+                  )}
+                </>
+              );
+            })()}
+
 
             <Grid item size={1}>
               <TextField

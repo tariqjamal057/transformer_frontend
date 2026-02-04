@@ -37,6 +37,11 @@ const Header = () => {
 
   const navigate = useNavigate();
 
+  const selectedCompany = JSON.parse(localStorage.getItem("selectedCompany"));
+  const companyLogo = selectedCompany?.logo 
+    ? `${import.meta.env.VITE_IMAGE_BASE_URL}${selectedCompany.logo.replace(/\\/g, "/")}` 
+    : logo;
+
   const auth = localStorage.getItem("Transformer user");
 
   const logout = () => {
@@ -71,7 +76,7 @@ const Header = () => {
           <div className="row d-flex align-items-center w-100">
             <div className="col-sm-2 part1">
               <Link to={"/"} className="d-flex align-items-center logo">
-                {<img src={logo} alt="logo" style={{ width: "55%" }} />}
+                {<img src={companyLogo} alt="logo" style={{ width: "auto", height: "50px"}} />}
                 {/*<span className="ms-2">RIVIE</span>*/}
               </Link>
             </div>

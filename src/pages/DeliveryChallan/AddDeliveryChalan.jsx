@@ -190,20 +190,7 @@ const AddDeliveryChalan = () => {
 
       // Sub-serial number population
       setSelectedTransformers([]);
-      if (
-        record.repaired_transformer_srno &&
-        record.repaired_transformer_mapping
-      ) {
-        const subSerialNumbers = record.repaired_transformer_mapping.map(
-          (srNoIst) => ({
-            id: srNoIst.oldSrNo,
-            serialNo: srNoIst.oldSrNo,
-          }),
-        );
-        setAvailableSubSerialNumbers(subSerialNumbers);
-      } else {
-        setAvailableSubSerialNumbers([]);
-      }
+      setAvailableSubSerialNumbers([]);
     } else {
       // Reset all fields if no record is found or selection is cleared
       setSelectedRecord(null);
@@ -255,6 +242,7 @@ const AddDeliveryChalan = () => {
     const selectedId = event.target.value;
     setConsigneeId(selectedId);
 
+    // Find the full original consignee record from the main consignees list
     const fullConsignee = consignees.find((item) => item.id === selectedId);
     if (fullConsignee) {
       setConsigneeAddress(fullConsignee.address);
@@ -262,6 +250,21 @@ const AddDeliveryChalan = () => {
     } else {
       setConsigneeAddress("");
       setConsigneeGSTNo("");
+    }
+
+    // Find the consignee details from within the selected final inspection
+    const consigneeFromInspection = availableConsignees.find(c => c.consigneeId === selectedId);
+    
+    if (consigneeFromInspection && consigneeFromInspection.repairedTransformerIds) {
+      const repairedSerials = consigneeFromInspection.repairedTransformerIds.map(sr => ({
+        id: sr,
+        serialNo: sr,
+      }));
+      setAvailableSubSerialNumbers(repairedSerials);
+      setSelectedTransformers(repairedSerials.map(s => s.id)); // Pre-select all
+    } else {
+      setAvailableSubSerialNumbers([]);
+      setSelectedTransformers([]);
     }
   };
 
@@ -386,10 +389,7 @@ const AddDeliveryChalan = () => {
                     onChange={(e) => setSelectedTransformers(e.target.value)}
                     input={<OutlinedInput label="Sub Serial No" />}
                     renderValue={(selected) => selected.join(", ")}
-                    disabled={
-                      !selectedFinalInspectionId ||
-                      !availableSubSerialNumbers?.length
-                    }
+                    disabled
                   >
                     {availableSubSerialNumbers?.map((s) => (
                       <MenuItem key={s.id} value={s.id}>

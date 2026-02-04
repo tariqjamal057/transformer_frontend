@@ -13,37 +13,23 @@ export default function PdfTemplate({ item }) {
   const getDisplayedSerials = (item) => {
     const fi = item.finalInspection;
 
-    const consigneeAllocation = fi?.consignees?.find(
+    const consignee = fi?.consignees?.find(
       (c) => c.consigneeId === item.consigneeId,
     );
 
-    if (!consigneeAllocation || !consigneeAllocation.subSnNumber) {
-      if (item.subSerialNumberFrom && item.subSerialNumberTo) {
-        return `${item.subSerialNumberFrom} TO ${item.subSerialNumberTo}`;
-      }
+    if (!consignee) {
       return "N/A";
     }
 
-    let serialsStr = consigneeAllocation.subSnNumber;
-    const mappings = fi.repaired_transformer_mapping;
-
-    if (mappings && mappings.length > 0) {
-      mappings.forEach((mapping) => {
-        const newSrNoRange = `${mapping.newSrNo} TO ${mapping.newSrNo}`;
-        if (serialsStr.includes(newSrNoRange)) {
-          serialsStr = serialsStr.replace(newSrNoRange, mapping.oldSrNo);
-        }
-      });
+    const serials = [];
+    if (consignee.subSnNumber) {
+      serials.push(consignee.subSnNumber.replace(/ TO /g, "-"));
+    }
+    if (consignee.repairedTransformerIds && consignee.repairedTransformerIds.length > 0) {
+      serials.push(...consignee.repairedTransformerIds);
     }
 
-    const finalStr = serialsStr
-      .replace(/ TO /g, "-")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .join(", ");
-
-    return finalStr;
+    return serials.filter(Boolean).join(', ') || 'N/A';
   };
 
   // Find the specific consignee's info from the final inspection data
@@ -79,7 +65,7 @@ export default function PdfTemplate({ item }) {
     materialDesc: item?.materialDescription?.description || "N/A",
     bearingNo: getDisplayedSerials(item),
     quantity: `${consigneeQuantity} Nos.`,
-    inspector: item?.finalInspection?.inspectionOfficers?.join(", ") || "N/A",
+    inspector: item?.finalInspection?.inspectionOfficers || [],
     inspectorTitle: "Assistant Engineer (O&M)", // Static data
     inspectorCompany: item?.supplyTender?.company?.name || "N/A",
     inspectorLocation: item?.supplyTender?.company?.address || "N/A",
@@ -151,8 +137,6 @@ export default function PdfTemplate({ item }) {
             <div className="fw-bold small">{formData.consigneeName}</div>
             <div className="extra-small-text mt-1 lh-sm">
               {formData.consigneeAddress}
-              <br />
-              {formData.consigneeCity}
               <br />
               {formData.consigneePhone}
             </div>
@@ -251,13 +235,12 @@ export default function PdfTemplate({ item }) {
             <div className="extra-small-text">
               <div className="fw-semibold">INSPECTED BY:</div>
               <div className="mt-1 lh-sm">
-                {formData.inspector}
-                <br />
-                {formData.inspectorTitle}
-                <br />
-                {formData.inspectorCompany}
-                <br />
-                {formData.inspectorLocation}
+                {formData.inspector.map((officer, index) => (
+                  <React.Fragment key={index}>
+                    {officer}
+                    <br />
+                  </React.Fragment>
+                ))}
               </div>
             </div>
           </div>

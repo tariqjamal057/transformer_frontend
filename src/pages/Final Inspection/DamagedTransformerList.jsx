@@ -14,6 +14,13 @@ import {
   Box,
   CircularProgress,
   Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Checkbox,
+  ListItemText,
+  OutlinedInput,
 } from "@mui/material";
 import dayjs from "dayjs";
 import SearchIcon from "@mui/icons-material/Search";
@@ -48,7 +55,7 @@ const DamagedTransformerList = () => {
   const [selectedFile, setSelectedFile] = useState(null);
 
   const [selectedSr, setSelectedSr] = useState(null);
-  const [selectedTrfsiNo, setSelectedTrfsiNo] = useState(null);
+  const [selectedTrfsiNo, setSelectedTrfsiNo] = useState([]);
 
   const { data: deliveryChallanList = [] } = useQuery({
     queryKey: ["allDeliveryChallans"],
@@ -156,7 +163,7 @@ const DamagedTransformerList = () => {
         (challan) => challan.subSerialNumberFrom && challan.subSerialNumberTo,
       )
       .map((challan) => ({
-        label: `Challan ${challan.challanNo} (${challan.subSerialNumberFrom} TO ${challan.subSerialNumberTo})`,
+        label: `${challan.subSerialNumberFrom} TO ${challan.subSerialNumberTo}`,
         challan,
       }));
   }, [deliveryChallanList]);
@@ -183,7 +190,7 @@ const DamagedTransformerList = () => {
       );
       if (matchingSr) {
         setSelectedSr(matchingSr);
-        setSelectedTrfsiNo(parseInt(item.serialNo, 10));
+        setSelectedTrfsiNo(item.serialNo ? item.serialNo.map(Number) : []);
       }
     }
 
@@ -222,7 +229,7 @@ const DamagedTransformerList = () => {
 
     const payload = {
       ...editedData,
-      serialNo: String(selectedTrfsiNo),
+      serialNo: selectedTrfsiNo.map(String),
       snNumberRange: selectedSr.label,
       deliveryChallanId: selectedSr.challan.id,
       ctlReportDate: editedData.ctlReportDate
@@ -452,16 +459,26 @@ const DamagedTransformerList = () => {
                 </Grid>
 
                 <Grid item size={1}>
-                  <Autocomplete
-                    options={trfsiOptions || []}
-                    getOptionLabel={(option) => option.toString()}
-                    value={selectedTrfsiNo}
-                    onChange={(_, newValue) => setSelectedTrfsiNo(newValue)}
-                    disabled={!selectedSr}
-                    renderInput={(params) => (
-                      <TextField {...params} label="Select TRFSI Number" />
-                    )}
-                  />
+                  <FormControl fullWidth disabled={!selectedSr}>
+                    <InputLabel id="trfsi-multiple-checkbox-label">
+                      Select TRFSI Numbers
+                    </InputLabel>
+                    <Select
+                      labelId="trfsi-multiple-checkbox-label"
+                      multiple
+                      value={selectedTrfsiNo}
+                      onChange={(e) => setSelectedTrfsiNo(e.target.value)}
+                      input={<OutlinedInput label="Select TRFSI Numbers" />}
+                      renderValue={(selected) => selected.join(", ")}
+                    >
+                      {(trfsiOptions || []).map((option) => (
+                        <MenuItem key={option} value={option}>
+                          <Checkbox checked={selectedTrfsiNo.indexOf(option) > -1} />
+                          <ListItemText primary={option.toString()} />
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Grid>
 
                 <Grid item size={2}>
