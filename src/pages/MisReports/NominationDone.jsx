@@ -152,11 +152,11 @@ const NominationDone = () => {
                                 {row.deliverySchedule?.supplyTender?.name}
                               </TableCell>
                               <TableCell rowSpan={row.consignees.length}>
-                                {row.deliverySchedule.tnNumber}
+                                {row?.deliverySchedule?.tnNumber}
                               </TableCell>
                               <TableCell rowSpan={row.consignees.length}>
-                                {row.deliverySchedule.rating} KVA{" "}
-                                {row.deliverySchedule.phase}
+                                {row.deliverySchedule?.rating} KVA{" "}
+                                {row.deliverySchedule?.phase}
                               </TableCell>
                               <TableCell rowSpan={row.consignees.length}>
                                 {row.snNumber}
@@ -205,7 +205,7 @@ const NominationDone = () => {
                         </TableCell>
                         <TableCell>{row.companyName}</TableCell>
                         <TableCell>{row.discom}</TableCell>
-                        <TableCell>{row.deliverySchedule?.tnNumber}</TableCell>
+                        <TableCell>{row?.deliverySchedule?.tnNumber}</TableCell>
                         <TableCell>
                           {row.deliverySchedule.rating} KVA{" "}
                           {row.deliverySchedule.phase}

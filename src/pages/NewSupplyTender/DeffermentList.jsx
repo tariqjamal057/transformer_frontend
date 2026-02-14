@@ -196,11 +196,11 @@ const DeffermentList = () => {
                       <td>{item.tnNumber}</td>
                       <td>{item.imposedLetterNo}</td>
                       <td>
-                        {format(new Date(item.imposedDate), "do MMMM yyyy")}
+                        {item.imposedDate ? format(new Date(item.imposedDate), "do MMMM yyyy"): "-"}
                       </td>
                       <td>{item.liftingLetterNo}</td>
                       <td>
-                        {format(new Date(item.liftingDate), "do MMMM yyyy")}
+                        {item.liftingDate ? format(new Date(item.liftingDate), "do MMMM yyyy"): "-"}
                       </td>
                       <td>
                         <div className="d-flex gap-2 align-item-center justify-content-center">

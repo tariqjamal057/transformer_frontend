@@ -154,7 +154,14 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       );
 
       // ✅ Load existing consignee list
-      setConsigneeList(inspectionData.consignees || []);
+      const loadedConsignees = (inspectionData.consignees || []).map(c => ({
+        ...c,
+        // Ensure newQuantity is set. If missing, infer from quantity - repaired count
+        newQuantity: c.newQuantity !== undefined 
+          ? c.newQuantity 
+          : (c.quantity - (c.repairedTransformerIds?.length || 0))
+      }));
+      setConsigneeList(loadedConsignees);
     }
   }, [inspectionData]);
 
@@ -230,7 +237,11 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
 
   // 👉 Handle Add Consignee
   const handleAddConsignee = () => {
-    if (!selectedConsignee || !consigneeQuantity) {
+    // Calculate already assigned repaired transformers
+    const assignedRepaired = consigneeList.flatMap(c => c.repairedTransformerIds || []);
+    const currentConsigneeRepaired = repairedTransformerSrno.filter(sn => !assignedRepaired.includes(sn));
+
+    if (!selectedConsignee || (!consigneeQuantity && currentConsigneeRepaired.length === 0)) {
       setAlertBox({
         open: true,
         msg: "Please select consignee & quantity",
@@ -250,53 +261,31 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       return;
     }
 
-    const requestedQty = parseInt(consigneeQuantity);
+    const requestedNewQty = parseInt(consigneeQuantity) || 0;
     const totalNewAvailable = to - from + 1;
-    const totalRepairedAvailable = repairedTransformerSrno.length;
 
-    const totalDistributed = consigneeList.reduce(
-      (sum, c) => sum + c.quantity,
+    // Calculate already distributed NEW quantities
+    const newDistributed = consigneeList.reduce(
+      (sum, c) => sum + (c.newQuantity || 0),
       0,
     );
 
-    if (totalDistributed + requestedQty > totalNewAvailable + totalRepairedAvailable) {
+    if (newDistributed + requestedNewQty > totalNewAvailable) {
       setAlertBox({
         open: true,
-        msg: "Quantity exceeds total available transformers!",
+        msg: "New Quantity exceeds available new transformers!",
         error: true,
       });
       return;
     }
 
-    // Calculate already distributed quantities
-    const newDistributed = consigneeList.reduce(
-      (sum, c) => sum + (c.newQuantity || 0),
-      0,
-    );
-    const repairedDistributed = consigneeList.reduce(
-      (sum, c) => sum + (c.repairedQuantity || 0),
-      0,
-    );
-
-    const remainingNewQty = totalNewAvailable - newDistributed;
-    
-    // Determine allocation for this consignee
-    const newQtyForThis = Math.min(requestedQty, remainingNewQty);
-    const repairedQtyForThis = requestedQty - newQtyForThis;
-
     // Get the sub-serial number range for new transformers
     let subSnNumber = null;
-    if (newQtyForThis > 0) {
+    if (requestedNewQty > 0) {
       const startSn = from + newDistributed;
-      const endSn = startSn + newQtyForThis - 1;
+      const endSn = startSn + requestedNewQty - 1;
       subSnNumber = `${startSn} TO ${endSn}`;
     }
-
-    // Get the assigned repaired transformer serial numbers
-    const assignedRepairedIds = repairedTransformerSrno.slice(
-      repairedDistributed,
-      repairedDistributed + repairedQtyForThis,
-    );
 
     const selectedConsigneeObj = consignees.find(
       (c) => c.id === selectedConsignee,
@@ -305,11 +294,11 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     const newConsignee = {
       consigneeId: selectedConsignee,
       consigneeName: selectedConsigneeObj?.name,
-      quantity: requestedQty,
-      newQuantity: newQtyForThis,
-      repairedQuantity: repairedQtyForThis,
+      quantity: requestedNewQty + currentConsigneeRepaired.length, // Total
+      newQuantity: requestedNewQty,
+      repairedQuantity: currentConsigneeRepaired.length,
       subSnNumber: subSnNumber,
-      repairedTransformerIds: assignedRepairedIds,
+      repairedTransformerIds: currentConsigneeRepaired,
     };
 
     setConsigneeList([...consigneeList, newConsignee]);

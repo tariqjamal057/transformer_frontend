@@ -420,12 +420,6 @@ const DeliverySchedule = () => {
       return;
     }
   
-    // Store old quantities by start date
-    const oldQuantities = deliverySchedule.reduce((acc, seg) => {
-      acc[seg.start] = seg.quantity;
-      return acc;
-    }, {});
-  
     let totalDeffermentDays = 0;
     const validPairs = imposedLiftingPairs.filter(p => p.imposedDate && p.liftingDate && dayjs(p.liftingDate).isAfter(dayjs(p.imposedDate)));
     validPairs.forEach(pair => {
@@ -433,13 +427,9 @@ const DeliverySchedule = () => {
     });
   
     const effectiveEndDate = end.add(totalDeffermentDays, 'day');
-    const totalQty = parseInt(totalQuantity) || 0;
-    const totalDeliveryDays = effectiveEndDate.diff(start, 'day') - totalDeffermentDays;
-    const perDayQty = totalDeliveryDays > 0 ? totalQty / totalDeliveryDays : 0;
   
     let segments = [];
     let currentStart = start;
-    let allocatedQty = 0;
   
     while (currentStart.isBefore(effectiveEndDate)) {
       let isDeferred = false;
@@ -473,50 +463,22 @@ const DeliverySchedule = () => {
         segmentEndDate = effectiveEndDate;
       }
   
-      const segmentDays = segmentEndDate.diff(currentStart, 'day') + 1;
-      let segmentQty = 0;
-      if (totalQty > 0) {
-        segmentQty = Math.floor(perDayQty * segmentDays);
-        allocatedQty += segmentQty;
-      }
+      // Preserve quantity by index if available, else 0
+      const existingQty = deliverySchedule[segments.length] ? deliverySchedule[segments.length].quantity : 0;
       
       const formattedStart = currentStart.format("DD MMM YYYY");
       segments.push({
         start: formattedStart,
         end: segmentEndDate.format("DD MMM YYYY"),
-        quantity: oldQuantities[formattedStart] || segmentQty,
+        quantity: existingQty,
       });
   
       currentStart = segmentEndDate.add(1, 'day');
       if (!currentStart.isBefore(effectiveEndDate)) break;
     }
-    
-    // Distribute remaining quantity due to rounding
-    if (totalQty > 0 && segments.length > 0) {
-      const remainingQty = totalQty - segments.reduce((sum, seg) => sum + (parseInt(seg.quantity, 10) || 0), 0);
-      const lastSegment = segments[segments.length-1];
-      lastSegment.quantity = (parseInt(lastSegment.quantity, 10) || 0) + remainingQty;
-    }
-
-    // A special case for when a new month is added at the end
-    const finalCalculatedQty = segments.reduce((sum, seg) => sum + (parseInt(seg.quantity, 10) || 0), 0);
-    if(totalQty > finalCalculatedQty) {
-      const lastSegment = segments[segments.length - 1];
-      lastSegment.quantity = (parseInt(lastSegment.quantity, 10) || 0) + (totalQty - finalCalculatedQty);
-    } else if (finalCalculatedQty > totalQty) {
-       const overQty = finalCalculatedQty - totalQty;
-       for(let i = segments.length - 1; i >= 0; i--) {
-         const seg = segments[i];
-         const currentQty = parseInt(seg.quantity, 10) || 0;
-         if (currentQty >= overQty) {
-           seg.quantity = currentQty - overQty;
-           break;
-         }
-       }
-    }
   
     setDeliverySchedule(segments);
-  }, [commencementDate, deliveryScheduleDate, totalQuantity, imposedLiftingPairs]);
+  }, [commencementDate, deliveryScheduleDate, imposedLiftingPairs]);
 
   // ✅ Handle manual quantity input
   const handleQuantityChange = (index, value) => {

@@ -154,13 +154,9 @@ const AddDeliverySchedule = () => {
     });
 
     const effectiveEndDate = end.add(totalDeffermentDays, 'day');
-    const totalQty = parseInt(totalQuantity) || 0;
-    const totalDeliveryDays = effectiveEndDate.diff(start, 'day') - totalDeffermentDays;
-    const perDayQty = totalDeliveryDays > 0 ? totalQty / totalDeliveryDays : 0;
 
     let segments = [];
     let currentStart = start;
-    let allocatedQty = 0;
 
     while (currentStart.isBefore(effectiveEndDate)) {
       let isDeferred = false;
@@ -193,12 +189,7 @@ const AddDeliverySchedule = () => {
         segmentEndDate = effectiveEndDate;
       }
 
-      const segmentDays = segmentEndDate.diff(currentStart, 'day') + 1;
       let segmentQty = 0;
-      if (totalQty > 0) {
-        segmentQty = Math.floor(perDayQty * segmentDays);
-        allocatedQty += segmentQty;
-      }
 
       const formattedStart = currentStart.format("DD MMM YYYY");
       segments.push({
@@ -210,15 +201,9 @@ const AddDeliverySchedule = () => {
       currentStart = segmentEndDate.add(1, 'day');
       if (!currentStart.isBefore(effectiveEndDate)) break;
     }
-
-    if (totalQty > 0 && segments.length > 0) {
-      const remainingQty = totalQty - segments.reduce((sum, seg) => sum + (parseInt(seg.quantity, 10) || 0), 0);
-      const lastSegment = segments[segments.length - 1];
-      lastSegment.quantity = (parseInt(lastSegment.quantity, 10) || 0) + remainingQty;
-    }
     
     setDeliverySchedule(segments);
-  }, [commencementDate, deliveryScheduleDate, totalQuantity, imposedLiftingPairs]);
+  }, [commencementDate, deliveryScheduleDate,imposedLiftingPairs]);
 
   // ✅ Handle manual quantity input
   const handleQuantityChange = (index, value) => {

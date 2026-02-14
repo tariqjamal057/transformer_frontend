@@ -99,21 +99,20 @@ const AddDeliveryChalan = () => {
   // Filter final inspections based on selected delivery schedule
   useEffect(() => {
     if (selectedDeliveryScheduleId && finalInspections && deliveryChallansAll) {
-      const usedFinalInspectionIds = new Set(
-        deliveryChallansAll
-          .filter(
-            (dc) =>
-              dc.finalInspection?.deliveryScheduleId ===
-              selectedDeliveryScheduleId,
-          )
-          .map((dc) => dc.finalInspectionId),
-      );
+      const filtered = finalInspections.filter((fi) => {
+        if (fi.deliveryScheduleId !== selectedDeliveryScheduleId) return false;
 
-      const filtered = finalInspections.filter(
-        (fi) =>
-          fi.deliveryScheduleId === selectedDeliveryScheduleId &&
-          !usedFinalInspectionIds.has(fi.id),
-      );
+        // Check if all consignees for this final inspection have been used
+        const usedConsigneesForThisFi = deliveryChallansAll
+          .filter((dc) => dc.finalInspectionId === fi.id)
+          .map((dc) => dc.consigneeId);
+
+        const allConsigneesUsed = (fi.consignees || []).every((c) =>
+          usedConsigneesForThisFi.includes(c.consigneeId),
+        );
+
+        return !allConsigneesUsed;
+      });
       setFilteredFinalInspections(filtered);
     } else {
       setFilteredFinalInspections(finalInspections || []);

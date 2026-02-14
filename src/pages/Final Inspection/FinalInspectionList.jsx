@@ -541,7 +541,7 @@ const FinalInspectionList = () => {
                   finalInspections.items.map((item, index) => (
                     <tr key={item.id}>
                       <td># {index + 1 + (currentPage - 1) * 10}</td>
-                      <td>{format(new Date(item.offerDate), "dd MMM yyyy")}</td>
+                      <td>{item.offerDate ? format(new Date(item.offerDate), "dd MMM yyyy") : "-"}</td>
                       <td>{item.offeredQuantity}</td>
 
                       <td>{item.deliverySchedule?.tnNumber}</td>
@@ -591,14 +591,14 @@ const FinalInspectionList = () => {
                           : "-"}
                       </td>
                       <td>
-                        {format(new Date(item.inspectionDate), "dd MMM yyyy")}
+                        {item.inspectionDate ? format(new Date(item.inspectionDate), "dd MMM yyyy") : "-"}
                       </td>
                       <td>{item.inspectedQuantity}</td>
                       <td>{item.grandTotal || 0}</td>
                       <td>
                         <div className="fw-semibold">{item.diNo}</div>
                         <div className="text-muted small">
-                          {format(new Date(item.diDate), "dd MMM yyyy")}
+                          {item.diDate ? format(new Date(item.diDate), "dd MMM yyyy") : "-"}
                         </div>
                       </td>
                       <td className="text-start">
