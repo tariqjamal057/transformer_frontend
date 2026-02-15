@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useMemo } from "react";
 import {
   Container,
   Paper,
@@ -46,11 +46,20 @@ const DIReceived = () => {
     };
   }, [setIsHideSidebarAndHeader]);
 
-  useEffect(() => {
-    if (inspectionData) {
-      setFilteredData(inspectionData);
-    }
+  // Filter out records where all consignees have 0 pending quantity
+  const pendingData = useMemo(() => {
+    if (!Array.isArray(inspectionData)) return [];
+    return inspectionData.filter((item) => {
+      if (!item.consignees || item.consignees.length === 0) return true;
+      return item.consignees.some((c) => (parseInt(c.pending, 10) || 0) > 0);
+    });
   }, [inspectionData]);
+
+  useEffect(() => {
+    if (pendingData) {
+      setFilteredData(pendingData);
+    }
+  }, [pendingData]);
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -90,7 +99,7 @@ const DIReceived = () => {
       </Box>
       <FiltersComponent
         onFilteredData={setFilteredData}
-        data={inspectionData}
+        data={pendingData}
         text="Dispatch Pending"
         onExportPDF={true}
         onExportExcel={true}

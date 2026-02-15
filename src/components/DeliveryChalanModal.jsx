@@ -267,17 +267,31 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
     // Find the consignee details from within the selected final inspection
     const consigneeFromInspection = availableConsignees.find(c => c.consigneeId === selectedId);
     
-    if (consigneeFromInspection && consigneeFromInspection.repairedTransformerIds) {
-      const repairedSerials = consigneeFromInspection.repairedTransformerIds.map(sr => ({
-        id: sr,
-        serialNo: sr,
-      }));
-      setAvailableSubSerialNumbers(repairedSerials);
-      setSelectedTransformers(repairedSerials.map(s => s.id)); // Pre-select all
-    } else {
-      setAvailableSubSerialNumbers([]);
-      setSelectedTransformers([]);
+    let allSerials = [];
+    if (consigneeFromInspection) {
+      // 1. Parse New Transformers Range
+      if (consigneeFromInspection.subSnNumber) {
+        const parts = consigneeFromInspection.subSnNumber.split(" TO ");
+        if (parts.length === 2) {
+          const start = parseInt(parts[0], 10);
+          const end = parseInt(parts[1], 10);
+          for (let i = start; i <= end; i++) {
+            allSerials.push({ id: String(i), serialNo: String(i) });
+          }
+        } else {
+          allSerials.push({ id: consigneeFromInspection.subSnNumber, serialNo: consigneeFromInspection.subSnNumber });
+        }
+      }
+      // 2. Add Repaired Transformers
+      if (consigneeFromInspection.repairedTransformerIds) {
+        consigneeFromInspection.repairedTransformerIds.forEach((id) => {
+          allSerials.push({ id: String(id), serialNo: String(id) });
+        });
+      }
     }
+
+    setAvailableSubSerialNumbers(allSerials);
+    setSelectedTransformers(allSerials.map((s) => s.id));
   };
 
   const [driverName, setDriverName] = useState("");
@@ -388,17 +402,30 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
 
       // Sub-serial population
       const consigneeFromInspection = fi.consignees?.find(c => c.consigneeId === deliveryChalanData.consigneeId);
-      if (consigneeFromInspection && consigneeFromInspection.repairedTransformerIds) {
-        const repairedSerials = consigneeFromInspection.repairedTransformerIds.map(sr => ({
-          id: sr,
-          serialNo: sr,
-        }));
-        setAvailableSubSerialNumbers(repairedSerials);
-        setSelectedTransformers(repairedSerials.map(s => s.id)); // Pre-select all
-      } else {
-        setAvailableSubSerialNumbers([]);
-        setSelectedTransformers([]);
+      
+      let allSerials = [];
+      if (consigneeFromInspection) {
+        if (consigneeFromInspection.subSnNumber) {
+          const parts = consigneeFromInspection.subSnNumber.split(" TO ");
+          if (parts.length === 2) {
+            const start = parseInt(parts[0], 10);
+            const end = parseInt(parts[1], 10);
+            for (let i = start; i <= end; i++) {
+              allSerials.push({ id: String(i), serialNo: String(i) });
+            }
+          } else {
+            allSerials.push({ id: consigneeFromInspection.subSnNumber, serialNo: consigneeFromInspection.subSnNumber });
+          }
+        }
+        if (consigneeFromInspection.repairedTransformerIds) {
+          consigneeFromInspection.repairedTransformerIds.forEach((id) => {
+            allSerials.push({ id: String(id), serialNo: String(id) });
+          });
+        }
       }
+
+      setAvailableSubSerialNumbers(allSerials);
+      setSelectedTransformers(allSerials.map((s) => s.id));
 
       // This logic is now replaced by the above
       // const subSerialFrom = deliveryChalanData.subSerialNumberFrom;
