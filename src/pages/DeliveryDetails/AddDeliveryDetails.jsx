@@ -159,6 +159,24 @@ const AddDeliveryDetails = () => {
                     InputProps={{ readOnly: true }}
                   />
                   <TextField
+                    label="Selected Transformers (New)"
+                    value={selectedData.selectedTransformers?.join(", ") || "N/A"}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                  />
+                  <TextField
+                    label="Repaired Transformers"
+                    value={selectedData.repairedSerialNumbers?.join(", ") || "N/A"}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                  />
+                  <TextField
+                    label="Other Consignee Serial Numbers"
+                    value={selectedData.otherConsigneeSerialNumbers || "N/A"}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                  />
+                  <TextField
                     label="GP Expiry Date"
                     value={dayjs(
                       selectedData.finalInspection.deliverySchedule

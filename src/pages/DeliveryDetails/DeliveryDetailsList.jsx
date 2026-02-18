@@ -113,6 +113,63 @@ const DeliveryDetailsList = () => {
     }
   };
 
+  const getOtherConsigneeDetails = (dc) => {
+    if (!dc?.otherConsigneeSerialNumbers) return "-";
+
+    const serials = dc.otherConsigneeSerialNumbers
+      .split(",")
+      .map((s) => s.trim());
+    const consignees = dc.finalInspection?.consignees || [];
+
+    const mapped = serials.map((serialRange) => {
+      // Check if it's a range
+      if (serialRange.includes("-")) {
+        const [start] = serialRange.split("-").map(Number);
+        // Find consignee for start (assuming range belongs to one)
+        const consignee = consignees.find((c) => {
+          // Check new range
+          if (c.subSnNumber) {
+            const parts = c.subSnNumber.split(" TO ");
+            if (parts.length === 2) {
+              const cStart = parseInt(parts[0], 10);
+              const cEnd = parseInt(parts[1], 10);
+              if (start >= cStart && start <= cEnd) return true;
+            } else if (parseInt(c.subSnNumber, 10) === start) {
+              return true;
+            }
+          }
+          return false;
+        });
+        return consignee
+          ? `${serialRange} (${consignee.consigneeName})`
+          : serialRange;
+      } else {
+        const serial = Number(serialRange);
+        const consignee = consignees.find((c) => {
+          // Check new
+          if (c.subSnNumber) {
+            const parts = c.subSnNumber.split(" TO ");
+            if (parts.length === 2) {
+              const cStart = parseInt(parts[0], 10);
+              const cEnd = parseInt(parts[1], 10);
+              if (serial >= cStart && serial <= cEnd) return true;
+            } else if (parseInt(c.subSnNumber, 10) === serial) {
+              return true;
+            }
+          }
+          // Check repaired
+          if (c.repairedTransformerIds?.includes(String(serial))) return true;
+          return false;
+        });
+        return consignee
+          ? `${serialRange} (${consignee.consigneeName})`
+          : serialRange;
+      }
+    });
+
+    return mapped.join(", ");
+  };
+
   return (
     <>
       <div className="right-content w-100">
@@ -217,6 +274,9 @@ const DeliveryDetailsList = () => {
                     <th>Sr No</th>
                     <th>TN Number</th>
                     <th>Serial No</th>
+                    <th>Selected Serial No</th>
+                    <th>Repaired Serial No</th>
+                    <th>Other Consignee Serial No</th>
                     <th>PO Number / Date</th>
                     <th>Challan No</th>
                     <th>Challan Date</th>
@@ -237,11 +297,11 @@ const DeliveryDetailsList = () => {
                 <tbody className="text-center align-middle">
                   {isLoading ? (
                     <tr>
-                      <td colSpan="17">Loading...</td>
+                      <td colSpan="20">Loading...</td>
                     </tr>
                   ) : isError ? (
                     <tr>
-                      <td colSpan="17">Error fetching data</td>
+                      <td colSpan="20">Error fetching data</td>
                     </tr>
                   ) : filteredItems?.length > 0 ? (
                     filteredItems.map((item, index) => {
@@ -261,6 +321,19 @@ const DeliveryDetailsList = () => {
                             {dc.finalInspection.serialNumberFrom} TO{" "}
                             {dc.finalInspection.serialNumberTo}
                           </td>
+
+                          {/* Selected Serial No */}
+                          <td>
+                            {(dc.selectedTransformers || []).join(', ') || '-'}
+                          </td>
+
+                          {/* Repaired Serial No */}
+                          <td>
+                            {(dc.repairedSerialNumbers || []).join(', ') || '-'}
+                          </td>
+
+                          {/* Other Consignee Serial No */}
+                          <td>{getOtherConsigneeDetails(dc)}</td>
 
                           {/* PO Number / Date */}
                           <td>
@@ -409,7 +482,7 @@ const DeliveryDetailsList = () => {
                     })
                   ) : (
                     <tr>
-                      <td colSpan="17" className="text-center">
+                      <td colSpan="20" className="text-center">
                         No data found
                       </td>
                     </tr>
