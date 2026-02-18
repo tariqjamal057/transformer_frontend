@@ -22,9 +22,9 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import api from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import { MyContext } from "../../App";
+import api from "../../services/api";
 
 const AddDeliveryChalan = () => {
   const { setAlertBox } = useContext(MyContext);
@@ -43,10 +43,15 @@ const AddDeliveryChalan = () => {
   const [poDate, setPoDate] = useState(null);
   const [chalanDescription, setChalanDescription] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
-  const [selectedTransformers, setSelectedTransformers] = useState([]);
-  const [availableSubSerialNumbers, setAvailableSubSerialNumbers] = useState(
-    [],
-  );
+  const [otherConsigneeSerialNumbers, setOtherConsigneeSerialNumbers] = useState("");
+
+  // New state for split selection
+  const [selectedNewTransformers, setSelectedNewTransformers] = useState([]);
+  const [selectedRepairedTransformers, setSelectedRepairedTransformers] =
+    useState([]);
+  const [availableNewTransformers, setAvailableNewTransformers] = useState([]);
+  const [availableRepairedTransformers, setAvailableRepairedTransformers] =
+    useState([]);
 
   const { data: finalInspections } = useQuery({
     queryKey: ["finalInspections"],
@@ -67,7 +72,8 @@ const AddDeliveryChalan = () => {
 
   const { data: deliveryChallansAll } = useQuery({
     queryKey: ["deliveryChallansAll"],
-    queryFn: () => api.get("/delivery-challans?all=true").then((res) => res.data),
+    queryFn: () =>
+      api.get("/delivery-challans?all=true").then((res) => res.data),
     placeholderData: [],
   });
 
@@ -78,11 +84,11 @@ const AddDeliveryChalan = () => {
     placeholderData: [],
   });
 
-  const [selectedFinalInspectionId, setSelectedFinalInspectionId] = useState("");
+  const [selectedFinalInspectionId, setSelectedFinalInspectionId] =
+    useState("");
 
-  const [selectedDeliveryScheduleId, setSelectedDeliveryScheduleId] = useState(
-    "",
-  );
+  const [selectedDeliveryScheduleId, setSelectedDeliveryScheduleId] =
+    useState("");
   const [filteredFinalInspections, setFilteredFinalInspections] = useState([]);
 
   const companyId = localStorage.getItem("companyId");
@@ -102,21 +108,70 @@ const AddDeliveryChalan = () => {
       const filtered = finalInspections.filter((fi) => {
         if (fi.deliveryScheduleId !== selectedDeliveryScheduleId) return false;
 
-        // Check if all consignees for this final inspection have been used
-        const usedConsigneesForThisFi = deliveryChallansAll
-          .filter((dc) => dc.finalInspectionId === fi.id)
-          .map((dc) => dc.consigneeId);
+        if (!fi.consignees || fi.consignees.length === 0) return true;
 
-        const allConsigneesUsed = (fi.consignees || []).every((c) =>
-          usedConsigneesForThisFi.includes(c.consigneeId),
-        );
+        // Check if ANY consignee has remaining items (New or Repaired)
+        return fi.consignees.some((consignee) => {
+          const assignedSerials = new Set();
 
-        return !allConsigneesUsed;
+          // 1. New Transformers Assigned
+          if (consignee.subSnNumber) {
+            const parts = consignee.subSnNumber.split(" TO ");
+            if (parts.length === 2) {
+              const start = parseInt(parts[0], 10);
+              const end = parseInt(parts[1], 10);
+              for (let i = start; i <= end; i++) assignedSerials.add(String(i));
+            } else {
+              assignedSerials.add(consignee.subSnNumber);
+            }
+          }
+
+          // 2. Repaired Transformers Assigned
+          if (consignee.repairedTransformerIds) {
+            consignee.repairedTransformerIds.forEach((id) =>
+              assignedSerials.add(String(id))
+            );
+          }
+
+          const totalAssigned = assignedSerials.size;
+
+          // Calculate Used
+          let totalUsed = 0;
+          const relevantChallans = deliveryChallansAll.filter(
+            (dc) => dc.finalInspectionId === fi.id
+          );
+
+          relevantChallans.forEach((dc) => {
+            if (dc.selectedTransformers && dc.selectedTransformers.length > 0) {
+              dc.selectedTransformers.forEach((s) => {
+                if (assignedSerials.has(String(s))) totalUsed++;
+              });
+            } else if (dc.subSerialNumberFrom && dc.subSerialNumberTo) {
+              const start = parseInt(dc.subSerialNumberFrom, 10);
+              const end = parseInt(dc.subSerialNumberTo, 10);
+              for (let i = start; i <= end; i++) {
+                if (assignedSerials.has(String(i))) totalUsed++;
+              }
+            }
+
+            if (
+              dc.repairedSerialNumbers &&
+              Array.isArray(dc.repairedSerialNumbers)
+            ) {
+              dc.repairedSerialNumbers.forEach((s) => {
+                if (assignedSerials.has(String(s))) totalUsed++;
+              });
+            }
+          });
+
+          return totalUsed < totalAssigned;
+        });
       });
       setFilteredFinalInspections(filtered);
     } else {
       setFilteredFinalInspections(finalInspections || []);
     }
+    console.log("setFilteredFinalInspections ", filteredFinalInspections);
   }, [selectedDeliveryScheduleId, finalInspections, deliveryChallansAll]);
 
   const handleTNChange = (deliveryScheduleId) => {
@@ -136,8 +191,11 @@ const AddDeliveryChalan = () => {
     setConsigneeId("");
     setConsigneeAddress("");
     setConsigneeGSTNo("");
-    setSelectedTransformers([]);
-    setAvailableSubSerialNumbers([]);
+    setSelectedNewTransformers([]);
+    setSelectedRepairedTransformers([]);
+    setAvailableNewTransformers([]);
+    setAvailableRepairedTransformers([]);
+    setOtherConsigneeSerialNumbers("");
   };
 
   const handleFinalInspectionChange = (finalInspectionId) => {
@@ -170,26 +228,78 @@ const AddDeliveryChalan = () => {
       );
 
       // Consignee population
+      // We show all consignees here, filtering of serials happens on selection
       if (record.consignees && deliveryChallansAll) {
-        const usedConsigneeIds = new Set(
-          deliveryChallansAll
-            .filter((dc) => dc.finalInspectionId === finalInspectionId)
-            .map((dc) => dc.consigneeId),
-        );
-        const filteredConsignees = record.consignees.filter(
-          (c) => !usedConsigneeIds.has(c.consigneeId),
-        );
+        const filteredConsignees = record.consignees.filter((consignee) => {
+          const assignedSerials = new Set();
+
+          // 1. New Transformers Assigned
+          if (consignee.subSnNumber) {
+            const parts = consignee.subSnNumber.split(" TO ");
+            if (parts.length === 2) {
+              const start = parseInt(parts[0], 10);
+              const end = parseInt(parts[1], 10);
+              for (let i = start; i <= end; i++) assignedSerials.add(String(i));
+            } else {
+              assignedSerials.add(consignee.subSnNumber);
+            }
+          }
+
+          // 2. Repaired Transformers Assigned
+          if (consignee.repairedTransformerIds) {
+            consignee.repairedTransformerIds.forEach((id) =>
+              assignedSerials.add(String(id))
+            );
+          }
+
+          const totalAssigned = assignedSerials.size;
+
+          // Calculate Used
+          let totalUsed = 0;
+          const relevantChallans = deliveryChallansAll.filter(
+            (dc) => dc.finalInspectionId === record.id
+          );
+
+          relevantChallans.forEach((dc) => {
+            if (dc.selectedTransformers && dc.selectedTransformers.length > 0) {
+              dc.selectedTransformers.forEach((s) => {
+                if (assignedSerials.has(String(s))) totalUsed++;
+              });
+            } else if (dc.subSerialNumberFrom && dc.subSerialNumberTo) {
+              const start = parseInt(dc.subSerialNumberFrom, 10);
+              const end = parseInt(dc.subSerialNumberTo, 10);
+              for (let i = start; i <= end; i++) {
+                if (assignedSerials.has(String(i))) totalUsed++;
+              }
+            }
+
+            if (
+              dc.repairedSerialNumbers &&
+              Array.isArray(dc.repairedSerialNumbers)
+            ) {
+              dc.repairedSerialNumbers.forEach((s) => {
+                if (assignedSerials.has(String(s))) totalUsed++;
+              });
+            }
+          });
+
+          return totalUsed < totalAssigned;
+        });
         setAvailableConsignees(filteredConsignees);
       } else {
         setAvailableConsignees(record.consignees || []);
       }
+
       setConsigneeId(""); // Reset selected consignee
       setConsigneeAddress("");
       setConsigneeGSTNo("");
 
       // Sub-serial number population
-      setSelectedTransformers([]);
-      setAvailableSubSerialNumbers([]);
+      setSelectedNewTransformers([]);
+      setSelectedRepairedTransformers([]);
+      setAvailableNewTransformers([]);
+      setAvailableRepairedTransformers([]);
+      setOtherConsigneeSerialNumbers("");
     } else {
       // Reset all fields if no record is found or selection is cleared
       setSelectedRecord(null);
@@ -205,8 +315,11 @@ const AddDeliveryChalan = () => {
       setConsigneeId("");
       setConsigneeAddress("");
       setConsigneeGSTNo("");
-      setSelectedTransformers([]);
-      setAvailableSubSerialNumbers([]);
+      setSelectedNewTransformers([]);
+      setSelectedRepairedTransformers([]);
+      setAvailableNewTransformers([]);
+      setAvailableRepairedTransformers([]);
+      setOtherConsigneeSerialNumbers("");
     }
   };
 
@@ -231,11 +344,8 @@ const AddDeliveryChalan = () => {
 
   const [availableConsignees, setAvailableConsignees] = useState([]);
   const [consigneeId, setConsigneeId] = useState("");
-  const [selectedConsigneeRecord, setSelectedConsigneeRecord] = useState(null);
   const [consigneeAddress, setConsigneeAddress] = useState("");
   const [consigneeGSTNo, setConsigneeGSTNo] = useState("");
-  const [subSerialNumberFrom, setSubSerialNumberFrom] = useState("");
-  const [subSerialNumberTo, setSubSerialNumberTo] = useState("");
 
   const handleConsigneeChange = (event) => {
     const selectedId = event.target.value;
@@ -252,9 +362,13 @@ const AddDeliveryChalan = () => {
     }
 
     // Find the consignee details from within the selected final inspection
-    const consigneeFromInspection = availableConsignees.find(c => c.consigneeId === selectedId);
-    
-    let allSerials = [];
+    const consigneeFromInspection = availableConsignees.find(
+      (c) => c.consigneeId === selectedId,
+    );
+
+    let newSerials = [];
+    let repairedSerials = [];
+
     if (consigneeFromInspection) {
       // 1. Parse New Transformers Range
       if (consigneeFromInspection.subSnNumber) {
@@ -263,22 +377,92 @@ const AddDeliveryChalan = () => {
           const start = parseInt(parts[0], 10);
           const end = parseInt(parts[1], 10);
           for (let i = start; i <= end; i++) {
-            allSerials.push({ id: String(i), serialNo: String(i) });
+            newSerials.push({ id: String(i), serialNo: String(i) });
           }
         } else {
-          allSerials.push({ id: consigneeFromInspection.subSnNumber, serialNo: consigneeFromInspection.subSnNumber });
+          newSerials.push({
+            id: consigneeFromInspection.subSnNumber,
+            serialNo: consigneeFromInspection.subSnNumber,
+          });
         }
       }
       // 2. Add Repaired Transformers
       if (consigneeFromInspection.repairedTransformerIds) {
         consigneeFromInspection.repairedTransformerIds.forEach((id) => {
-          allSerials.push({ id: String(id), serialNo: String(id) });
+          repairedSerials.push({ id: String(id), serialNo: String(id) });
         });
       }
     }
 
-    setAvailableSubSerialNumbers(allSerials);
-    setSelectedTransformers(allSerials.map((s) => s.id));
+    // Filter out used serials from existing challans
+    const usedNew = new Set();
+    const usedRepaired = new Set();
+
+    if (deliveryChallansAll && selectedRecord) {
+      deliveryChallansAll.forEach((dc) => {
+        if (dc.finalInspectionId === selectedRecord.id) {
+          if (dc.consigneeId === selectedId) {
+            // New transformers explicitly selected
+            if (
+              dc.selectedTransformers &&
+              Array.isArray(dc.selectedTransformers) &&
+              dc.selectedTransformers.length > 0
+            ) {
+              dc.selectedTransformers.forEach((s) => usedNew.add(String(s)));
+            }
+            // New transformers range (fallback for old records)
+            else if (dc.subSerialNumberFrom && dc.subSerialNumberTo) {
+              const start = parseInt(dc.subSerialNumberFrom, 10);
+              const end = parseInt(dc.subSerialNumberTo, 10);
+              for (let i = start; i <= end; i++) usedNew.add(String(i));
+            }
+            // Repaired transformers
+            if (
+              dc.repairedSerialNumbers &&
+              Array.isArray(dc.repairedSerialNumbers)
+            ) {
+              dc.repairedSerialNumbers.forEach((s) =>
+                usedRepaired.add(String(s))
+              );
+            }
+          }
+
+          // Other Consignee Serial Numbers
+          if (dc.otherConsigneeSerialNumbers) {
+            const parts = dc.otherConsigneeSerialNumbers
+              .split(",")
+              .map((s) => s.trim());
+            parts.forEach((part) => {
+              if (part.includes("-")) {
+                const [start, end] = part
+                  .split("-")
+                  .map((n) => parseInt(n, 10));
+                if (!isNaN(start) && !isNaN(end)) {
+                  for (let i = start; i <= end; i++) {
+                    usedNew.add(String(i));
+                    usedRepaired.add(String(i));
+                  }
+                }
+              } else {
+                usedNew.add(part);
+                usedRepaired.add(part);
+              }
+            });
+          }
+        }
+      });
+    }
+
+    const filteredNew = newSerials.filter((s) => !usedNew.has(s.id));
+    const filteredRepaired = repairedSerials.filter(
+      (s) => !usedRepaired.has(s.id),
+    );
+
+    setAvailableNewTransformers(filteredNew);
+    setAvailableRepairedTransformers(filteredRepaired);
+
+    setSelectedNewTransformers([]);
+    setSelectedRepairedTransformers([]);
   };
 
   const [driverName, setDriverName] = useState("");
@@ -318,11 +502,77 @@ const AddDeliveryChalan = () => {
     e.preventDefault();
     if (!selectedRecord) return;
 
+    // Process otherConsigneeSerialNumbers
+    let manualNewSerials = [];
+    let manualRepairedSerials = [];
+
+    if (otherConsigneeSerialNumbers.trim()) {
+      const parts = otherConsigneeSerialNumbers.split(",").map((s) => s.trim()).filter(Boolean);
+      const enteredSerials = [];
+
+      parts.forEach((part) => {
+        if (part.includes("-")) {
+          const [start, end] = part.split("-").map((n) => parseInt(n, 10));
+          if (!isNaN(start) && !isNaN(end) && start <= end) {
+            for (let i = start; i <= end; i++) {
+              enteredSerials.push(String(i));
+            }
+          }
+        } else {
+          enteredSerials.push(part);
+        }
+      });
+
+      // Validation against Inspection Record
+      const validNew = new Set();
+      const validRepaired = new Set();
+
+      if (selectedRecord.consignees) {
+        selectedRecord.consignees.forEach((c) => {
+          // New Transformers
+          if (c.subSnNumber) {
+            const rangeParts = c.subSnNumber.split(" TO ");
+            if (rangeParts.length === 2) {
+              const s = parseInt(rangeParts[0], 10);
+              const e = parseInt(rangeParts[1], 10);
+              for (let i = s; i <= e; i++) validNew.add(String(i));
+            } else {
+              validNew.add(c.subSnNumber);
+            }
+          }
+          // Repaired Transformers
+          if (c.repairedTransformerIds) {
+            c.repairedTransformerIds.forEach((id) => validRepaired.add(String(id)));
+          }
+        });
+      }
+
+      const invalidSerials = [];
+      enteredSerials.forEach((s) => {
+        if (validNew.has(s)) {
+          manualNewSerials.push(s);
+        } else if (validRepaired.has(s)) {
+          manualRepairedSerials.push(s);
+        } else {
+          invalidSerials.push(s);
+        }
+      });
+
+      if (invalidSerials.length > 0) {
+        setAlertBox({
+          open: true,
+          msg: `Invalid Serial Numbers (not found in Inspection): ${invalidSerials.join(", ")}`,
+          error: true,
+        });
+        return;
+      }
+    }
+
     let subSerialNumberFrom = null;
     let subSerialNumberTo = null;
 
-    if (selectedTransformers.length > 0) {
-      const numericSerials = selectedTransformers.map((n) => parseInt(n, 10));
+    if (selectedNewTransformers.length > 0) {
+      const numericSerials = selectedNewTransformers.map((n) => parseInt(n, 10));
       subSerialNumberFrom = String(Math.min(...numericSerials));
       subSerialNumberTo = String(Math.max(...numericSerials));
     }
@@ -332,6 +582,9 @@ const AddDeliveryChalan = () => {
       challanNo,
       subSerialNumberFrom,
       subSerialNumberTo,
+      selectedTransformers: selectedNewTransformers,
+      repairedSerialNumbers: selectedRepairedTransformers,
+      otherConsigneeSerialNumbers,
       consignorName,
       consignorAddress,
       consignorPhone: consignorPhoneNo,
@@ -383,7 +636,8 @@ const AddDeliveryChalan = () => {
                   label="Select Serial Number"
                   value={selectedFinalInspectionId}
                   onChange={(e) => handleFinalInspectionChange(e.target.value)}
-                  disabled={!selectedDeliveryScheduleId}
+                  // disabled={!selectedDeliveryScheduleId}
+                  disabled={!filteredFinalInspections.length}
                 >
                   {filteredFinalInspections?.map((fi) => (
                     <MenuItem key={fi?.id} value={fi?.id}>
@@ -395,25 +649,61 @@ const AddDeliveryChalan = () => {
 
               <Grid item size={1}>
                 <FormControl fullWidth>
-                  <InputLabel>Sub Serial No</InputLabel>
+                  <InputLabel>New Transformers (TRFSI No)</InputLabel>
                   <Select
                     multiple
-                    value={selectedTransformers}
-                    onChange={(e) => setSelectedTransformers(e.target.value)}
-                    input={<OutlinedInput label="Sub Serial No" />}
+                    value={selectedNewTransformers}
+                    onChange={(e) => setSelectedNewTransformers(e.target.value)}
+                    input={
+                      <OutlinedInput label="New Transformers (TRFSI No)" />
+                    }
                     renderValue={(selected) => selected.join(", ")}
-                    disabled
+                    disabled={!availableNewTransformers.length}
                   >
-                    {availableSubSerialNumbers?.map((s) => (
+                    {availableNewTransformers?.map((s) => (
                       <MenuItem key={s.id} value={s.id}>
                         <Checkbox
-                          checked={selectedTransformers.includes(s.id)}
+                          checked={selectedNewTransformers.includes(s.id)}
                         />
                         <ListItemText primary={s.serialNo} />
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
+              </Grid>
+
+              <Grid item size={1}>
+                <FormControl fullWidth>
+                  <InputLabel>Repaired Transformers</InputLabel>
+                  <Select
+                    multiple
+                    value={selectedRepairedTransformers}
+                    onChange={(e) =>
+                      setSelectedRepairedTransformers(e.target.value)
+                    }
+                    input={<OutlinedInput label="Repaired Transformers" />}
+                    renderValue={(selected) => selected.join(", ")}
+                    disabled={!availableRepairedTransformers.length}
+                  >
+                    {availableRepairedTransformers?.map((s) => (
+                      <MenuItem key={s.id} value={s.id}>
+                        <Checkbox
+                          checked={selectedRepairedTransformers.includes(s.id)}
+                        />
+                        <ListItemText primary={s.serialNo} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item size={2}>
+                <TextField
+                  fullWidth
+                  label="Other Consignee Serial Numbers (e.g. 1021-1050, 1055, 456)"
+                  value={otherConsigneeSerialNumbers}
+                  onChange={(e) => setOtherConsigneeSerialNumbers(e.target.value)}
+                />
               </Grid>
 
               {/* DI No */}

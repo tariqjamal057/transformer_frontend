@@ -11,25 +11,83 @@ export default function PdfTemplate({ item }) {
   };
 
   const getDisplayedSerials = (item) => {
-    const fi = item.finalInspection;
+    let parts = [];
 
-    const consignee = fi?.consignees?.find(
-      (c) => c.consigneeId === item.consigneeId,
-    );
-
-    if (!consignee) {
-      return "N/A";
+    // 1. New Transformers
+    if (item.selectedTransformers && item.selectedTransformers.length > 0) {
+      const nums = item.selectedTransformers
+        .map((n) => parseInt(n, 10))
+        .sort((a, b) => a - b);
+      let ranges = [];
+      if (nums.length > 0) {
+        let start = nums[0];
+        let end = nums[0];
+        for (let i = 1; i < nums.length; i++) {
+          if (nums[i] === end + 1) {
+            end = nums[i];
+          } else {
+            ranges.push(start === end ? `${start}` : `${start}-${end}`);
+            start = nums[i];
+            end = nums[i];
+          }
+        }
+        ranges.push(start === end ? `${start}` : `${start}-${end}`);
+        parts.push(ranges.join(", "));
+      } else {
+        parts.push(item.selectedTransformers.join(", "));
+      }
+    } else if (item.subSerialNumberFrom && item.subSerialNumberTo) {
+      parts.push(`${item.subSerialNumberFrom}-${item.subSerialNumberTo}`);
     }
 
-    const serials = [];
-    if (consignee.subSnNumber) {
-      serials.push(consignee.subSnNumber.replace(/ TO /g, "-"));
-    }
-    if (consignee.repairedTransformerIds && consignee.repairedTransformerIds.length > 0) {
-      serials.push(...consignee.repairedTransformerIds);
+    // 2. Repaired Transformers
+    if (item.repairedSerialNumbers && item.repairedSerialNumbers.length > 0) {
+      parts.push(item.repairedSerialNumbers.join(", "));
     }
 
-    return serials.filter(Boolean).join(', ') || 'N/A';
+    // 3. Other Consignee Serials
+    if (item.otherConsigneeSerialNumbers) {
+      const expanded = [];
+      const segments = item.otherConsigneeSerialNumbers.split(",");
+      segments.forEach((segment) => {
+        const s = segment.trim();
+        if (s.includes("-")) {
+          const [start, end] = s.split("-").map((n) => parseInt(n, 10));
+          if (!isNaN(start) && !isNaN(end) && start <= end) {
+            for (let i = start; i <= end; i++) {
+              expanded.push(i);
+            }
+          } else {
+            expanded.push(s);
+          }
+        } else {
+          expanded.push(s);
+        }
+      });
+      parts.push(expanded.join(", "));
+    }
+
+    // Fallback to old logic if no specific data found
+    if (parts.length === 0) {
+      const fi = item.finalInspection;
+      const consignee = fi?.consignees?.find(
+        (c) => c.consigneeId === item.consigneeId,
+      );
+
+      if (consignee) {
+        if (consignee.subSnNumber) {
+          parts.push(consignee.subSnNumber.replace(/ TO /g, "-"));
+        }
+        if (
+          consignee.repairedTransformerIds &&
+          consignee.repairedTransformerIds.length > 0
+        ) {
+          parts.push(...consignee.repairedTransformerIds);
+        }
+      }
+    }
+
+    return parts.filter(Boolean).join(", ") || "N/A";
   };
 
   // Find the specific consignee's info from the final inspection data
@@ -39,9 +97,55 @@ export default function PdfTemplate({ item }) {
 
   console.log("Consignee Info:", consigneeInfo);
 
-  // Use the specific consignee's quantity if available, otherwise fallback to the total inspected quantity
-  const consigneeQuantity =
-    consigneeInfo?.quantity || item?.finalInspection?.inspectedQuantity || "N/A";
+  const getQuantity = (item) => {
+    let count = 0;
+    let hasData = false;
+
+    // New Transformers
+    if (item.selectedTransformers && item.selectedTransformers.length > 0) {
+      count += item.selectedTransformers.length;
+      hasData = true;
+    } else if (item.subSerialNumberFrom && item.subSerialNumberTo) {
+      count +=
+        parseInt(item.subSerialNumberTo) -
+        parseInt(item.subSerialNumberFrom) +
+        1;
+      hasData = true;
+    }
+
+    // Repaired Transformers
+    if (item.repairedSerialNumbers && item.repairedSerialNumbers.length > 0) {
+      count += item.repairedSerialNumbers.length;
+      hasData = true;
+    }
+
+    // Other Consignee Serials
+    if (item.otherConsigneeSerialNumbers) {
+      const others = item.otherConsigneeSerialNumbers.split(",");
+      others.forEach((s) => {
+        s = s.trim();
+        if (s.includes("-")) {
+          const [start, end] = s.split("-").map((n) => parseInt(n, 10));
+          if (!isNaN(start) && !isNaN(end)) {
+            count += end - start + 1;
+          }
+        } else if (s) {
+          count += 1;
+        }
+      });
+      hasData = true;
+    }
+
+    if (!hasData) {
+      return (
+        consigneeInfo?.quantity ||
+        item?.finalInspection?.inspectedQuantity ||
+        "N/A"
+      );
+    }
+
+    return count;
+  };
 
   // Map the dynamic 'item' prop to the formData structure
   const formData = {
@@ -49,7 +153,9 @@ export default function PdfTemplate({ item }) {
     challanDate: formatDate(item?.challanCreatedAt),
     consigneeName: item?.supplyTender?.company?.name || "N/A",
     consigneeAddress: item?.supplyTender?.company?.address || "N/A",
-    companyImage: item?.supplyTender?.company?.logo ? `${import.meta.env.VITE_IMAGE_BASE_URL}${item.supplyTender.company.logo.replace(/\\/g, "/")}` : null,
+    companyImage: item?.supplyTender?.company?.logo
+      ? `${import.meta.env.VITE_IMAGE_BASE_URL}${item.supplyTender.company.logo.replace(/\\/g, "/")}`
+      : null,
     consigneePhone: `PHONE: ${item?.supplyTender?.company?.phone || "N/A"}`,
     consignorName: item?.consignorName || "N/A",
     consignorCompany: item?.consignee?.name || "N/A", // 'To' field seems to be the consignee
@@ -65,7 +171,7 @@ export default function PdfTemplate({ item }) {
     grDate: "", // GR Date not in model
     materialDesc: item?.materialDescription?.description || "N/A",
     bearingNo: getDisplayedSerials(item),
-    quantity: `${consigneeQuantity} Nos.`,
+    quantity: `${getQuantity(item)} Nos.`,
     inspector: item?.finalInspection?.inspectionOfficers || [],
     inspectorTitle: "Assistant Engineer (O&M)", // Static data
     inspectorCompany: item?.supplyTender?.company?.name || "N/A",
@@ -74,7 +180,7 @@ export default function PdfTemplate({ item }) {
     diNo: item?.finalInspection?.diNo || "N/A",
     diDate: formatDate(item?.finalInspection?.diDate),
     receiptMaterialDesc: item?.materialDescription?.description || "N/A",
-    receiptQuantity: `${consigneeQuantity} Nos.`,
+    receiptQuantity: `${getQuantity(item)} Nos.`,
   };
 
   return (
@@ -136,7 +242,7 @@ export default function PdfTemplate({ item }) {
         <div className="row g-0 bottom-border">
           <div className="col-6 px-3 py-2">
             <div className="d-flex items-start">
-              <div style={{width: '70%'}}>
+              <div style={{ width: "70%" }}>
                 <div className="fw-bold small">{formData.consigneeName}</div>
                 <div className="extra-small-text mt-1 lh-sm">
                   {formData.consigneeAddress}
@@ -144,8 +250,18 @@ export default function PdfTemplate({ item }) {
                   {formData.consigneePhone}
                 </div>
               </div>
-              <div style={{width: '30%'}} className="d-flex justify-content-center align-items-center">
-                {formData.companyImage && <img src={formData.companyImage} alt="logo" style={{width: '100%', height: '50px'}} />}</div>
+              <div
+                style={{ width: "30%" }}
+                className="d-flex justify-content-center align-items-center"
+              >
+                {formData.companyImage && (
+                  <img
+                    src={formData.companyImage}
+                    alt="logo"
+                    style={{ width: "100%", height: "50px" }}
+                  />
+                )}
+              </div>
             </div>
           </div>
           <div className="col-6 px-3 py-2 left-border">

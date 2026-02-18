@@ -139,6 +139,63 @@ const DeliveryChalanList = () => {
     }, 300);
   };
 
+  const getOtherConsigneeDetails = (item) => {
+    if (!item.otherConsigneeSerialNumbers) return "-";
+
+    const serials = item.otherConsigneeSerialNumbers
+      .split(",")
+      .map((s) => s.trim());
+    const consignees = item.finalInspection?.consignees || [];
+
+    const mapped = serials.map((serialRange) => {
+      // Check if it's a range
+      if (serialRange.includes("-")) {
+        const [start] = serialRange.split("-").map(Number);
+        // Find consignee for start (assuming range belongs to one)
+        const consignee = consignees.find((c) => {
+          // Check new range
+          if (c.subSnNumber) {
+            const parts = c.subSnNumber.split(" TO ");
+            if (parts.length === 2) {
+              const cStart = parseInt(parts[0], 10);
+              const cEnd = parseInt(parts[1], 10);
+              if (start >= cStart && start <= cEnd) return true;
+            } else if (parseInt(c.subSnNumber, 10) === start) {
+              return true;
+            }
+          }
+          return false;
+        });
+        return consignee
+          ? `${serialRange} (${consignee.consigneeName})`
+          : serialRange;
+      } else {
+        const serial = Number(serialRange);
+        const consignee = consignees.find((c) => {
+          // Check new
+          if (c.subSnNumber) {
+            const parts = c.subSnNumber.split(" TO ");
+            if (parts.length === 2) {
+              const cStart = parseInt(parts[0], 10);
+              const cEnd = parseInt(parts[1], 10);
+              if (serial >= cStart && serial <= cEnd) return true;
+            } else if (parseInt(c.subSnNumber, 10) === serial) {
+              return true;
+            }
+          }
+          // Check repaired
+          if (c.repairedTransformerIds?.includes(serial)) return true;
+          return false;
+        });
+        return consignee
+          ? `${serialRange} (${consignee.consigneeName})`
+          : serialRange;
+      }
+    });
+
+    return mapped.join(", ");
+  };
+
   return (
     <>
       <div className="right-content w-100">
@@ -199,6 +256,7 @@ const DeliveryChalanList = () => {
                   <th>Transformer Info</th>
                   <th>Serial No</th>
                   <th>Sub Serial No</th>
+                  <th>Other Consignee Transformer</th>
                   <th>Inspection Officers</th>
                   <th>Inspection Date</th>
                   <th>Consignor Details</th>
@@ -259,13 +317,16 @@ const DeliveryChalanList = () => {
 
                       {/* Serial No */}
                       <td>
-                        {item.finalInspection?.consignees?.find(c => c.consigneeId === item.consigneeId)?.subSnNumber || 'N/A'}
+                        {(item?.selectedTransformers || []).join(', ') || ''}
                       </td>
 
                       {/* Sub Serial No */}
                       <td>
-                        {(item.finalInspection?.consignees?.find(c => c.consigneeId === item.consigneeId)?.repairedTransformerIds || []).join(', ') || ''}
+                        {(item?.repairedSerialNumbers || []).join(', ') || ''}
                       </td>
+
+                      {/* Other Consignee Transformer */}
+                      <td>{getOtherConsigneeDetails(item)}</td>
 
                       {/* Inspection Officers */}
                       <td>
