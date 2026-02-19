@@ -13,6 +13,7 @@ import { MyContext } from "../../App";
 import Swal from "sweetalert2";
 import Pagination from "../../components/Pagination";
 import GPReceiptBulkUploadModal from "../../components/GPReceiptBulkUploadModal";
+import dayjs from "dayjs";
 
 const NewGPReceiptRecordList = () => {
   const { setAlertBox, hasPermission } = useContext(MyContext);
@@ -78,6 +79,11 @@ const NewGPReceiptRecordList = () => {
         item.deliveryChallan?.finalInspection?.deliverySchedule?.phase || "",
       "Poly Seal No": item.polySealNo,
       "Discom Tfr. Sr. No.": item.consigneeTFRSerialNo,
+      "Delivered to ACOS": item.deliveredToAcos,
+      "Rec. Challan Item No.": item.recChallanItemNo,
+      "Rec. Challan Date": item.recChallanItemDate
+        ? dayjs(item.recChallanItemDate).format("DD/MM/YYYY")
+        : "",
       "Seal No Time Of G.P. Received": item.sealNoTimeOfGPReceived,
       "Date Of Supply": item.deliveryChallan?.createdAt,
       "Oil Level": item.oilLevel,
@@ -137,6 +143,9 @@ const NewGPReceiptRecordList = () => {
         "Original\nTfr. Sr.\nNo.",
         "Discom\nTfr. Sr.\nNo.",
         "Rating",
+        "Delivered\nto ACOS",
+        "Rec.\nChallan\nItem No.",
+        "Rec.\nChallan\nDate",
         "Wound",
         "Phase",
         "Poly\nSeal\nNo",
@@ -157,6 +166,11 @@ const NewGPReceiptRecordList = () => {
       item.originalTfrSrNo || "",
       item.consigneeTFRSerialNo || "",
       item.rating || "",
+      item.deliveredToAcos || "",
+      item.recChallanItemNo || "",
+      item.recChallanItemDate
+        ? dayjs(item.recChallanItemDate).format("DD/MM/YYYY")
+        : "",
       item.deliveryChallan?.finalInspection?.deliverySchedule?.wound || "",
       item.deliveryChallan?.finalInspection?.deliverySchedule?.phase || "",
       item.polySealNo || "",
@@ -178,12 +192,15 @@ const NewGPReceiptRecordList = () => {
       8: { cellWidth: 50 }, // Original Tfr. Sr. No.
       9: { cellWidth: 50 }, // Discom Tfr. Sr. No.
       10: { cellWidth: 35 }, // Rating
-      11: { cellWidth: 40 }, // Wound
-      12: { cellWidth: 40 }, // Phase
-      13: { cellWidth: 38 }, // Poly Seal No
-      14: { cellWidth: 45 }, // Seal No (Received)
-      15: { cellWidth: 45 }, // Date Of Supply
-      16: { cellWidth: 52 }, // Remarks
+      11: { cellWidth: 40 }, // Delivered to ACOS
+      12: { cellWidth: 40 }, // Rec. Challan Item No.
+      13: { cellWidth: 40 }, // Rec. Challan Date
+      14: { cellWidth: 40 }, // Wound
+      15: { cellWidth: 40 }, // Phase
+      16: { cellWidth: 38 }, // Poly Seal No
+      17: { cellWidth: 45 }, // Seal No (Received)
+      18: { cellWidth: 45 }, // Date Of Supply
+      19: { cellWidth: 52 }, // Remarks
     };
     const totalTableWidth = Object.values(columnStyles).reduce(
       (sum, col) => sum + (col.cellWidth || 0),
@@ -302,6 +319,9 @@ const NewGPReceiptRecordList = () => {
                   <th>TRF SI No</th>
                   <th>Original Tfr. Sr. No.</th>
                   <th>Discom Tfr. Sr. No.</th>
+                  <th>Delivered to ACOS</th>
+                  <th>Rec. Challan Item No.</th>
+                  <th>Rec. Challan Date</th>
                   <th>Rating</th>
                   <th>Wound</th>
                   <th>Phase</th>
@@ -338,6 +358,13 @@ const NewGPReceiptRecordList = () => {
                       <td>{item.trfsiNo}</td>
                       <td>{item.originalTfrSrNo}</td>
                       <td>{item.consigneeTFRSerialNo}</td>
+                      <td>{item.deliveredToAcos}</td>
+                      <td>{item.recChallanItemNo}</td>
+                      <td>
+                        {item.recChallanItemDate
+                          ? dayjs(item.recChallanItemDate).format("DD/MM/YYYY")
+                          : ""}
+                      </td>
                       <td>{item.rating}</td>
                       <td>
                         {

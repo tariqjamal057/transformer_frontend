@@ -36,6 +36,10 @@ const AddNewGPReceiptRecord = () => {
   const [sealNoTimeOfGPReceived, setSealNoTimeOfGPReceived] = useState("");
   const [consigneeTFRSerialNo, setConsigneeTFRSerialNo] = useState("");
   const [originalTfrSrNo, setOriginalTfrSrNo] = useState("");
+  const [deliveredToAcos, setDeliveredToAcos] = useState("");
+  const [recChallanItemNo, setRecChallanItemNo] = useState("");
+  const [recChallanItemDate, setRecChallanItemDate] = useState(null);
+
 
   //parts missing details state
   const [oilLevel, setOilLevel] = useState("");
@@ -88,12 +92,9 @@ const AddNewGPReceiptRecord = () => {
         const hasTrfsi = ch.finalInspection.sealingDetails.some(
           (s) => String(s.trfSiNo) === String(trfsiNo),
         );
-        if (hasTrfsi) {
-          return ch;
-        }
-        // const sameRating =
-        //   ch.finalInspection.deliverySchedule.rating === parseInt(rating);
-        // return hasTrfsi && sameRating;
+        const sameRating =
+          String(ch.finalInspection.deliverySchedule.rating) === String(rating);
+        return hasTrfsi && sameRating;
       });
       console.log("found ------------", found);
       if (found) {
@@ -122,6 +123,7 @@ const AddNewGPReceiptRecord = () => {
       });
       return;
     }
+
     const data = {
       accountReceiptNoteNo,
       accountReceiptNoteDate: dayjs(accountReceiptNoteDate).toISOString(),
@@ -153,6 +155,9 @@ const AddNewGPReceiptRecord = () => {
       channel,
       core,
       polySealNo: String(polySealNo),
+      deliveredToAcos,
+      recChallanItemNo,
+      recChallanItemDate: recChallanItemDate ? dayjs(recChallanItemDate).toISOString() : null,
     };
     addNewGPReceiptRecordMutation.mutate(data);
   };
@@ -238,6 +243,39 @@ const AddNewGPReceiptRecord = () => {
               />
             </Grid>
 
+            {/* Delivered to ACOS */}
+            <Grid item size={1}>
+              <TextField
+                fullWidth
+                label="Delivered to ACOS"
+                variant="outlined"
+                value={deliveredToAcos}
+                onChange={(e) => setDeliveredToAcos(e.target.value)}
+              />
+            </Grid>
+
+            {/* Rec. Challan Item No. */}
+            <Grid item size={1}>
+              <TextField
+                fullWidth
+                label="Rec. Challan Item No."
+                variant="outlined"
+                value={recChallanItemNo}
+                onChange={(e) => setRecChallanItemNo(e.target.value)}
+              />
+            </Grid>
+
+            {/* Rec. Challan Date */}
+            <Grid item size={1}>
+              <DatePicker
+                label="Rec. Challan Date"
+                value={recChallanItemDate}
+                onChange={(newValue) => setRecChallanItemDate(newValue)}
+                slotProps={{ textField: { fullWidth: true } }}
+                format="DD/MM/YYYY"
+              />
+            </Grid>
+
             <Grid item size={1}>
               <TextField
                 fullWidth
@@ -312,6 +350,32 @@ const AddNewGPReceiptRecord = () => {
 
                 <Grid item size={1}>
                   <TextField
+                    label="Inspection Date"
+                    value={dayjs(selectedChalan?.finalInspection?.inspectionDate).format("DD/MM/YYYY")}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                  />
+                </Grid>
+
+                <Grid item size={1}>
+                  <TextField
+                    label="Challan NO"
+                    value={selectedChalan?.challanNo}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                  />
+                </Grid>
+                <Grid item size={1}>
+                  <TextField
+                    label="Challan Date"
+                    value={dayjs(selectedChalan?.createdAt).format("DD/MM/YYYY")}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                  />
+                </Grid>
+
+                <Grid item size={1}>
+                  <TextField
                     label="Date Of Supply"
                     value={selectedChalan?.createdAt}
                     fullWidth
@@ -321,7 +385,7 @@ const AddNewGPReceiptRecord = () => {
 
                 <Grid item size={1}>
                   <TextField
-                    label="Seal No Time Of New Supply"
+                    label="Sealing Details (Seal No Time Of New Supply)"
                     value={polySealNo}
                     fullWidth
                     InputProps={{ readOnly: true }}
@@ -506,6 +570,14 @@ const AddNewGPReceiptRecord = () => {
                 "Submit Failure Info"
               )}
             </Button>
+            {/* <Button
+              variant="contained"
+              color="primary"
+              sx={{ px: 5, py: 1.5, borderRadius: 3, ml: 2 }}
+              onClick={() => alert("Create Challan feature coming soon")}
+            >
+              Create Challan
+            </Button> */}
           </Box>
         </Paper>
       </div>

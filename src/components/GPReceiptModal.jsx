@@ -50,6 +50,9 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
   const [sealNoTimeOfGPReceived, setSealNoTimeOfGPReceived] = useState("");
   const [consigneeTFRSerialNo, setConsigneeTFRSerialNo] = useState("");
   const [originalTfrSrNo, setOriginalTfrSrNo] = useState("");
+  const [deliveredToAcos, setDeliveredToAcos] = useState("");
+  const [recChallanItemNo, setRecChallanItemNo] = useState("");
+  const [recChallanItemDate, setRecChallanItemDate] = useState(null);
 
   //parts missing details state
   const [oilLevel, setOilLevel] = useState("");
@@ -156,6 +159,9 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
       channel,
       core,
       polySealNo: String(polySealNo),
+      deliveredToAcos,
+      recChallanItemNo,
+      recChallanItemDate: recChallanItemDate ? dayjs(recChallanItemDate).toISOString() : null,
     };
     updateGPReceipt(data);
   };
@@ -184,6 +190,13 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
       setPolySealNo(gpReceiptData.polySealNo || "");
       setSealNoTimeOfGPReceived(gpReceiptData.sealNoTimeOfGPReceived || "");
       setConsigneeTFRSerialNo(gpReceiptData.consigneeTFRSerialNo || "");
+      setDeliveredToAcos(gpReceiptData.deliveredToAcos || "");
+      setRecChallanItemNo(gpReceiptData.recChallanItemNo || "");
+      setRecChallanItemDate(
+        gpReceiptData.recChallanItemDate
+          ? dayjs(gpReceiptData.recChallanItemDate)
+          : null,
+      );
 
       // ✅ Parts missing details
       setOilLevel(gpReceiptData.oilLevel || "");
@@ -285,6 +298,34 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
               sx={{ mt: 2, mb: 1 }}
               margin="normal"
               onChange={setDiscomReceiptNoteDate}
+              format="DD/MM/YYYY"
+              slotProps={{ textField: { fullWidth: true } }}
+            />
+
+            <TextField
+              fullWidth
+              label="Delivered to ACOS"
+              variant="outlined"
+              margin="normal"
+              value={deliveredToAcos}
+              onChange={(e) => setDeliveredToAcos(e.target.value)}
+            />
+
+            <TextField
+              fullWidth
+              label="Rec. Challan Item No."
+              variant="outlined"
+              margin="normal"
+              value={recChallanItemNo}
+              onChange={(e) => setRecChallanItemNo(e.target.value)}
+            />
+
+            <DatePicker
+              label="Rec. Challan Date"
+              value={recChallanItemDate}
+              sx={{ mt: 2, mb: 1 }}
+              margin="normal"
+              onChange={setRecChallanItemDate}
               format="DD/MM/YYYY"
               slotProps={{ textField: { fullWidth: true } }}
             />

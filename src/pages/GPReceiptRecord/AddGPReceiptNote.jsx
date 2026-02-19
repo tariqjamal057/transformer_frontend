@@ -11,11 +11,6 @@ import {
   TableRow,
   TableCell,
   TableBody,
-  Checkbox,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
 } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -32,7 +27,7 @@ const AddGPReceiptNote = () => {
 
   const [selectDateFrom, setSelectDateFrom] = useState(null);
   const [selectDateTo, setSelectDateTo] = useState(null);
-  const [consigneeId, setConsigneeId] = useState("");
+  const [consigneeName, setConsigneeName] = useState("");
   const [accountReceiptNoteNo, setAccountReceiptNoteNo] = useState("");
   const [accountReceiptNoteDate, setAccountReceiptNoteDate] = useState(null);
   const [acos, setAcos] = useState("");
@@ -40,7 +35,6 @@ const AddGPReceiptNote = () => {
   const [discomReceiptNoteDate, setDiscomReceiptNoteDate] = useState(null);
 
   const [filteredRecords, setFilteredRecords] = useState([]);
-  const [selectedRecordIds, setSelectedRecordIds] = useState([]);
 
   const { data: newGpReceiptRecords, isLoading } = useQuery({
     queryKey: ["newGpReceiptRecords"],
@@ -74,38 +68,59 @@ const AddGPReceiptNote = () => {
   });
 
   useEffect(() => {
-    console.log("consigneeId", consigneeId);
+    console.log("consigneeName", consigneeName);
     console.log("newGpReceiptRecords", newGpReceiptRecords);
     console.log("consignees", consignees);
 
-    if (!consigneeId) {
+    if (!consigneeName) {
       setFilteredRecords([]);
       return;
     }
 
-    const selectedConsignee = consignees.find((c) => c.id === consigneeId);
-    const selectedName = selectedConsignee?.name || "";
-    console.log("selectedName", selectedName);
-
     if (newGpReceiptRecords) {
-      const matches = newGpReceiptRecords.filter((record) =>
-        record.consigneeName.toLowerCase().includes(selectedName.toLowerCase()),
+      let matches = newGpReceiptRecords.filter((record) =>
+        record.consigneeName.toLowerCase() === consigneeName.toLowerCase(),
       );
+
+      if (selectDateFrom) {
+        matches = matches.filter((record) => {
+          const recordDate = dayjs(record.accountReceiptNoteDate);
+          return (
+            recordDate.isValid() &&
+            (recordDate.isSame(selectDateFrom, "day") ||
+              recordDate.isAfter(selectDateFrom, "day"))
+          );
+        });
+      }
+
+      if (selectDateTo) {
+        matches = matches.filter((record) => {
+          const recordDate = dayjs(record.accountReceiptNoteDate);
+          return (
+            recordDate.isValid() &&
+            (recordDate.isSame(selectDateTo, "day") ||
+              recordDate.isBefore(selectDateTo, "day"))
+          );
+        });
+      }
+
       console.log("matches", matches);
       setFilteredRecords(matches);
     }
-  }, [consigneeId, newGpReceiptRecords, consignees]);
-
-  const handleSelectRecord = (id) => {
-    setSelectedRecordIds((prev) =>
-      prev.includes(id)
-        ? prev.filter((recordId) => recordId !== id)
-        : [...prev, id],
-    );
-  };
+  }, [
+    consigneeName,
+    newGpReceiptRecords,
+    consignees,
+    selectDateFrom,
+    selectDateTo,
+  ]);
 
   const handleSubmit = () => {
     const supplyTenderId = localStorage.getItem("selectedSupplyTenderId");
+    const selectedConsignee = consignees?.find(
+      (c) => c.name.toLowerCase() === consigneeName.toLowerCase(),
+    );
+    const consigneeId = selectedConsignee?.id || null;
 
     const gpReceiptNoteData = {
       selectDateFrom: selectDateFrom
@@ -126,7 +141,7 @@ const AddGPReceiptNote = () => {
     };
     addGPReceiptNote({
       gpReceiptNoteData,
-      recordIds: selectedRecordIds,
+      recordIds: filteredRecords.map((rec) => rec.id),
     });
   };
 
@@ -166,21 +181,13 @@ const AddGPReceiptNote = () => {
             </Grid>
 
             <Grid item size={2}>
-              <FormControl fullWidth>
-                <InputLabel>Consignee Name</InputLabel>
-                <Select
-                  value={consigneeId}
-                  label="Consignee Name"
-                  onChange={(e) => setConsigneeId(e.target.value)}
-                >
-                  {consignees &&
-                    consignees.map((consignee) => (
-                      <MenuItem key={consignee.id} value={consignee.id}>
-                        {consignee.name}
-                      </MenuItem>
-                    ))}
-                </Select>
-              </FormControl>
+              <TextField
+                fullWidth
+                label="Consignee Name"
+                variant="outlined"
+                value={consigneeName}
+                onChange={(e) => setConsigneeName(e.target.value)}
+              />
             </Grid>
 
             <Grid item size={1}>
@@ -245,24 +252,6 @@ const AddGPReceiptNote = () => {
                 <Table sx={{ minWidth: 1200, border: "1px solid #ddd" }}>
                   <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
                     <TableRow>
-                      <TableCell padding="checkbox">
-                        <Checkbox
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedRecordIds(
-                                filteredRecords.map((rec) => rec.id),
-                              );
-                            } else {
-                              setSelectedRecordIds([]);
-                            }
-                          }}
-                          checked={
-                            selectedRecordIds.length ===
-                              filteredRecords.length &&
-                            filteredRecords.length > 0
-                          }
-                        />
-                      </TableCell>
                       <TableCell>Sin No</TableCell>
                       <TableCell>TRFSI No</TableCell>
                       <TableCell>Rating</TableCell>
@@ -272,18 +261,25 @@ const AddGPReceiptNote = () => {
                       <TableCell>Oil Level</TableCell>
                       <TableCell>HV Bushing</TableCell>
                       <TableCell>LV Bushing</TableCell>
+                      <TableCell>HT Metal Parts</TableCell>
+                      <TableCell>LT Metal Parts</TableCell>
+                      <TableCell>M&P Box</TableCell>
+                      <TableCell>M&P Box Cover</TableCell>
+                      <TableCell>MCCB</TableCell>
+                      <TableCell>ICB</TableCell>
+                      <TableCell>Copper Flexible Cable</TableCell>
+                      <TableCell>AL Wire</TableCell>
+                      <TableCell>Conservator</TableCell>
+                      <TableCell>Radiator</TableCell>
+                      <TableCell>Fuse</TableCell>
+                      <TableCell>Channel</TableCell>
+                      <TableCell>Core</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {filteredRecords &&
                       filteredRecords?.map((rec) => (
                         <TableRow key={rec.id} hover>
-                          <TableCell padding="checkbox">
-                            <Checkbox
-                              checked={selectedRecordIds.includes(rec.id)}
-                              onChange={() => handleSelectRecord(rec.id)}
-                            />
-                          </TableCell>
                           <TableCell>{rec.sinNo}</TableCell>
                           <TableCell>{rec.trfsiNo}</TableCell>
                           <TableCell>{rec.rating}</TableCell>
@@ -302,6 +298,19 @@ const AddGPReceiptNote = () => {
                           <TableCell>{rec.oilLevel}</TableCell>
                           <TableCell>{rec.hvBushing}</TableCell>
                           <TableCell>{rec.lvBushing}</TableCell>
+                          <TableCell>{rec.htMetalParts}</TableCell>
+                          <TableCell>{rec.ltMetalParts}</TableCell>
+                          <TableCell>{rec.mAndpBox}</TableCell>
+                          <TableCell>{rec.mAndpBoxCover}</TableCell>
+                          <TableCell>{rec.mccb}</TableCell>
+                          <TableCell>{rec.icb}</TableCell>
+                          <TableCell>{rec.copperFlexibleCable}</TableCell>
+                          <TableCell>{rec.alWire}</TableCell>
+                          <TableCell>{rec.conservator}</TableCell>
+                          <TableCell>{rec.radiator}</TableCell>
+                          <TableCell>{rec.fuse}</TableCell>
+                          <TableCell>{rec.channel}</TableCell>
+                          <TableCell>{rec.core}</TableCell>
                         </TableRow>
                       ))}
                   </TableBody>
@@ -316,7 +325,7 @@ const AddGPReceiptNote = () => {
               color="success"
               onClick={handleSubmit}
               sx={{ px: 5, py: 1.5, borderRadius: 3 }}
-              disabled={isAdding || selectedRecordIds.length === 0}
+              disabled={isAdding || filteredRecords.length === 0}
             >
               {isAdding ? "Submitting..." : "Submit"}
             </Button>

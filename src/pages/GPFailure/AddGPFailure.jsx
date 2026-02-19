@@ -70,15 +70,10 @@ const AddGPFailureInformation = () => {
         const hasTrfsi = ch.finalInspection.sealingDetails.some(
           (s) => String(s.trfSiNo) === String(trfsiNo),
         );
-        if (hasTrfsi) {
-          return ch;
-        }
-        // // const sameRating =
-        // //   ch.finalInspection.deliverySchedule.rating === rating;
+        const sameRating =
+          String(ch.finalInspection.deliverySchedule.rating) === String(rating);
 
-        // console.log("hastrsif ", hasTrfsi)
-        // // console.log("sameRating ", sameRating)
-        // return hasTrfsi;
+        return hasTrfsi && sameRating;
       });
       console.log("found ", found);
       setSelectedChalan(found || null);
