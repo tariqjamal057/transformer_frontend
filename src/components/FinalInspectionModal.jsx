@@ -94,6 +94,10 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
   const [inspectedQuantity, setInspectedQuantity] = useState("");
   const [nominationLetterNo, setNominationLetterNo] = useState("");
   const [nominationDate, setNominationDate] = useState(null);
+  const [imposeLetterNo, setImposeLetterNo] = useState("");
+  const [imposeDate, setImposeDate] = useState(null);
+  const [liftingLetterNo, setLiftingLetterNo] = useState("");
+  const [liftingDate, setLiftingDate] = useState(null);
   const [offerDate, setOfferDate] = useState(null);
   const [offeredQuantity, setOfferedQuantity] = useState("");
   const [inspectionOfficer, setInspectionOfficer] = useState("");
@@ -136,6 +140,16 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
         inspectionData.nominationDate
           ? dayjs(inspectionData.nominationDate)
           : null,
+      );
+      setImposeLetterNo(inspectionData.imposeLetterNo || "");
+      setImposeDate(
+        inspectionData.imposeDate
+          ? dayjs(inspectionData.imposeDate)
+          : null,
+      );
+      setLiftingLetterNo(inspectionData.liftingLetterNo || "");
+      setLiftingDate(
+        inspectionData.liftingDate ? dayjs(inspectionData.liftingDate) : null,
       );
       setOfferDate(
         inspectionData.offerDate ? dayjs(inspectionData.offerDate) : null,
@@ -428,6 +442,12 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       nominationDate: nominationDate
         ? dayjs(nominationDate).toISOString()
         : null,
+      imposeLetterNo: imposeLetterNo || null,
+      imposeDate: imposeDate
+        ? dayjs(imposeDate).toISOString()
+        : null,
+      liftingLetterNo: liftingLetterNo || null,
+      liftingDate: liftingDate ? dayjs(liftingDate).toISOString() : null,
       diNo: diNo || null,
       diDate: diDate ? dayjs(diDate).toISOString() : null,
       warranty: warranty ? String(warranty) : null,
@@ -550,6 +570,40 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
               label="Nomination Date"
               value={nominationDate}
               onChange={setNominationDate}
+              format="DD/MM/YYYY"
+              slotProps={{ textField: { fullWidth: true } }}
+              sx={{ mt: 2, width: "100%" }}
+            />
+
+            <TextField
+              label="Impose Letter No"
+              fullWidth
+              value={imposeLetterNo}
+              onChange={(e) => setImposeLetterNo(e.target.value)}
+              sx={{ mt: 2 }}
+            />
+
+            <DatePicker
+              label="Impose Date"
+              value={imposeDate}
+              onChange={setImposeDate}
+              format="DD/MM/YYYY"
+              slotProps={{ textField: { fullWidth: true } }}
+              sx={{ mt: 2, width: "100%" }}
+            />
+
+            <TextField
+              label="Lifting Letter No"
+              fullWidth
+              value={liftingLetterNo}
+              onChange={(e) => setLiftingLetterNo(e.target.value)}
+              sx={{ mt: 2 }}
+            />
+
+            <DatePicker
+              label="Lifting Date"
+              value={liftingDate}
+              onChange={setLiftingDate}
               format="DD/MM/YYYY"
               slotProps={{ textField: { fullWidth: true } }}
               sx={{ mt: 2, width: "100%" }}

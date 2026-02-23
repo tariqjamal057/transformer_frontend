@@ -112,6 +112,16 @@ const Companies = () => {
 
   const handleCompanySubmit = (e) => {
     e.preventDefault();
+
+    if (!editingCompany && !newCompanyLogo) {
+      setAlertBox({
+        open: true,
+        msg: "Company Logo is required!",
+        error: true,
+      });
+      return;
+    }
+
     const formData = new FormData();
     formData.append("name", newCompanyName);
     formData.append("address", newCompanyAddress);
@@ -411,9 +421,12 @@ const Companies = () => {
                       type="file"
                       className="form-control"
                       accept="image/*"
+                      required={!editingCompany}
                       onChange={(e) => {
-                        setNewCompanyLogo(e.target.files[0]);
-                        setPreviewLogo(URL.createObjectURL(e.target.files[0]));
+                        if (e.target.files && e.target.files[0]) {
+                          setNewCompanyLogo(e.target.files[0]);
+                          setPreviewLogo(URL.createObjectURL(e.target.files[0]));
+                        }
                       }}
                     />
                   </div>
