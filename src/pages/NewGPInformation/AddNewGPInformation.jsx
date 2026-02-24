@@ -131,18 +131,27 @@ const AddNewGPInformation = () => {
   };
 
   const handleSubmit = () => {
-    if (matchedData.length > 0) {
-      const payload = {
-        challanReceiptedItemNo,
-        challanReceiptedDate: challanReceiptedDate
-          ? dayjs(challanReceiptedDate).toISOString()
-          : null,
-        records: matchedData,
-      };
-      bulkProcess(payload);
-    } else {
-      setAlertBox({ open: true, msg: "No data to submit.", error: true });
+    const missingFields = [];
+    if (!challanReceiptedItemNo) missingFields.push("Challan Receipted Item No");
+    if (!challanReceiptedDate) missingFields.push("Challan Receipted Date");
+    if (matchedData.length === 0) missingFields.push("Records (Upload File)");
+
+    if (missingFields.length > 0) {
+      setAlertBox({
+        open: true,
+        msg: `Please fill required fields: ${missingFields.join(", ")}`,
+        error: true,
+      });
+      return;
     }
+    const payload = {
+      challanReceiptedItemNo,
+      challanReceiptedDate: challanReceiptedDate
+        ? dayjs(challanReceiptedDate).toISOString()
+        : null,
+      records: matchedData,
+    };
+    bulkProcess(payload);
   };
 
   const handleDownloadSample = () => {
@@ -174,6 +183,7 @@ const AddNewGPInformation = () => {
                 fullWidth
                 label="Challan Receipted Item No"
                 variant="outlined"
+                required
                 value={challanReceiptedItemNo}
                 onChange={(e) => setChallanReceiptedItemNo(e.target.value)}
               />
@@ -183,7 +193,7 @@ const AddNewGPInformation = () => {
                 label="Challan Receipted Date"
                 value={challanReceiptedDate}
                 onChange={(date) => setChallanReceiptedDate(date)}
-                slotProps={{ textField: { fullWidth: true } }}
+                slotProps={{ textField: { fullWidth: true, required: true } }}
                 format="DD/MM/YYYY"
               />
             </Grid>

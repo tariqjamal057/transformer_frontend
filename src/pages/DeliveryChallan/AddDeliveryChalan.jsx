@@ -500,6 +500,22 @@ const AddDeliveryChalan = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const missingFields = [];
+    if (!selectedDeliveryScheduleId) missingFields.push("TN Number");
+    if (!selectedFinalInspectionId) missingFields.push("Serial Number");
+    if (selectedNewTransformers.length === 0) missingFields.push("New Transformers");
+    if (!challanNo) missingFields.push("Consignee Receipt No");
+    if (!consigneeId) missingFields.push("Consignee Name");
+    if (!materialDescriptionId) missingFields.push("Material Description");
+
+    if (missingFields.length > 0) {
+      setAlertBox({
+        open: true,
+        msg: `Please fill required fields: ${missingFields.join(", ")}`,
+        error: true,
+      });
+      return;
+    }
     if (!selectedRecord) return;
 
     // Process otherConsigneeSerialNumbers
@@ -619,6 +635,7 @@ const AddDeliveryChalan = () => {
                   label="Select TN Number"
                   value={selectedDeliveryScheduleId}
                   onChange={(e) => handleTNChange(e.target.value)}
+                  required
                 >
                   {deliverySchedules?.map((ds) => (
                     <MenuItem key={ds?.id} value={ds?.id}>
@@ -638,6 +655,7 @@ const AddDeliveryChalan = () => {
                   onChange={(e) => handleFinalInspectionChange(e.target.value)}
                   // disabled={!selectedDeliveryScheduleId}
                   disabled={!filteredFinalInspections.length}
+                  required
                 >
                   {filteredFinalInspections?.map((fi) => (
                     <MenuItem key={fi?.id} value={fi?.id}>
@@ -648,7 +666,7 @@ const AddDeliveryChalan = () => {
               </Grid>
 
               <Grid item size={1}>
-                <FormControl fullWidth>
+                <FormControl fullWidth required>
                   <InputLabel>New Transformers (TRFSI No)</InputLabel>
                   <Select
                     multiple
@@ -770,6 +788,7 @@ const AddDeliveryChalan = () => {
                   fullWidth
                   value={challanNo}
                   onChange={(e) => setChallanNo(e.target.value)}
+                  required
                 />
               </Grid>
 
@@ -840,6 +859,7 @@ const AddDeliveryChalan = () => {
                   value={consigneeId}
                   onChange={handleConsigneeChange}
                   disabled={!availableConsignees.length}
+                  required
                 >
                   {availableConsignees.map((item) => (
                     <MenuItem key={item.consigneeId} value={item.consigneeId}>
@@ -926,6 +946,7 @@ const AddDeliveryChalan = () => {
                   value={materialDescriptionId}
                   onChange={(e) => handleMaterialSelect(e.target.value)}
                   margin="normal"
+                  required
                 >
                   {materialDescriptions?.map((item) => {
                     const firstSixWords = item.description

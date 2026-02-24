@@ -115,6 +115,21 @@ const AddNewGPReceiptRecord = () => {
   }, [trfsiNo, rating, deliveryChallans]);
 
   const handleSubmit = () => {
+    const missingFields = [];
+    if (!accountReceiptNoteNo) missingFields.push("Account Receipt Note No");
+    if (!accountReceiptNoteDate) missingFields.push("Account Receipt Note Date");
+    if (!sinNo) missingFields.push("SIN No");
+    if (!trfsiNo) missingFields.push("TRFSI No");
+    if (!rating) missingFields.push("Rating");
+
+    if (missingFields.length > 0) {
+      setAlertBox({
+        open: true,
+        msg: `Please fill required fields: ${missingFields.join(", ")}`,
+        error: true,
+      });
+      return;
+    }
     if (!selectedChalan) {
       setAlertBox({
         open: true,
@@ -184,6 +199,7 @@ const AddNewGPReceiptRecord = () => {
                 label="Account Receipt Note No"
                 variant="outlined"
                 value={accountReceiptNoteNo}
+                required
                 onChange={(e) => setAccountReceiptNoteNo(e.target.value)}
               />
             </Grid>
@@ -194,7 +210,7 @@ const AddNewGPReceiptRecord = () => {
                 label="Account Receipt Note Date"
                 value={accountReceiptNoteDate}
                 onChange={(newValue) => setAccountReceiptNoteDate(newValue)}
-                slotProps={{ textField: { fullWidth: true } }}
+                slotProps={{ textField: { fullWidth: true, required: true } }}
                 format="DD/MM/YYYY"
               />
             </Grid>
@@ -206,6 +222,7 @@ const AddNewGPReceiptRecord = () => {
                 label="SIN No"
                 variant="outlined"
                 value={sinNo}
+                required
                 onChange={(e) => setSinNo(e.target.value)}
               />
             </Grid>
@@ -282,6 +299,7 @@ const AddNewGPReceiptRecord = () => {
                 label="TRFSI No"
                 variant="outlined"
                 value={trfsiNo}
+                required
                 onChange={(e) => setTrfsiNo(e.target.value)}
               />
             </Grid>
@@ -314,6 +332,7 @@ const AddNewGPReceiptRecord = () => {
                 label="Rating"
                 variant="outlined"
                 value={rating}
+                required
                 onChange={(e) => setRating(e.target.value)}
               />
             </Grid>

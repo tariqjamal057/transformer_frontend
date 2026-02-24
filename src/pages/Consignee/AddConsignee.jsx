@@ -36,6 +36,19 @@ const AddConsignee = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const missingFields = [];
+    if (!name) missingFields.push("Name");
+    if (!address) missingFields.push("Address");
+    if (!gstNo) missingFields.push("GST No");
+
+    if (missingFields.length > 0) {
+      setAlertBox({
+        open: true,
+        msg: `Please fill required fields: ${missingFields.join(", ")}`,
+        error: true,
+      });
+      return;
+    }
     addConsigneeMutation.mutate({
       name,
       address,
@@ -58,6 +71,7 @@ const AddConsignee = () => {
               <TextField
                 label="Name"
                 fullWidth
+                required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -67,6 +81,7 @@ const AddConsignee = () => {
               <TextField
                 label="Address"
                 fullWidth
+                required
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
               />
@@ -76,6 +91,7 @@ const AddConsignee = () => {
               <TextField
                 label="GST No"
                 fullWidth
+                required
                 value={gstNo}
                 onChange={(e) => setGstNo(e.target.value)}
               />

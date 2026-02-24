@@ -197,18 +197,24 @@ const AddFailureAnalysis = () => {
 
   // Handle Submit
   const handleSubmit = () => {
-    if (!selectedNewGPReceiptRecord || !selectedGPFailure) {
+    const missingFields = [];
+    if (!sinNo) missingFields.push("SIN No");
+    if (!reason) missingFields.push("Reason of Failure");
+    if (reason === "Other Reason" && !otherReason) missingFields.push("Specify Other Reason");
+
+    if (missingFields.length > 0) {
       setAlertBox({
         open: true,
-        msg: "Please ensure both GP Receipt Record and GP Failure are matched.",
+        msg: `Please fill required fields: ${missingFields.join(", ")}`,
         error: true,
       });
       return;
     }
-    if (!reason || (reason === "Other Reason" && !otherReason)) {
+
+    if (!selectedNewGPReceiptRecord || !selectedGPFailure) {
       setAlertBox({
         open: true,
-        msg: "Please select or specify a reason for failure.",
+        msg: "Please ensure both GP Receipt Record and GP Failure are matched.",
         error: true,
       });
       return;
@@ -266,6 +272,7 @@ const AddFailureAnalysis = () => {
               value={sinNo}
               onChange={(e) => setSinNo(e.target.value)}
               disabled={isDataLoading}
+              required
             />
           </Grid>
 
@@ -372,7 +379,7 @@ const AddFailureAnalysis = () => {
 
         {/* Reason of Failure Section */}
         <Box sx={{ mb: 3 }}>
-          <FormControl fullWidth>
+          <FormControl fullWidth required>
             <InputLabel id="reason-label">Reason of Failure</InputLabel>
             <Select
               labelId="reason-label"
@@ -404,6 +411,7 @@ const AddFailureAnalysis = () => {
               value={otherReason}
               onChange={(e) => setOtherReason(e.target.value)}
               disabled={isDataLoading}
+              required
             />
           )}
         </Box>

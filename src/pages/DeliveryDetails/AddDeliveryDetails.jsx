@@ -66,9 +66,27 @@ const AddDeliveryDetails = () => {
   };
 
   // Handle Submit
-  const handleSubmit = () => {
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const missingFields = [];
+    if (!selectedChallanNo) missingFields.push("Challan No");
+    if (!receiptedChallanNo) missingFields.push("Receipt Challan No");
+    if (!receiptedChallanDate) missingFields.push("Receipt Challan Date");
+
+    if (missingFields.length > 0) {
+      setAlertBox({
+        open: true,
+        msg: `Please fill required fields: ${missingFields.join(", ")}`,
+        error: true,
+      });
+      return;
+    }
     if (!selectedData) {
-      alert("Please select a Challan Number first.");
+      setAlertBox({
+        open: true,
+        msg: "Please select a Challan Number first.",
+        error: true,
+      });
       return;
     }
 
@@ -103,6 +121,7 @@ const AddDeliveryDetails = () => {
                 value={selectedChallanNo}
                 onChange={handleChallanChange}
                 fullWidth
+                required
               >
                 {availableChallans?.map((item) => (
                   <MenuItem key={item.id} value={item.challanNo}>
@@ -198,6 +217,7 @@ const AddDeliveryDetails = () => {
                 label="Receipt Challan No"
                 value={receiptedChallanNo}
                 fullWidth
+                required
                 onChange={(e) => setReceiptedChallanNo(e.target.value)}
               />
 
@@ -206,7 +226,7 @@ const AddDeliveryDetails = () => {
                 //minDate={today}
                 value={receiptedChallanDate}
                 onChange={setReceiptedChallanDate}
-                slotProps={{ textField: { fullWidth: true } }}
+                slotProps={{ textField: { fullWidth: true, required: true } }}
                 format="DD/MM/YYYY"
               />
 

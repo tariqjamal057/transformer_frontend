@@ -346,6 +346,21 @@ const AddFinalInspection = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const missingFields = [];
+    if (!tnDetail) missingFields.push("TN Number");
+    if (!serialNumberFrom) missingFields.push("Serial Number From");
+    if (!serialNumberTo) missingFields.push("Serial Number To");
+    if (!offerDate) missingFields.push("Date Of Offer");
+    if (!offeredQuantity) missingFields.push("Offered Quantity");
+
+    if (missingFields.length > 0) {
+      setAlertBox({
+        open: true,
+        msg: `Please fill required fields: ${missingFields.join(", ")}`,
+        error: true,
+      });
+      return;
+    }
     const data = {
       deliveryScheduleId: tnDetail?.id || null,
       serialNumberFrom: serialNumberFrom ? parseInt(serialNumberFrom) : null,
@@ -404,7 +419,7 @@ const AddFinalInspection = () => {
                   value={tnDetail}
                   onChange={handleTnChange}
                   renderInput={(params) => (
-                    <TextField {...params} label="TN Number" fullWidth />
+                    <TextField {...params} label="TN Number" fullWidth required />
                   )}
                 />
               </Grid>
@@ -441,13 +456,14 @@ const AddFinalInspection = () => {
                   value={offerDate}
                   onChange={setOfferDate}
                   format="dd/MM/yyyy"
-                  slotProps={{ textField: { fullWidth: true } }}
+                  slotProps={{ textField: { fullWidth: true, required: true } }}
                 />
               </Grid>
 
               <Grid item size={1}>
                 <TextField
                   label="Offered Quantity"
+                  required
                   fullWidth
                   value={offeredQuantity}
                   onChange={(e) => setOfferedQuantity(e.target.value)}
@@ -458,6 +474,7 @@ const AddFinalInspection = () => {
                 <TextField
                   type="number"
                   label="Serial Number From"
+                  required
                   fullWidth
                   value={serialNumberFrom}
                   onChange={(e) => setSerialNumberFrom(e.target.value)}
@@ -468,6 +485,7 @@ const AddFinalInspection = () => {
                 <TextField
                   type="number"
                   label="Serial Number To"
+                  required
                   fullWidth
                   value={serialNumberTo}
                   onChange={(e) => setSerialNumberTo(e.target.value)}

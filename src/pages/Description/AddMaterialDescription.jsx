@@ -33,6 +33,21 @@ const AddMaterialDescription = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const missingFields = [];
+    if (!materialName) missingFields.push("Material Name");
+    if (!phase) missingFields.push("Phase");
+    if (!rating) missingFields.push("Rating");
+    if (!wound) missingFields.push("Wound");
+    if (!materialDescription) missingFields.push("Description Of Material");
+
+    if (missingFields.length > 0) {
+      setAlertBox({
+        open: true,
+        msg: `Please fill required fields: ${missingFields.join(", ")}`,
+        error: true,
+      });
+      return;
+    }
     addMaterialDescriptionMutation.mutate({
       name: materialName,
       phase,
@@ -55,6 +70,7 @@ const AddMaterialDescription = () => {
               <TextField
                 label="Material Name"
                 fullWidth
+                required
                 value={materialName}
                 onChange={(e) => setMaterialName(e.target.value)}
                 
@@ -65,6 +81,7 @@ const AddMaterialDescription = () => {
               <TextField
                 label="Phase"
                 fullWidth
+                required
                 value={phase}
                 onChange={(e) => setPhase(e.target.value)}
                 
@@ -75,6 +92,7 @@ const AddMaterialDescription = () => {
               <TextField
                 label="Rating"
                 fullWidth
+                required
                 value={rating}
                 onChange={(e) => setRating(e.target.value)}
                 
@@ -85,6 +103,7 @@ const AddMaterialDescription = () => {
               <TextField
                 label="Wound"
                 fullWidth
+                required
                 value={wound}
                 onChange={(e) => setWound(e.target.value)}
                 
@@ -95,6 +114,7 @@ const AddMaterialDescription = () => {
               <TextField
                 fullWidth
                 multiline
+                required
                 rows={4}
                 label="Description Of Material"
                 value={materialDescription}

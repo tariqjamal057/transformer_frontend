@@ -215,6 +215,21 @@ const AddDeliverySchedule = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    const missingFields = [];
+    if (!tnDetail) missingFields.push("Tender No");
+    if (!rating) missingFields.push("Rating");
+    if (!wound) missingFields.push("Wound");
+    if (!phase) missingFields.push("Phase");
+
+    if (missingFields.length > 0) {
+      setAlertBox({
+        open: true,
+        msg: `Please fill required fields: ${missingFields.join(", ")}`,
+        error: true,
+      });
+      return;
+    }
+
     const sumOfQuantities = deliverySchedule.reduce(
       (sum, item) => sum + (parseInt(item.quantity) || 0),
       0
@@ -279,7 +294,9 @@ const AddDeliverySchedule = () => {
                 fullWidth
                 type="text"
                 value={tnDetail}
+                required
                 onChange={(e) => setTnDetail(e.target.value)}
+                
               />
             </Grid>
 
@@ -288,6 +305,7 @@ const AddDeliverySchedule = () => {
                 type="number"
                 label="Rating"
                 fullWidth
+                required
                 value={rating}
                 onChange={(e) => {
                   const value = parseInt(e.target.value);
@@ -303,6 +321,7 @@ const AddDeliverySchedule = () => {
               <TextField
                 label="Wound"
                 fullWidth
+                required
                 value={wound}
                 onChange={(e) => setWound(e.target.value)}
                 // Removed InputProps={{ readOnly: true }}
@@ -313,6 +332,7 @@ const AddDeliverySchedule = () => {
               <TextField
                 label="Phase"
                 fullWidth
+                required
                 value={phase}
                 onChange={(e) => setPhase(e.target.value)}
                 // Removed InputProps={{ readOnly: true }}

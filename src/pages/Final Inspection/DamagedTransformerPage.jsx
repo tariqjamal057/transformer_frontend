@@ -199,14 +199,14 @@ export default function DamagedTransformerPage() {
                   value={selectedSr}
                   onChange={handleSrNumberChange}
                   renderInput={(params) => (
-                    <TextField {...params} label="Select SR No" />
+                    <TextField {...params} label="Select SR No" required />
                   )}
                 />
               </Grid>
 
               {/* TRFSI Number Dropdown */}
               <Grid item size={1}>
-                <FormControl fullWidth disabled={!selectedSr}>
+                <FormControl fullWidth disabled={!selectedSr} required>
                   <InputLabel id="trfsi-multiple-checkbox-label">
                     Select TRFSI Number
                   </InputLabel>

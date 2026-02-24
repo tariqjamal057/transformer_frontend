@@ -116,6 +116,19 @@ const AddGPReceiptNote = () => {
   ]);
 
   const handleSubmit = () => {
+    const missingFields = [];
+    if (!selectDateFrom) missingFields.push("Select Date From");
+    if (!selectDateTo) missingFields.push("Select Date To");
+    if (!consigneeName) missingFields.push("Consignee Name");
+
+    if (missingFields.length > 0) {
+      setAlertBox({
+        open: true,
+        msg: `Please fill required fields: ${missingFields.join(", ")}`,
+        error: true,
+      });
+      return;
+    }
     const supplyTenderId = localStorage.getItem("selectedSupplyTenderId");
     const selectedConsignee = consignees?.find(
       (c) => c.name.toLowerCase() === consigneeName.toLowerCase(),
@@ -165,7 +178,7 @@ const AddGPReceiptNote = () => {
                 label="Select Date From"
                 value={selectDateFrom}
                 onChange={(newValue) => setSelectDateFrom(newValue)}
-                slotProps={{ textField: { fullWidth: true } }}
+                slotProps={{ textField: { fullWidth: true, required: true } }}
                 format="DD/MM/YYYY"
               />
             </Grid>
@@ -175,7 +188,7 @@ const AddGPReceiptNote = () => {
                 label="Select Date To"
                 value={selectDateTo}
                 onChange={(newValue) => setSelectDateTo(newValue)}
-                slotProps={{ textField: { fullWidth: true } }}
+                slotProps={{ textField: { fullWidth: true, required: true } }}
                 format="DD/MM/YYYY"
               />
             </Grid>
@@ -185,6 +198,7 @@ const AddGPReceiptNote = () => {
                 fullWidth
                 label="Consignee Name"
                 variant="outlined"
+                required
                 value={consigneeName}
                 onChange={(e) => setConsigneeName(e.target.value)}
               />

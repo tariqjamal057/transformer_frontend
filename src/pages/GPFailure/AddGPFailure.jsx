@@ -104,6 +104,18 @@ const AddGPFailureInformation = () => {
   };
 
   const handleSubmit = () => {
+    const missingFields = [];
+    if (!trfsiNo) missingFields.push("TRFSI No");
+    if (!rating) missingFields.push("Rating");
+
+    if (missingFields.length > 0) {
+      setAlertBox({
+        open: true,
+        msg: `Please fill required fields: ${missingFields.join(", ")}`,
+        error: true,
+      });
+      return;
+    }
     if (!selectedChalan) {
       setAlertBox({
         open: true,
@@ -158,6 +170,7 @@ const AddGPFailureInformation = () => {
                 label="TRFSI No"
                 variant="outlined"
                 value={trfsiNo}
+                required
                 onChange={(e) => setTrfsiNo(e.target.value)}
               />
             </Grid>
@@ -166,6 +179,7 @@ const AddGPFailureInformation = () => {
                 fullWidth
                 label="Rating"
                 variant="outlined"
+                required
                 value={rating}
                 onChange={(e) => setRating(e.target.value)}
               />
