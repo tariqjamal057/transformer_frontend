@@ -146,7 +146,8 @@ export default function PdfTemplate({ item }) {
 
     return count;
   };
-
+  console.log("item ", item)
+  console.log("Get Quantity:", getQuantity(item))
   // Map the dynamic 'item' prop to the formData structure
   const formData = {
     challanNo: item?.challanNo || "N/A",
@@ -267,7 +268,7 @@ export default function PdfTemplate({ item }) {
           <div className="col-6 px-3 py-2 left-border">
             <div className="fw-semibold extra-small-text mb-1">To,</div>
             <div className="extra-small-text lh-sm">
-              {formData.consignorName}
+              {formData.consignorCompany}
               <br />
               {formData.consignorCity}
               <br />
@@ -438,7 +439,7 @@ export default function PdfTemplate({ item }) {
           {/* Signature Section */}
           <div className="mt-5 extra-small-text">
             <div className="text-end">
-              {formData.consignorName}
+              {formData.consigneeName}
               <br />
               {formData.consigneeAddress}
             </div>

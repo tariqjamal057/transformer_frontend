@@ -37,6 +37,13 @@ export default function DamagedTransformerPage() {
     placeholderData: [],
   });
 
+  const { data: damagedTransformers = [] } = useQuery({
+    queryKey: ["allDamagedTransformers"],
+    queryFn: () =>
+      api.get("/damaged-transformers?all=true").then((res) => res.data),
+    placeholderData: [],
+  });
+
   // State for selected objects from dropdowns
   const [selectedSr, setSelectedSr] = useState(null);
   const [selectedTrfsiNo, setSelectedTrfsiNo] = useState([]);
@@ -115,12 +122,23 @@ export default function DamagedTransformerPage() {
     const to = parseInt(selectedSr.challan.subSerialNumberTo);
     if (isNaN(from) || isNaN(to)) return [];
 
+    const usedSerials = new Set();
+    if (Array.isArray(damagedTransformers)) {
+      damagedTransformers.forEach((dt) => {
+        if (Array.isArray(dt.serialNo)) {
+          dt.serialNo.forEach((s) => usedSerials.add(String(s)));
+        }
+      });
+    }
+
     const options = [];
     for (let i = from; i <= to; i++) {
-      options.push(i);
+      if (!usedSerials.has(String(i))) {
+        options.push(i);
+      }
     }
     return options;
-  }, [selectedSr]);
+  }, [selectedSr, damagedTransformers]);
 
   const handleSrNumberChange = (_, value) => {
     setSelectedSr(value);
