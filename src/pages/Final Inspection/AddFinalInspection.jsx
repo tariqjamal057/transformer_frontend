@@ -50,10 +50,6 @@ const AddFinalInspection = () => {
   const [inspectedQuantity, setInspectedQuantity] = useState("");
   const [nominationLetterNo, setNominationLetterNo] = useState("");
   const [nominationDate, setNominationDate] = useState(null);
-  const [imposeLetterNo, setImposeLetterNo] = useState("");
-  const [imposeDate, setImposeDate] = useState(null);
-  const [liftingLetterNo, setLiftingLetterNo] = useState("");
-  const [liftingDate, setLiftingDate] = useState(null);
   const [offerDate, setOfferDate] = useState(null);
   const [offeredQuantity, setOfferedQuantity] = useState("");
   const [inspectionOfficer, setInspectionOfficer] = useState("");
@@ -376,12 +372,6 @@ const AddFinalInspection = () => {
       nominationDate: nominationDate
         ? dayjs(nominationDate).toISOString()
         : null,
-      imposeLetterNo: imposeLetterNo || null,
-      imposeDate: imposeDate
-        ? dayjs(imposeDate).toISOString()
-        : null,
-      liftingLetterNo: liftingLetterNo || null,
-      liftingDate: liftingDate ? dayjs(liftingDate).toISOString() : null,
       diNo: diNo || null,
       diDate: diDate ? dayjs(diDate).toISOString() : null,
       consignees: consigneeList,
@@ -535,44 +525,6 @@ const AddFinalInspection = () => {
                   label="Nomination Date"
                   value={nominationDate}
                   onChange={setNominationDate}
-                  format="dd/MM/yyyy"
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-              </Grid>
-
-              <Grid item size={1}>
-                <TextField
-                  label="Impose Letter No"
-                  fullWidth
-                  value={imposeLetterNo}
-                  onChange={(e) => setImposeLetterNo(e.target.value)}
-                />
-              </Grid>
-
-              <Grid item size={1}>
-                <DatePicker
-                  label="Impose Date"
-                  value={imposeDate}
-                  onChange={setImposeDate}
-                  format="dd/MM/yyyy"
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-              </Grid>
-
-              <Grid item size={1}>
-                <TextField
-                  label="Lifting Letter No"
-                  fullWidth
-                  value={liftingLetterNo}
-                  onChange={(e) => setLiftingLetterNo(e.target.value)}
-                />
-              </Grid>
-
-              <Grid item size={1}>
-                <DatePicker
-                  label="Lifting Date"
-                  value={liftingDate}
-                  onChange={setLiftingDate}
                   format="dd/MM/yyyy"
                   slotProps={{ textField: { fullWidth: true } }}
                 />

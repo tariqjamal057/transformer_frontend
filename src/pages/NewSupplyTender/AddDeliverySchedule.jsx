@@ -142,68 +142,69 @@ const AddDeliverySchedule = () => {
       return;
     }
 
-    const oldQuantities = deliverySchedule.reduce((acc, seg) => {
-      acc[seg.start] = seg.quantity;
-      return acc;
-    }, {});
+    // Preserve quantities by index
+    const oldQuantities = deliverySchedule.map(s => s.quantity);
 
-    let totalDeffermentDays = 0;
-    const validPairs = imposedLiftingPairs.filter(p => p.imposedDate && p.liftingDate && dayjs(p.liftingDate).isAfter(dayjs(p.imposedDate)));
-    validPairs.forEach(pair => {
-      totalDeffermentDays += dayjs(pair.liftingDate).diff(dayjs(pair.imposedDate), 'day');
-    });
+    const validPairs = imposedLiftingPairs.filter(p => p.imposedDate && p.liftingDate);
 
-    const effectiveEndDate = end.add(totalDeffermentDays, 'day');
-
-    let segments = [];
-    let currentStart = start;
-
-    while (currentStart.isBefore(effectiveEndDate)) {
-      let isDeferred = false;
-      for (const pair of validPairs) {
+    const isDateDeferred = (date) => {
+      return validPairs.some((pair) => {
         const imposed = dayjs(pair.imposedDate);
         const lifting = dayjs(pair.liftingDate);
-        if (currentStart.isSame(imposed) || (currentStart.isAfter(imposed) && currentStart.isBefore(lifting))) {
-          currentStart = lifting.add(1, 'day');
-          isDeferred = true;
-          break;
-        }
+        // Inclusive check: [imposed, lifting]
+        return (
+          (date.isSame(imposed, "day") || date.isAfter(imposed, "day")) &&
+          (date.isSame(lifting, "day") || date.isBefore(lifting, "day"))
+        );
+      });
+    };
+
+    // Calculate total active days required from original schedule
+    // Inclusive difference: end - start + 1
+    const totalActiveDaysNeeded = end.diff(start, "day") + 1;
+
+    let segments = [];
+    let processedActiveDays = 0;
+    let cursor = start;
+
+    while (processedActiveDays < totalActiveDaysNeeded) {
+      let segmentStart = cursor;
+      
+      // Standard chunk is 31 days (add(30, 'day') -> 31 inclusive).
+      // But if remaining is less, take remaining.
+      let daysToFind = 31;
+      if (totalActiveDaysNeeded - processedActiveDays < daysToFind) {
+          daysToFind = totalActiveDaysNeeded - processedActiveDays;
       }
-      if (isDeferred) continue;
-
-      let segmentEndDate = currentStart.add(30, 'day');
-
-      let nextImposedDate = null;
-      for (const pair of validPairs) {
-        const imposed = dayjs(pair.imposedDate);
-        if (imposed.isAfter(currentStart) && (!nextImposedDate || imposed.isBefore(nextImposedDate))) {
-          nextImposedDate = imposed;
-        }
+      
+      let found = 0;
+      let tempCursor = segmentStart;
+      
+      // Advance tempCursor until we find 'daysToFind' active days
+      while (found < daysToFind) {
+          if (!isDateDeferred(tempCursor)) {
+              found++;
+          }
+          if (found < daysToFind) {
+              tempCursor = tempCursor.add(1, "day");
+          }
       }
-
-      if (nextImposedDate && segmentEndDate.isAfter(nextImposedDate)) {
-        segmentEndDate = nextImposedDate.subtract(1, 'day');
-      }
-
-      if (segmentEndDate.isAfter(effectiveEndDate)) {
-        segmentEndDate = effectiveEndDate;
-      }
-
-      let segmentQty = 0;
-
-      const formattedStart = currentStart.format("DD MMM YYYY");
+      
+      let segmentEnd = tempCursor;
+      
+      const formattedStart = segmentStart.format("DD MMM YYYY");
       segments.push({
         start: formattedStart,
-        end: segmentEndDate.format("DD MMM YYYY"),
-        quantity: oldQuantities[formattedStart] || segmentQty,
+        end: segmentEnd.format("DD MMM YYYY"),
+        quantity: oldQuantities[segments.length] || 0,
       });
-
-      currentStart = segmentEndDate.add(1, 'day');
-      if (!currentStart.isBefore(effectiveEndDate)) break;
+      
+      cursor = segmentEnd.add(1, "day");
+      processedActiveDays += found;
     }
     
     setDeliverySchedule(segments);
-  }, [commencementDate, deliveryScheduleDate,imposedLiftingPairs]);
+  }, [commencementDate, deliveryScheduleDate, imposedLiftingPairs]);
 
   // ✅ Handle manual quantity input
   const handleQuantityChange = (index, value) => {
@@ -239,7 +240,7 @@ const AddDeliverySchedule = () => {
       setAlertBox({
         open: true,
         error: true,
-        msg: `Total quantity mismatch! Entered total = ${sumOfQuantities}, expected = ${totalQuantity}.`,
+        msg: `Total quantity mismatch! Entered total = , expected = .`,
       });
       return;
     }

@@ -30,7 +30,7 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
-import { format, differenceInDays, addMonths, isAfter } from "date-fns";
+import { format } from "date-fns";
 import SearchIcon from "@mui/icons-material/Search";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api";
@@ -323,51 +323,6 @@ const DeliverySchedule = () => {
     setImposedLiftingPairs((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Calculate segmented delivery quantities
-  const calculateSegments = (cpDate, deliveryScheduleDate, totalQuantity) => {
-    const start = new Date(cpDate);
-    const end = new Date(deliveryScheduleDate);
-
-    const totalDays = differenceInDays(end, start);
-    const perDayQty = totalQuantity / totalDays;
-
-    let segments = [];
-    let currentStart = start;
-    let allocated = 0;
-
-    while (currentStart < end) {
-      let nextSegmentEnd = addMonths(currentStart, 1);
-
-      // If overshoots, clamp to final end
-      if (isAfter(nextSegmentEnd, end)) {
-        nextSegmentEnd = end;
-      }
-
-      const segmentDays = differenceInDays(nextSegmentEnd, currentStart);
-      let rawQty = perDayQty * segmentDays;
-
-      let segmentQuantity = Math.floor(rawQty);
-      allocated += segmentQuantity;
-
-      segments.push({
-        start: format(currentStart, "dd MMM yyyy"),
-        end: format(nextSegmentEnd, "dd MMM yyyy"),
-        days: segmentDays,
-        quantity: segmentQuantity,
-      });
-
-      currentStart = nextSegmentEnd;
-    }
-
-    // Fix rounding error: adjust last segment to match total
-    const diff = totalQuantity - allocated;
-    if (segments.length > 0) {
-      segments[segments.length - 1].quantity += diff;
-    }
-
-    return segments;
-  };
-
   useEffect(() => {
     if (commencementDays === "") {
       if (commencementDate !== null) setCommencementDate(null);
@@ -420,61 +375,65 @@ const DeliverySchedule = () => {
       return;
     }
   
-    let totalDeffermentDays = 0;
-    const validPairs = imposedLiftingPairs.filter(p => p.imposedDate && p.liftingDate && dayjs(p.liftingDate).isAfter(dayjs(p.imposedDate)));
-    validPairs.forEach(pair => {
-      totalDeffermentDays += dayjs(pair.liftingDate).diff(dayjs(pair.imposedDate), 'day');
-    });
-  
-    const effectiveEndDate = end.add(totalDeffermentDays, 'day');
-  
-    let segments = [];
-    let currentStart = start;
-  
-    while (currentStart.isBefore(effectiveEndDate)) {
-      let isDeferred = false;
-      for (const pair of validPairs) {
+    // Preserve quantities by index
+    const oldQuantities = deliverySchedule.map(s => s.quantity);
+
+    const validPairs = imposedLiftingPairs.filter(p => p.imposedDate && p.liftingDate);
+
+    const isDateDeferred = (date) => {
+      return validPairs.some((pair) => {
         const imposed = dayjs(pair.imposedDate);
         const lifting = dayjs(pair.liftingDate);
-        if (currentStart.isSame(imposed) || (currentStart.isAfter(imposed) && currentStart.isBefore(lifting))) {
-          currentStart = lifting.add(1, 'day');
-          isDeferred = true;
-          break;
-        }
-      }
-      if (isDeferred) continue;
-  
-      let segmentEndDate = currentStart.add(30, 'day');
-  
-      // Check for intersections with the next deferment period
-      let nextImposedDate = null;
-      for (const pair of validPairs) {
-        const imposed = dayjs(pair.imposedDate);
-        if (imposed.isAfter(currentStart) && (!nextImposedDate || imposed.isBefore(nextImposedDate))) {
-          nextImposedDate = imposed;
-        }
-      }
-  
-      if (nextImposedDate && segmentEndDate.isAfter(nextImposedDate)) {
-        segmentEndDate = nextImposedDate.subtract(1, 'day');
-      }
-  
-      if (segmentEndDate.isAfter(effectiveEndDate)) {
-        segmentEndDate = effectiveEndDate;
-      }
-  
-      // Preserve quantity by index if available, else 0
-      const existingQty = deliverySchedule[segments.length] ? deliverySchedule[segments.length].quantity : 0;
+        // Inclusive check: [imposed, lifting]
+        return (
+          (date.isSame(imposed, "day") || date.isAfter(imposed, "day")) &&
+          (date.isSame(lifting, "day") || date.isBefore(lifting, "day"))
+        );
+      });
+    };
+
+    // Calculate total active days required from original schedule
+    // Inclusive difference: end - start + 1
+    const totalActiveDaysNeeded = end.diff(start, "day") + 1;
+
+    let segments = [];
+    let processedActiveDays = 0;
+    let cursor = start;
+
+    while (processedActiveDays < totalActiveDaysNeeded) {
+      let segmentStart = cursor;
       
-      const formattedStart = currentStart.format("DD MMM YYYY");
+      // Standard chunk is 31 days (add(30, 'day') -> 31 inclusive).
+      // But if remaining is less, take remaining.
+      let daysToFind = 31;
+      if (totalActiveDaysNeeded - processedActiveDays < daysToFind) {
+          daysToFind = totalActiveDaysNeeded - processedActiveDays;
+      }
+      
+      let found = 0;
+      let tempCursor = segmentStart;
+      
+      // Advance tempCursor until we find 'daysToFind' active days
+      while (found < daysToFind) {
+          if (!isDateDeferred(tempCursor)) {
+              found++;
+          }
+          if (found < daysToFind) {
+              tempCursor = tempCursor.add(1, "day");
+          }
+      }
+      
+      let segmentEnd = tempCursor;
+      
+      const formattedStart = segmentStart.format("DD MMM YYYY");
       segments.push({
         start: formattedStart,
-        end: segmentEndDate.format("DD MMM YYYY"),
-        quantity: existingQty,
+        end: segmentEnd.format("DD MMM YYYY"),
+        quantity: oldQuantities[segments.length] || 0,
       });
-  
-      currentStart = segmentEndDate.add(1, 'day');
-      if (!currentStart.isBefore(effectiveEndDate)) break;
+      
+      cursor = segmentEnd.add(1, "day");
+      processedActiveDays += found;
     }
   
     setDeliverySchedule(segments);
@@ -617,7 +576,7 @@ const DeliverySchedule = () => {
       setAlertBox({
         open: true,
         error: true,
-        msg: `Total quantity mismatch! Entered total = ${sumOfQuantities}, expected = ${totalQuantity}.`,
+        msg: `Total quantity mismatch! Entered total = , expected = .`,
       });
       return;
     }
@@ -851,12 +810,6 @@ const DeliverySchedule = () => {
                   </tr>
                 ) : (
                   filteredSchedules?.map((item, index) => {
-                    const segments = calculateSegments(
-                      item.commencementDate,
-                      item.deliveryScheduleDate,
-                      item.totalQuantity,
-                    );
-
                     return (
                       <tr key={index}>
                         <td># {index + 1}</td>
