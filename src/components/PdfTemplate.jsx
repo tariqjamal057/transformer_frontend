@@ -325,7 +325,7 @@ export default function PdfTemplate({ item }) {
           <div className="col-6 px-3 py-2 left-border">
             <div className="extra-small-text">
               <div className="mb-1">
-                <span className="fw-semibold">GR NO.</span> {formData.grNo}
+
               </div>
               <div>
                 <span className="fw-semibold">Date</span> {formData.grDate}
@@ -386,7 +386,7 @@ export default function PdfTemplate({ item }) {
         {/* Row 9: Certificate Section */}
         <div className="px-3 py-2 border-top-0">
           <div className="text-end extra-small-text mb-2">
-            <span className="fw-semibold">For {formData.consignorCompany}</span>
+            <span className="fw-semibold">For {formData.consigneeName}</span>
           </div>
 
           <div className="text-center mb-2">

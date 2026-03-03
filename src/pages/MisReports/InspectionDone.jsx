@@ -103,6 +103,7 @@ const InspectionDone = () => {
         onExportExcel={true}
         sheetName="Inspection done but DI pending"
         pdfTitle="Inspection Done But DI Pending"
+        exportMode="inspection"
       />
       <Paper sx={{ p: 2, mt: 3 }}>
         <Typography variant="h6" mb={1}>

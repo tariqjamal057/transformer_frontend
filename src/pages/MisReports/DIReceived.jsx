@@ -105,6 +105,7 @@ const DIReceived = () => {
         onExportExcel={true}
         sheetName="Material inspected DI received but dispatch pending"
         pdfTitle="Material Inspected DI Received But Dispatch Pending"
+        exportMode="di"
       />
       <Paper sx={{ p: 2, mt: 3 }}>
         <Typography variant="h6" mb={1}>

@@ -765,12 +765,12 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
           </TextField>
 
           <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel>New Transformers (TRFSI No)</InputLabel>
+            <InputLabel>Serial No</InputLabel>
             <Select
               multiple
               value={selectedNewTransformers}
               onChange={(e) => setSelectedNewTransformers(e.target.value)}
-              input={<OutlinedInput label="New Transformers (TRFSI No)" />}
+              input={<OutlinedInput label="Serial No" />}
               renderValue={(selected) => selected.join(", ")}
               disabled={!availableNewTransformers.length}
             >
@@ -784,12 +784,12 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
           </FormControl>
 
           <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel>Repaired Transformers</InputLabel>
+            <InputLabel>Sub Serial No</InputLabel>
             <Select
               multiple
               value={selectedRepairedTransformers}
               onChange={(e) => setSelectedRepairedTransformers(e.target.value)}
-              input={<OutlinedInput label="Repaired Transformers" />}
+              input={<OutlinedInput label="Sub Serial No" />}
               renderValue={(selected) => selected.join(", ")}
               disabled={!availableRepairedTransformers.length}
             >

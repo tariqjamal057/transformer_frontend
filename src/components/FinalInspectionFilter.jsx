@@ -186,12 +186,24 @@ const FiltersComponent = ({
         excelRows.push([
           normalize(cIdx === 0 ? index + 1 : ""),
           normalize(
-            cIdx === 0 && item.offeredDate
-              ? dayjs(item.offeredDate).format("DD MMM YYYY")
+            cIdx === 0 && (item.offeredDate || item.offerDate)
+              ? dayjs(item.offeredDate || item.offerDate).format("DD MMM YYYY")
               : "",
           ),
-          normalize(cIdx === 0 ? item.companyName : ""),
-          normalize(cIdx === 0 ? item.discom : ""),
+          normalize(
+            cIdx === 0
+              ? item.companyName ||
+                  item.deliverySchedule?.supplyTender?.company?.name ||
+                  item.supplyTender?.company?.name
+              : "",
+          ),
+          normalize(
+            cIdx === 0
+              ? item.discom ||
+                  item.deliverySchedule?.supplyTender?.name ||
+                  item.supplyTender?.name
+              : "",
+          ),
           normalize(cIdx === 0 ? item.deliverySchedule?.tnNumber : ""),
           normalize(
             cIdx === 0
@@ -200,7 +212,14 @@ const FiltersComponent = ({
                 }`
               : "",
           ),
-          normalize(cIdx === 0 ? item.snNumber : ""),
+          normalize(
+            cIdx === 0
+              ? item.snNumber ||
+                  (item.serialNumberFrom
+                    ? `${item.serialNumberFrom} to ${item.serialNumberTo}`
+                    : "")
+              : "",
+          ),
           normalize(cIdx === 0 ? item.offeredQuantity : ""),
 
           // ✅ FIXED INSPECTOR LOGIC
@@ -343,16 +362,30 @@ const FiltersComponent = ({
 
       return {
         "S.No": index + 1,
-        "Offered Date": item.offeredDate
-          ? dayjs(item.offeredDate).format("DD MMM YYYY")
-          : "",
-        "Firm Name": item.companyName || "",
-        Discom: item.discom || "",
+        "Offered Date":
+          item.offeredDate || item.offerDate
+            ? dayjs(item.offeredDate || item.offerDate).format("DD MMM YYYY")
+            : "",
+        "Firm Name":
+          item.companyName ||
+          item.deliverySchedule?.supplyTender?.company?.name ||
+          item.supplyTender?.company?.name ||
+          "",
+        Discom:
+          item.discom ||
+          item.deliverySchedule?.supplyTender?.name ||
+          item.supplyTender?.name ||
+          "",
         "TN No.": item.deliverySchedule?.tnNumber || "",
         "Material Name": `${item.deliverySchedule?.rating || ""} KVA ${
           item.deliverySchedule?.phase || ""
         }`,
-        "Tfr. Serial No.": item.snNumber || "",
+        "Tfr. Serial No.":
+          item.snNumber ||
+          (item.serialNumberFrom
+            ? `${item.serialNumberFrom} to ${item.serialNumberTo}`
+            : "") ||
+          "",
         "Offered Qty": item.offeredQuantity || "",
         "Inspection Officers": item.inspectionOfficers?.length
           ? item.inspectionOfficers.join(", ")
@@ -398,10 +431,56 @@ const FiltersComponent = ({
     XLSX.writeFile(wb, `${sheetName}.xlsx`);
   };
 
+  // ✅ Export Excel for Inspection Done (Specific fields)
+  const exportExcelForInspection = () => {
+    const excelData = filteredData.map((item, index) => ({
+      "S.No": index + 1,
+      "Offered Date":
+        item.offeredDate || item.offerDate
+          ? dayjs(item.offeredDate || item.offerDate).format("DD MMM YYYY")
+          : "",
+      "Firm Name":
+        item.companyName ||
+        item.deliverySchedule?.supplyTender?.company?.name ||
+        item.supplyTender?.company?.name ||
+        "",
+      Discom:
+        item.discom ||
+        item.deliverySchedule?.supplyTender?.name ||
+        item.supplyTender?.name ||
+        "",
+      "TN No.": item.deliverySchedule?.tnNumber || "",
+      "Material Name": `${item.deliverySchedule?.rating || ""} KVA ${
+        item.deliverySchedule?.phase || ""
+      }`,
+      "Tfr. Serial No.":
+        item.snNumber ||
+        (item.serialNumberFrom
+          ? `${item.serialNumberFrom} to ${item.serialNumberTo}`
+          : "") ||
+        "",
+      "Offered Qty": item.offeredQuantity || "",
+      "Inspection Officers": item.inspectionOfficers?.length
+        ? item.inspectionOfficers.join(", ")
+        : "",
+      "Inspection Date": item.inspectionDate
+        ? dayjs(item.inspectionDate).format("DD MMM YYYY")
+        : "",
+      "Inspected Qty": item.inspectedQuantity || "",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 30));
+    XLSX.writeFile(wb, `${sheetName}.xlsx`);
+  };
+
   // ✅ Click handler decides which function to run
   const handleExcelExport = () => {
     if (exportMode === "di") {
       exportExcelForDI(filteredData);
+    } else if (exportMode === "inspection") {
+      exportExcelForInspection();
     } else {
       exportExcel(filteredData);
     }
@@ -422,14 +501,26 @@ const FiltersComponent = ({
     // Step 1: Prepare data as array
     const pdfData = filteredData.map((item, index) => [
       index + 1, // S.No
-      item.offeredDate ? dayjs(item.offeredDate).format("DD MMM YYYY") : "",
-      item.companyName || "",
-      item.discom || "",
+      item.offeredDate || item.offerDate
+        ? dayjs(item.offeredDate || item.offerDate).format("DD MMM YYYY")
+        : "",
+      item.companyName ||
+        item.deliverySchedule?.supplyTender?.company?.name ||
+        item.supplyTender?.company?.name ||
+        "",
+      item.discom ||
+        item.deliverySchedule?.supplyTender?.name ||
+        item.supplyTender?.name ||
+        "",
       item.deliverySchedule?.tnNumber || "",
       `${item.deliverySchedule?.rating || ""} KVA ${
         item.deliverySchedule?.phase || ""
       }`,
-      item.snNumber || "",
+      item.snNumber ||
+        (item.serialNumberFrom
+          ? `${item.serialNumberFrom} to ${item.serialNumberTo}`
+          : "") ||
+        "",
       item.offeredQuantity || 0,
       item.inspectionOfficers?.length ? item.inspectionOfficers.join(", ") : "",
       item.inspectionDate
@@ -612,12 +703,24 @@ const FiltersComponent = ({
         pdfData.push([
           normalize(cIdx === 0 ? index + 1 : ""),
           normalize(
-            cIdx === 0 && item.offeredDate
-              ? dayjs(item.offeredDate).format("DD MMM YYYY")
+            cIdx === 0 && (item.offeredDate || item.offerDate)
+              ? dayjs(item.offeredDate || item.offerDate).format("DD MMM YYYY")
               : "",
           ),
-          normalize(cIdx === 0 ? item.companyName : ""),
-          normalize(cIdx === 0 ? item.discom : ""),
+          normalize(
+            cIdx === 0
+              ? item.companyName ||
+                  item.deliverySchedule?.supplyTender?.company?.name ||
+                  item.supplyTender?.company?.name
+              : "",
+          ),
+          normalize(
+            cIdx === 0
+              ? item.discom ||
+                  item.deliverySchedule?.supplyTender?.name ||
+                  item.supplyTender?.name
+              : "",
+          ),
           normalize(cIdx === 0 ? item.deliverySchedule?.tnNumber : ""),
           normalize(
             cIdx === 0
@@ -626,7 +729,14 @@ const FiltersComponent = ({
                 }`
               : "",
           ),
-          normalize(cIdx === 0 ? item.snNumber : ""),
+          normalize(
+            cIdx === 0
+              ? item.snNumber ||
+                  (item.serialNumberFrom
+                    ? `${item.serialNumberFrom} to ${item.serialNumberTo}`
+                    : "")
+              : "",
+          ),
           normalize(cIdx === 0 ? item.offeredQuantity : ""),
 
           // ✅ FIXED INSPECTOR LOGIC

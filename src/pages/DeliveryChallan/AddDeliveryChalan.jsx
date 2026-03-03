@@ -667,13 +667,13 @@ const AddDeliveryChalan = () => {
 
               <Grid item size={1}>
                 <FormControl fullWidth required>
-                  <InputLabel>New Transformers (TRFSI No)</InputLabel>
+                  <InputLabel>Serial No</InputLabel>
                   <Select
                     multiple
                     value={selectedNewTransformers}
                     onChange={(e) => setSelectedNewTransformers(e.target.value)}
                     input={
-                      <OutlinedInput label="New Transformers (TRFSI No)" />
+                      <OutlinedInput label="Serial No" />
                     }
                     renderValue={(selected) => selected.join(", ")}
                     disabled={!availableNewTransformers.length}
@@ -692,14 +692,14 @@ const AddDeliveryChalan = () => {
 
               <Grid item size={1}>
                 <FormControl fullWidth>
-                  <InputLabel>Repaired Transformers</InputLabel>
+                  <InputLabel>Sub Serial No</InputLabel>
                   <Select
                     multiple
                     value={selectedRepairedTransformers}
                     onChange={(e) =>
                       setSelectedRepairedTransformers(e.target.value)
                     }
-                    input={<OutlinedInput label="Repaired Transformers" />}
+                    input={<OutlinedInput label="Sub Serial No" />}
                     renderValue={(selected) => selected.join(", ")}
                     disabled={!availableRepairedTransformers.length}
                   >
@@ -784,7 +784,7 @@ const AddDeliveryChalan = () => {
 
               <Grid item size={1}>
                 <TextField
-                  label="Consignee Receipt No"
+                  label="Challan No"
                   fullWidth
                   value={challanNo}
                   onChange={(e) => setChallanNo(e.target.value)}
