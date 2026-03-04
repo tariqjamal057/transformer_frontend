@@ -110,80 +110,94 @@ const ProductionFilter = ({
     [data],
   );
 
-  // ✅ Export Excel (merged consignees in one row)
+  // ✅ Export Excel (row-wise expansion like requested)
   const exportExcel = (withSummary = false) => {
     const wb = XLSX.utils.book_new();
     let ws;
 
+    const normalize = (val) =>
+      val === null || val === undefined ? "" : String(val).trim();
+
+    let excelRows = [];
+
+    filteredData.forEach((item, index) => {
+      const schedules = Array.isArray(item.quantityPerMonthInSchedule)
+        ? item.quantityPerMonthInSchedule
+        : [];
+      const rowCount = Math.max(schedules.length, 1);
+
+      for (let sIdx = 0; sIdx < rowCount; sIdx++) {
+        const s = schedules[sIdx] || {};
+        const scheduleStr = s.schedule ? `${s.schedule}: ${s.quantity}` : "";
+
+        excelRows.push([
+          normalize(sIdx === 0 ? index + 1 : ""),
+          normalize(sIdx === 0 ? item.companyName : ""),
+          normalize(sIdx === 0 ? item.discom : ""),
+          normalize(sIdx === 0 ? item.deliverySchedule?.tnNumber : ""),
+          normalize(sIdx === 0 ? item.deliverySchedule?.rating : ""),
+          normalize(sIdx === 0 ? item.deliverySchedule?.phase : ""),
+          normalize(sIdx === 0 ? (item.deliverySchedule?.wound || "Copper") : ""),
+          normalize(sIdx === 0 ? item.deliverySchedule?.status : ""),
+          normalize(
+            sIdx === 0 && item.deliverySchedule?.scheduleDate
+              ? dayjs(item.deliverySchedule.scheduleDate).format("DD MMM YYYY")
+              : "",
+          ),
+          normalize(sIdx === 0 ? item.deliverySchedule?.totalOrderQuantity : ""),
+          normalize(scheduleStr),
+          normalize(sIdx === 0 ? item.totalSupplyDueInCurrentMonth : ""),
+          normalize(sIdx === 0 ? item.offeredForInspectionTotal : ""),
+          normalize(sIdx === 0 ? item.finalInspectionTotal : ""),
+          normalize(sIdx === 0 ? item.actualSuppliedTotal : ""),
+          normalize(sIdx === 0 ? item.balanceDueToBeInspectedInCurrentMonth : ""),
+          normalize(sIdx === 0 ? item.balancePending : ""),
+          normalize(sIdx === 0 ? item.snNumber : ""),
+          normalize(sIdx === 0 ? item.plannedForMonth : ""),
+        ]);
+      }
+    });
+
+    const excelHeaders = [
+      "S.No",
+      "Firm Name",
+      "Discom",
+      "TN No.",
+      "Rating",
+      "Phase",
+      "Wound",
+      "Status",
+      "Schedule Date",
+      "Total Order Qty",
+      "Qty Per Month In Schedule",
+      "Total Supply Due In Current Month",
+      "Offered For Ins Total",
+      "Final Ins. Total",
+      "Actual Supplied Total",
+      "Balance Due To Be Ins. During Current Month",
+      "Balance Pending",
+      "Tfr Sr. No.",
+      "Planned For Month",
+    ];
+
+    const worksheetData = [excelHeaders, ...excelRows];
+
     if (withSummary && pdfSummary.trim() !== "") {
-      ws = XLSX.utils.aoa_to_sheet([[]]);
-      XLSX.utils.sheet_add_aoa(ws, [[`Summary: ${pdfSummary}`]], {
-        origin: "A1",
-      });
-    }
-
-    const excelData = filteredData.map((item, index) => {
-      return {
-        "S.No": index + 1,
-        "Firm Name": item.companyName || "",
-        Discom: item.discom || "",
-        "TN No.": item.deliverySchedule?.tnNumber || "",
-        Rating: item.deliverySchedule?.rating || "",
-        Phase: item.deliverySchedule?.phase || "",
-        Wound: item.deliverySchedule?.wound || "Copper",
-        Status: item.deliverySchedule?.status || "",
-        "Schedule Date": item.deliverySchedule?.scheduleDate
-          ? dayjs(item.deliverySchedule.scheduleDate).format("DD MMM YYYY")
-          : "",
-        "Total Order Qty": item.deliverySchedule?.totalOrderQuantity || "",
-        "Qty Per Month In Schedule": item.quantityPerMonthInSchedule || "",
-        "Total Supply Due In Current Month":
-          item.totalSupplyDueInCurrentMonth || "",
-        "Offered For Ins Total": item.offeredForInspectionTotal || "",
-        "Final Ins. Total": item.finalInspectionTotal || "",
-        "Actual Supplied Total": item.actualSuppliedTotal || "",
-        "Balance Due To Be Ins. During Current Month":
-          item.balanceDueToBeInspectedInCurrentMonth || "",
-        "Balance Pending": item.balancePending || "",
-        "Tfr Sr. No.": item.snNumber || "",
-        "Planned For Month": item.plannedForMonth || "",
-      };
-    });
-
-    // Step 2: Find non-empty columns
-    const allKeys = Object.keys(excelData[0] || {});
-    const nonEmptyKeys = allKeys.filter((key) =>
-      excelData.some((row) => row[key] && row[key].toString().trim() !== ""),
-    );
-
-    // Step 3: Keep only non-empty columns
-    const cleanedData = excelData.map((row) => {
-      const newRow = {};
-      nonEmptyKeys.forEach((key) => {
-        newRow[key] = row[key];
-      });
-      return newRow;
-    });
-
-    // Step 4: Export Excel
-    if (ws) {
-      XLSX.utils.sheet_add_json(ws, cleanedData, {
-        origin: "A3",
-        skipHeader: false,
-      });
+      ws = XLSX.utils.aoa_to_sheet([[`Summary: ${pdfSummary}`], []]);
+      XLSX.utils.sheet_add_aoa(ws, worksheetData, { origin: "A3" });
     } else {
-      ws = XLSX.utils.json_to_sheet(cleanedData);
+      ws = XLSX.utils.aoa_to_sheet(worksheetData);
     }
 
-    XLSX.utils.book_append_sheet(wb, ws, "FinalInspection");
-    XLSX.writeFile(wb, "FinalInspectionMisReport.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "ProductionPlanning");
+    XLSX.writeFile(wb, "ProductionPlanningMisReport.xlsx");
     setOpenSummaryModal(false);
     setPdfSummary("");
   };
 
   const exportPDF = (withSummary = false) => {
-    // Use landscape orientation to fit all columns like the uploaded PDF
-    const doc = new jsPDF("l", "pt", "a4"); // 'l' = landscape mode
+    // Use landscape orientation to fit all columns
+    const doc = new jsPDF("l", "pt", "a4");
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -195,45 +209,58 @@ const ProductionFilter = ({
       align: "center",
     });
 
-    // Handle Summary if present
     let tableStartY = 50;
     if (withSummary && pdfSummary.trim() !== "") {
       doc.setFontSize(9);
       doc.setFont(undefined, "normal");
-
       const summaryText = `Summary: ${pdfSummary}`;
       const splitSummary = doc.splitTextToSize(summaryText, pageWidth - 80);
       doc.text(splitSummary, 40, 50);
-
       tableStartY = 50 + splitSummary.length * 12 + 10;
     }
 
-    // Prepare data matching the uploaded PDF structure
-    const pdfData = filteredData.map((item, index) => [
-      index + 1, // S.No
-      item.companyName || "",
-      item.discom || "",
-      item.deliverySchedule?.tnNumber || "",
-      item.deliverySchedule?.rating || "",
-      item.deliverySchedule?.phase || "",
-      item.deliverySchedule?.wound || "Copper",
-      item.deliverySchedule?.status || "",
-      item.deliverySchedule?.scheduleDate
-        ? dayjs(item.deliverySchedule.scheduleDate).format("DD MMM YYYY")
-        : "",
-      item.deliverySchedule?.totalOrderQuantity || "",
-      item.quantityPerMonthInSchedule || "",
-      item.totalSupplyDueInCurrentMonth || "",
-      item.offeredForInspectionTotal || "",
-      item.finalInspectionTotal || "",
-      item.actualSuppliedTotal || "",
-      item.balanceDueToBeInspectedInCurrentMonth || "",
-      item.balancePending || "",
-      item.snNumber || "",
-      item.plannedForMonth || "",
-    ]);
+    const normalize = (val) =>
+      val === null || val === undefined ? "" : String(val).trim();
 
-    // Column headers matching the uploaded PDF exactly
+    let pdfRows = [];
+    filteredData.forEach((item, index) => {
+      const schedules = Array.isArray(item.quantityPerMonthInSchedule)
+        ? item.quantityPerMonthInSchedule
+        : [];
+      const rowCount = Math.max(schedules.length, 1);
+
+      for (let sIdx = 0; sIdx < rowCount; sIdx++) {
+        const s = schedules[sIdx] || {};
+        const scheduleStr = s.schedule ? `${s.schedule}: ${s.quantity}` : "";
+
+        pdfRows.push([
+          normalize(sIdx === 0 ? index + 1 : ""),
+          normalize(sIdx === 0 ? item.companyName : ""),
+          normalize(sIdx === 0 ? item.discom : ""),
+          normalize(sIdx === 0 ? item.deliverySchedule?.tnNumber : ""),
+          normalize(sIdx === 0 ? item.deliverySchedule?.rating : ""),
+          normalize(sIdx === 0 ? item.deliverySchedule?.phase : ""),
+          normalize(sIdx === 0 ? (item.deliverySchedule?.wound || "Copper") : ""),
+          normalize(sIdx === 0 ? item.deliverySchedule?.status : ""),
+          normalize(
+            sIdx === 0 && item.deliverySchedule?.scheduleDate
+              ? dayjs(item.deliverySchedule.scheduleDate).format("DD MMM YYYY")
+              : "",
+          ),
+          normalize(sIdx === 0 ? item.deliverySchedule?.totalOrderQuantity : ""),
+          normalize(scheduleStr),
+          normalize(sIdx === 0 ? item.totalSupplyDueInCurrentMonth : ""),
+          normalize(sIdx === 0 ? item.offeredForInspectionTotal : ""),
+          normalize(sIdx === 0 ? item.finalInspectionTotal : ""),
+          normalize(sIdx === 0 ? item.actualSuppliedTotal : ""),
+          normalize(sIdx === 0 ? item.balanceDueToBeInspectedInCurrentMonth : ""),
+          normalize(sIdx === 0 ? item.balancePending : ""),
+          normalize(sIdx === 0 ? item.snNumber : ""),
+          normalize(sIdx === 0 ? item.plannedForMonth : ""),
+        ]);
+      }
+    });
+
     const headers = [
       "S.No",
       "Firm Name",
@@ -245,48 +272,47 @@ const ProductionFilter = ({
       "Status",
       "Schedule Date",
       "Total\nOrder\nQty",
-      "Qty\nPer\nMonth\nIn\nSchedule",
-      "Total\nSupply\nDue In\nCurrent\nMonth",
-      "Offered\nFor Ins\nTotal",
+      "Qty Per\nMonth In\nSchedule",
+      "Total\nSupply\nDue In\nCurr.\nMonth",
+      "Off.\nFor Ins\nTotal",
       "Final\nIns.\nTotal",
-      "Actual\nSupplied\nTotal",
-      "Balance\nDue To Be\nIns.\nDuring\nCurrent\nMonth",
-      "Balance\nPending",
-      "Tfr Sr. No.",
-      "Planned\nFor\nMonth",
+      "Act.\nSupp.\nTotal",
+      "Bal.\nDue Ins.\nCurr.\nMonth",
+      "Bal.\nPend.",
+      "Tfr Sr.\nNo.",
+      "Plan\nFor\nMonth",
     ];
 
-    // Custom column widths to match the uploaded PDF layout
     const columnStyles = {
-      0: { cellWidth: 30 }, // S.No
-      1: { cellWidth: 65 }, // Firm Name
-      2: { cellWidth: 40 }, // Discom
-      3: { cellWidth: 40 }, // TN No.
-      4: { cellWidth: 35 }, // Rating
-      5: { cellWidth: 50 }, // Phase
-      6: { cellWidth: 40 }, // Wound
-      7: { cellWidth: 45 }, // Status
-      8: { cellWidth: 55 }, // Schedule Date
-      9: { cellWidth: 35 }, // Total Order Qty
-      10: { cellWidth: 35 }, // Qty Per Month
-      11: { cellWidth: 40 }, // Supply Due
-      12: { cellWidth: 35 }, // Offered Ins
-      13: { cellWidth: 35 }, // Final Ins
-      14: { cellWidth: 35 }, // Actual Supplied
-      15: { cellWidth: 40 }, // Balance Due Ins
-      16: { cellWidth: 35 }, // Balance Pending
-      17: { cellWidth: 55 }, // Tfr Sr. No.
-      18: { cellWidth: 40 }, // Planned For Month
+      0: { cellWidth: 25 }, // S.No
+      1: { cellWidth: 60 }, // Firm Name
+      2: { cellWidth: 35 }, // Discom
+      3: { cellWidth: 35 }, // TN No.
+      4: { cellWidth: 30 }, // Rating
+      5: { cellWidth: 45 }, // Phase
+      6: { cellWidth: 35 }, // Wound
+      7: { cellWidth: 40 }, // Status
+      8: { cellWidth: 50 }, // Schedule Date
+      9: { cellWidth: 30 }, // Total Order Qty
+      10: { cellWidth: 80 }, // Qty Per Month (Increased for readability)
+      11: { cellWidth: 35 }, // Supply Due
+      12: { cellWidth: 30 }, // Offered Ins
+      13: { cellWidth: 30 }, // Final Ins
+      14: { cellWidth: 30 }, // Actual Supplied
+      15: { cellWidth: 35 }, // Balance Due Ins
+      16: { cellWidth: 30 }, // Balance Pending
+      17: { cellWidth: 50 }, // Tfr Sr. No.
+      18: { cellWidth: 35 }, // Planned For Month
     };
 
     autoTable(doc, {
       head: [headers],
-      body: pdfData,
+      body: pdfRows,
       startY: tableStartY,
       theme: "grid",
       styles: {
-        fontSize: 7,
-        cellPadding: 2,
+        fontSize: 6,
+        cellPadding: 1.5,
         lineColor: [0, 0, 0],
         lineWidth: 0.5,
         valign: "middle",
@@ -295,7 +321,7 @@ const ProductionFilter = ({
       headStyles: {
         fillColor: [255, 255, 255],
         textColor: [0, 0, 0],
-        fontSize: 7,
+        fontSize: 6,
         fontStyle: "bold",
         lineColor: [0, 0, 0],
         lineWidth: 0.5,
@@ -310,18 +336,12 @@ const ProductionFilter = ({
         lineWidth: 0.5,
       },
       columnStyles: columnStyles,
-      alternateRowStyles: {
-        fillColor: [255, 255, 255], // No alternating colors like the uploaded PDF
-      },
-      margin: { top: 40, right: 20, bottom: 30, left: 20 },
+      margin: { top: 40, right: 15, bottom: 30, left: 15 },
       didDrawPage: function (data) {
-        // Add page numbers at the bottom
         const pageCount = doc.internal.getNumberOfPages();
         doc.setFontSize(8);
         doc.text(
-          `Page ${
-            doc.internal.getCurrentPageInfo().pageNumber
-          } of ${pageCount}`,
+          `Page ${doc.internal.getCurrentPageInfo().pageNumber} of ${pageCount}`,
           pageWidth / 2,
           pageHeight - 15,
           { align: "center" },
@@ -329,7 +349,6 @@ const ProductionFilter = ({
       },
     });
 
-    // Save the PDF
     doc.save("ProductionPlanning.pdf");
     setOpenSummaryModal(false);
     setPdfSummary("");
