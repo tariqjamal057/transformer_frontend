@@ -49,10 +49,15 @@ const DIReceived = () => {
   // Filter out records where all consignees have 0 pending quantity
   const pendingData = useMemo(() => {
     if (!Array.isArray(inspectionData)) return [];
-    return inspectionData.filter((item) => {
-      if (!item.consignees || item.consignees.length === 0) return true;
-      return item.consignees.some((c) => (parseInt(c.pending, 10) || 0) > 0);
-    });
+    return inspectionData
+      .map((item) => {
+        // Filter consignees to only show those with pending > 0
+        const activeConsignees = (item.consignees || []).filter(
+          (c) => (parseInt(c.pending, 10) || 0) > 0
+        );
+        return { ...item, activeConsignees };
+      })
+      .filter((item) => item.activeConsignees.length > 0);
   }, [inspectionData]);
 
   useEffect(() => {
@@ -159,8 +164,8 @@ const DIReceived = () => {
                 filteredData.map((row, idx) => {
                   return (
                     <React.Fragment key={row.id}>
-                      {row.consignees && row.consignees.length > 0 ? (
-                        row.consignees.map((c, cIdx) => {
+                      {row.activeConsignees && row.activeConsignees.length > 0 ? (
+                        row.activeConsignees.map((c, cIdx) => {
                           const baseDate =
                             row.specialCase === "yes"
                               ? row.inspectionDate
@@ -181,32 +186,32 @@ const DIReceived = () => {
                             <TableRow key={`${row.id}-${cIdx}`}>
                               {cIdx === 0 && (
                                 <>
-                                  <TableCell rowSpan={row.consignees.length}>
+                                  <TableCell rowSpan={row.activeConsignees.length}>
                                     {idx + 1}
                                   </TableCell>
-                                  <TableCell rowSpan={row.consignees.length}>
+                                  <TableCell rowSpan={row.activeConsignees.length}>
                                     {dayjs(row.offerDate).format("DD MMM YYYY")}
                                   </TableCell>
-                                  <TableCell rowSpan={row.consignees.length}>
+                                  <TableCell rowSpan={row.activeConsignees.length}>
                                     {row.companyName}
                                   </TableCell>
-                                  <TableCell rowSpan={row.consignees.length}>
+                                  <TableCell rowSpan={row.activeConsignees.length}>
                                     {row.discom}
                                   </TableCell>
-                                  <TableCell rowSpan={row.consignees.length}>
+                                  <TableCell rowSpan={row.activeConsignees.length}>
                                     {row.deliverySchedule.tnNumber}
                                   </TableCell>
-                                  <TableCell rowSpan={row.consignees.length}>
+                                  <TableCell rowSpan={row.activeConsignees.length}>
                                     {row.deliverySchedule.rating} KVA{" "}
                                     {row.deliverySchedule.phase}
                                   </TableCell>
-                                  <TableCell rowSpan={row.consignees.length}>
+                                  <TableCell rowSpan={row.activeConsignees.length}>
                                     {row.snNumber}
                                   </TableCell>
-                                  <TableCell rowSpan={row.consignees.length}>
+                                  <TableCell rowSpan={row.activeConsignees.length}>
                                     {row.offeredQuantity}
                                   </TableCell>
-                                  <TableCell rowSpan={row.consignees.length}>
+                                  <TableCell rowSpan={row.activeConsignees.length}>
                                     <div className="d-flex flex-wrap gap-1">
                                       {row.inspectionOfficers &&
                                         row.inspectionOfficers.map(
@@ -225,20 +230,20 @@ const DIReceived = () => {
                                         )}
                                     </div>
                                   </TableCell>
-                                  <TableCell rowSpan={row.consignees.length}>
+                                  <TableCell rowSpan={row.activeConsignees.length}>
                                     {row.inspectionDate
                                       ? dayjs(row.inspectionDate).format(
                                           "DD MMM YYYY",
                                         )
                                       : "-"}
                                   </TableCell>
-                                  <TableCell rowSpan={row.consignees.length}>
+                                  <TableCell rowSpan={row.activeConsignees.length}>
                                     {row.inspectedQuantity || ""}
                                   </TableCell>
-                                  <TableCell rowSpan={row.consignees.length}>
+                                  <TableCell rowSpan={row.activeConsignees.length}>
                                     {row.diNo || "-"}
                                   </TableCell>
-                                  <TableCell rowSpan={row.consignees.length}>
+                                  <TableCell rowSpan={row.activeConsignees.length}>
                                     {row.diDate
                                       ? dayjs(row.diDate).format("DD MMM YYYY")
                                       : "-"}
