@@ -10,7 +10,7 @@ import {
   MenuItem,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -101,7 +101,7 @@ const AddDeliveryDetails = () => {
 
   return (
     <>
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
         <div className="right-content w-100">
           <Paper elevation={4} sx={{ p: 4, borderRadius: 4 }}>
             <Typography
@@ -178,19 +178,19 @@ const AddDeliveryDetails = () => {
                     InputProps={{ readOnly: true }}
                   />
                   <TextField
-                    label="Selected Transformers (New)"
+                    label="Serial No"
                     value={selectedData.selectedTransformers?.join(", ") || "N/A"}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
                   <TextField
-                    label="Repaired Transformers"
+                    label="Sub Serial No"
                     value={selectedData.repairedSerialNumbers?.join(", ") || "N/A"}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
                   <TextField
-                    label="Other Consignee Serial Numbers"
+                    label="Other Consignee Serial No"
                     value={selectedData.otherConsigneeSerialNumbers || "N/A"}
                     fullWidth
                     InputProps={{ readOnly: true }}

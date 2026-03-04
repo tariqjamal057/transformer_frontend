@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
-import { Button, Grid, MenuItem, TextField } from "@mui/material";
+import { Button, Grid, MenuItem, TextField, IconButton } from "@mui/material";
 import { Link } from "react-router-dom";
-import { MdDelete } from "react-icons/md";
+import { MdDelete, MdEdit } from "react-icons/md";
 import Swal from "sweetalert2";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api";
@@ -9,6 +9,7 @@ import { MyContext } from "../../App";
 import SearchBox from "../../components/SearchBox";
 import Pagination from "../../components/Pagination";
 import DeliveryDetailsBulkUploadModal from "../../components/DeliveryDetailsBulkUploadModal";
+import DeliveryDetailsModal from "../../components/DeliveryDetailsModal";
 import dayjs from "dayjs";
 
 const DeliveryDetailsList = () => {
@@ -18,6 +19,8 @@ const DeliveryDetailsList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [openBulkUploadModal, setOpenBulkUploadModal] = useState(false);
+  const [openModal, setOpenModal] = useState(false);
+  const [selectedDeliveryDetail, setSelectedDeliveryDetail] = useState(null);
 
   const [selectedTnNumber, setSelectedTnNumber] = useState("");
   const [selectedRating, setSelectedRating] = useState("");
@@ -29,10 +32,11 @@ const DeliveryDetailsList = () => {
     isError,
   } = useQuery({
     queryKey: ["deliveryDetails", currentPage, searchQuery],
-    queryFn: () =>
-      api
+    queryFn: () => {
+      return api
         .get(`/delivery-details?page=${currentPage}&search=${searchQuery}`)
-        .then((res) => res.data),
+        .then((res) => res.data);
+    },
   });
 
   const { data: finalInspections } = useQuery({
@@ -83,7 +87,9 @@ const DeliveryDetailsList = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => api.delete(`/delivery-details/${id}`),
+    mutationFn: (id) => {
+      return api.delete(`/delivery-details/${id}`);
+    },
     onSuccess: () => {
       setAlertBox({
         open: true,
@@ -111,6 +117,16 @@ const DeliveryDetailsList = () => {
     if (result.isConfirmed) {
       deleteMutation.mutate(id);
     }
+  };
+
+  const handleEditClick = (item) => {
+    setSelectedDeliveryDetail(item);
+    setOpenModal(true);
+  };
+
+  const handleAddClick = () => {
+    setSelectedDeliveryDetail(null);
+    setOpenModal(true);
   };
 
   const getOtherConsigneeDetails = (dc) => {
@@ -275,7 +291,7 @@ const DeliveryDetailsList = () => {
                     <th>TN Number</th>
                     <th>Serial No</th>
                     <th>Selected Serial No</th>
-                    <th>Repaired Serial No</th>
+                    <th>Selected Sub Serial No</th>
                     <th>Other Consignee Serial No</th>
                     <th>PO Number / Date</th>
                     <th>Challan No</th>
@@ -289,8 +305,8 @@ const DeliveryDetailsList = () => {
                     <th>Inspection Date</th>
                     <th>Consignor Details</th>
                     <th>Consignee Details</th>
+                    <th>Action</th>
                     {/* <th>Material Description</th> */}
-                    {/* <th>Action</th> */}
                   </tr>
                 </thead>
 
@@ -324,12 +340,12 @@ const DeliveryDetailsList = () => {
 
                           {/* Selected Serial No */}
                           <td>
-                            {(dc.selectedTransformers || []).join(', ') || '-'}
+                            {(dc.selectedTransformers || []).join(", ") || "-"}
                           </td>
 
                           {/* Repaired Serial No */}
                           <td>
-                            {(dc.repairedSerialNumbers || []).join(', ') || '-'}
+                            {(dc.repairedSerialNumbers || []).join(", ") || "-"}
                           </td>
 
                           {/* Other Consignee Serial No */}
@@ -457,26 +473,23 @@ const DeliveryDetailsList = () => {
                               <strong>GST:</strong> {dc.consignee.gstNo}
                             </div>
                           </td>
-
-                          {/* Material Description */}
-                          {/* <td className="text-start">
-                          <div>{dc.materialDescription?.description}</div>
-                        </td> */}
-
                           {/* Action Buttons */}
-                          {/* <td>
+                          <td>
                             <div className="d-flex gap-2 align-items-center justify-content-center">
-                              <button
-                                className="btn btn-sm btn-danger"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteClick(item.id);
-                                }}
+                              <IconButton
+                                color="secondary"
+                                onClick={() => handleEditClick(item)}
+                              >
+                                <MdEdit />
+                              </IconButton>
+                              {/* <IconButton
+                                color="error"
+                                onClick={() => handleDeleteClick(item.id)}
                               >
                                 <MdDelete />
-                              </button>
+                              </IconButton> */}
                             </div>
-                          </td> */}
+                          </td>
                         </tr>
                       );
                     })
@@ -502,6 +515,11 @@ const DeliveryDetailsList = () => {
         <DeliveryDetailsBulkUploadModal
           open={openBulkUploadModal}
           handleClose={() => setOpenBulkUploadModal(false)}
+        />
+        <DeliveryDetailsModal
+          open={openModal}
+          handleClose={() => setOpenModal(false)}
+          deliveryDetailData={selectedDeliveryDetail}
         />
       </div>
     </>
