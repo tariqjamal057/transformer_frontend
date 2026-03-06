@@ -16,12 +16,12 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import dayjs from "dayjs";
-import FiltersComponent from "../../components/FinalInspectionFilter";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import api from "../../services/api";
 import { MyContext } from "../../App";
 import Pagination from "../../components/Pagination";
+import FiltersComponent from "../../components/NominationPendingFilter";
 
 const MaterialOfferedButNominationPending = () => {
   const { setIsHideSidebarAndHeader } = useContext(MyContext);
@@ -123,6 +123,7 @@ const MaterialOfferedButNominationPending = () => {
                 <TableCell>TN No</TableCell>
                 <TableCell>Material Name</TableCell>
                 <TableCell>Tfr. Serial No.</TableCell>
+                <TableCell>Sub-serial No</TableCell>
                 <TableCell>Offered Qty</TableCell>
               </TableRow>
             </TableHead>
@@ -130,19 +131,19 @@ const MaterialOfferedButNominationPending = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center">
+                  <TableCell colSpan={9} align="center">
                     <CircularProgress />
                   </TableCell>
                 </TableRow>
               ) : isError ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center">
+                  <TableCell colSpan={9} align="center">
                     <Alert severity="error">Error fetching data</Alert>
                   </TableCell>
                 </TableRow>
               ) : paginatedData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center">
+                  <TableCell colSpan={9} align="center">
                     No records found
                   </TableCell>
                 </TableRow>
@@ -153,7 +154,7 @@ const MaterialOfferedButNominationPending = () => {
                       {(currentPage - 1) * PAGE_SIZE + idx + 1}
                     </TableCell>
                     <TableCell>
-                      {dayjs(row.offeredDate).format("DD MMM YYYY")}
+                      {dayjs(row.offerDate).format("DD MMM YYYY")}
                     </TableCell>
                     <TableCell>
                       {row.deliverySchedule?.supplyTender?.company?.name}
@@ -168,6 +169,21 @@ const MaterialOfferedButNominationPending = () => {
                     </TableCell>
                     <TableCell>
                       {row.serialNumberFrom} to {row.serialNumberTo}
+                    </TableCell>
+                    <TableCell>
+                      {row.consignees?.length > 0 ? (
+                        row.consignees.map(c => {
+                          const parts = [];
+                          // if (c.repairedTransformerIds) parts.push(c.repairedTransformerIds);
+                          if (c.repairedTransformerIds) {
+                            c.repairedTransformerIds.forEach(oldId => {
+                              const mapping = row.repaired_transformer_mapping?.find(m => String(m.oldSrNo) === String(oldId));
+                              parts.push(mapping ? `${oldId}` : oldId);
+                            });
+                          }
+                          return parts.join(", ");
+                        }).filter(Boolean).join(", ")
+                      ) : "—"}
                     </TableCell>
                     <TableCell>{row.offeredQuantity}</TableCell>
                   </TableRow>

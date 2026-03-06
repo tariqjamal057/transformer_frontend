@@ -140,7 +140,7 @@ const NominationDone = () => {
                                 {idx + 1}
                               </TableCell>
                               <TableCell rowSpan={row.consignees.length}>
-                                {dayjs(row.offeredDate).format("DD MMM YYYY")}
+                                {dayjs(row.offerDate).format("DD MMM YYYY")}
                               </TableCell>
                               <TableCell rowSpan={row.consignees.length}>
                                 {

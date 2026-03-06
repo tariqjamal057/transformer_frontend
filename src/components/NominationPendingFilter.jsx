@@ -356,7 +356,7 @@ const FiltersComponent = ({
       const srNumbers =
         item.consignees?.map((c) => {
           const parts = [];
-          if (c.subSnNumber) parts.push(c.subSnNumber);
+        //   if (c.subSnNumber) parts.push(c.subSnNumber);
           if (c.repairedTransformerIds) {
             c.repairedTransformerIds.forEach(oldId => {
               const mapping = item.repaired_transformer_mapping?.find(m => String(m.oldSrNo) === String(oldId));
@@ -398,23 +398,23 @@ const FiltersComponent = ({
           "",
         "Sub-serial No": srNumbers,
         "Offered Qty": item.offeredQuantity || "",
-        "Inspection Officers": item.inspectionOfficers?.length
-          ? item.inspectionOfficers.join(", ")
-          : "",
-        "Inspection Date": item.inspectionDate
-          ? dayjs(item.inspectionDate).format("DD MMM YYYY")
-          : "",
-        "Inspected Qty": item.inspectedQuantity || "",
-        "D.I. No": item.diNo || "",
-        "D.I. Date": item.diDate
-          ? dayjs(item.diDate).format("DD MMM YYYY")
-          : "",
-        "Due Date of Delivery": dueDateMerged,
-        "Consignee Name": consigneeNames,
-        "SR. NO. OF TFR.": srNumbers,
-        Qty: qtys,
-        Dispatch: dispatches,
-        Pending: pendings,
+        // "Inspection Officers": item.inspectionOfficers?.length
+        //   ? item.inspectionOfficers.join(", ")
+        //   : "",
+        // "Inspection Date": item.inspectionDate
+        //   ? dayjs(item.inspectionDate).format("DD MMM YYYY")
+        //   : "",
+        // "Inspected Qty": item.inspectedQuantity || "",
+        // "D.I. No": item.diNo || "",
+        // "D.I. Date": item.diDate
+        //   ? dayjs(item.diDate).format("DD MMM YYYY")
+        //   : "",
+        // "Due Date of Delivery": dueDateMerged,
+        // "Consignee Name": consigneeNames,
+        // "SR. NO. OF TFR.": srNumbers,
+        // Qty: qtys,
+        // Dispatch: dispatches,
+        // Pending: pendings,
       };
     });
 
