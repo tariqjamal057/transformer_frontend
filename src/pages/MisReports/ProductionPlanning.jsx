@@ -472,29 +472,33 @@ const ProductionPlanning = () => {
                       {row.deliverySchedule?.totalOrderQuantity}
                     </TableCell>
                     <TableCell>
-                      {Array.isArray(row.quantityPerMonthInSchedule) ? (
-                        row.quantityPerMonthInSchedule.map((s, i) => (
-                          // <div key={i}>
-                          //   Schedule: {s.schedule} Quantity: {s.quantity}
-                          // </div>
-                          <div key={i} className="flex flex-col items-start gap-y-1 border-b border-gray-200" style={{ whiteSpace: "nowrap" }}>
+                      {Array.isArray(row.quantityPerMonthInSchedule)
+                        ? row.quantityPerMonthInSchedule.map((s, i) => (
+                            // <div key={i}>
+                            //   Schedule: {s.schedule} Quantity: {s.quantity}
+                            // </div>
+                            <div
+                              key={i}
+                              className="flex flex-col items-start gap-y-1 border-b border-gray-200"
+                              style={{ whiteSpace: "nowrap" }}
+                            >
                               <div className="">
                                 <strong>Schedule:</strong> {s.schedule}
                               </div>
                               <div className="">
                                 <strong>Quantity:</strong> {s.quantity}
                               </div>
-                              {i !== row.quantityPerMonthInSchedule.length - 1 && (
+                              {i !==
+                                row.quantityPerMonthInSchedule.length - 1 && (
                                 <hr className="my-2" />
                               )}
-                          
-                          </div>
-                        ))
-                      ) : (
-                        row.quantityPerMonthInSchedule?.toFixed(2) || "-"
-                      )}
+                            </div>
+                          ))
+                        : row.quantityPerMonthInSchedule?.toFixed(2) || "-"}
                     </TableCell>
-                    <TableCell>{row.totalSupplyDueInCurrentMonth?.toFixed(2)}</TableCell>
+                    <TableCell>
+                      {row.totalSupplyDueInCurrentMonth?.toFixed(2)}
+                    </TableCell>
                     <TableCell>{row.offeredForInspectionTotal}</TableCell>
                     <TableCell>{row.finalInspectionTotal}</TableCell>
                     <TableCell>{row.actualSuppliedTotal}</TableCell>
@@ -502,7 +506,7 @@ const ProductionPlanning = () => {
                       {row.balanceDueToBeInspectedInCurrentMonth?.toFixed(2)}
                     </TableCell>
                     <TableCell>{row.balancePending}</TableCell>
-                    <TableCell>{row.snNumber}</TableCell>
+                    <TableCell>{/* {row.snNumber} */}-</TableCell>
                     <TableCell>{row.plannedForMonth}</TableCell>
                   </TableRow>
                 ))
