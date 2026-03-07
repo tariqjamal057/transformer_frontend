@@ -12,6 +12,66 @@ import DeliveryDetailsBulkUploadModal from "../../components/DeliveryDetailsBulk
 import DeliveryDetailsModal from "../../components/DeliveryDetailsModal";
 import dayjs from "dayjs";
 
+const compressSerials = (serials) => {
+  if (!serials || !Array.isArray(serials) || serials.length === 0) return "";
+  const nums = serials
+    .map((n) => parseInt(n, 10))
+    .filter((n) => !isNaN(n))
+    .sort((a, b) => a - b);
+
+  if (nums.length === 0) return serials.join(", ");
+
+  const parts = [];
+  let start = nums[0];
+  let end = nums[0];
+
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] === end + 1) {
+      end = nums[i];
+    } else {
+      parts.push(start === end ? `${start}` : `${start}-${end}`);
+      start = nums[i];
+      end = nums[i];
+    }
+  }
+  parts.push(start === end ? `${start}` : `${start}-${end}`);
+  return parts.join(", ");
+};
+
+const calculateSuppliedQuantity = (dc) => {
+  if (!dc) return 0;
+  let count = 0;
+
+  // 1. New Transformers
+  if (dc.selectedTransformers && Array.isArray(dc.selectedTransformers)) {
+    count += dc.selectedTransformers.length;
+  } else if (dc.subSerialNumberFrom && dc.subSerialNumberTo) {
+    const start = parseInt(dc.subSerialNumberFrom, 10);
+    const end = parseInt(dc.subSerialNumberTo, 10);
+    if (!isNaN(start) && !isNaN(end)) count += end - start + 1;
+  }
+
+  // 2. Repaired Transformers
+  if (dc.repairedSerialNumbers && Array.isArray(dc.repairedSerialNumbers)) {
+    count += dc.repairedSerialNumbers.length;
+  }
+
+  // 3. Other Consignee Serial Numbers
+  if (dc.otherConsigneeSerialNumbers) {
+    const parts = dc.otherConsigneeSerialNumbers.split(",").map((s) => s.trim()).filter(Boolean);
+    parts.forEach((part) => {
+      if (part.includes("-")) {
+        const [start, end] = part.split("-").map((n) => parseInt(n.trim(), 10));
+        if (!isNaN(start) && !isNaN(end)) count += end - start + 1;
+      } else {
+        count += 1;
+      }
+    });
+  }
+
+  return count;
+};
+
 const DeliveryDetailsList = () => {
   const { setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
@@ -340,12 +400,12 @@ const DeliveryDetailsList = () => {
 
                           {/* Selected Serial No */}
                           <td>
-                            {(dc.selectedTransformers || []).join(", ") || "-"}
+                            {compressSerials(dc.selectedTransformers) || "-"}
                           </td>
 
                           {/* Repaired Serial No */}
                           <td>
-                            {(dc.repairedSerialNumbers || []).join(", ") || "-"}
+                            {compressSerials(dc.repairedSerialNumbers) || "-"}
                           </td>
 
                           {/* Other Consignee Serial No */}
@@ -374,9 +434,9 @@ const DeliveryDetailsList = () => {
 
                           {/* Receipted Challan Date */}
                           <td>
-                            {new Date(
-                              item.receiptedChallanDate,
-                            ).toLocaleDateString()}
+                            {dayjs(item.receiptedChallanDate).format(
+                              "YYYY-MM-DD",
+                            )}
                           </td>
 
                           {/* Total Qty. */}

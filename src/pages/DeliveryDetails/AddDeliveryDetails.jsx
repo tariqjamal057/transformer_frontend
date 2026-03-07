@@ -18,6 +18,66 @@ import api from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import { MyContext } from "../../App";
 
+const compressSerials = (serials) => {
+  if (!serials || !Array.isArray(serials) || serials.length === 0) return "";
+  const nums = serials
+    .map((n) => parseInt(n, 10))
+    .filter((n) => !isNaN(n))
+    .sort((a, b) => a - b);
+
+  if (nums.length === 0) return serials.join(", ");
+
+  const parts = [];
+  let start = nums[0];
+  let end = nums[0];
+
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] === end + 1) {
+      end = nums[i];
+    } else {
+      parts.push(start === end ? `${start}` : `${start}-${end}`);
+      start = nums[i];
+      end = nums[i];
+    }
+  }
+  parts.push(start === end ? `${start}` : `${start}-${end}`);
+  return parts.join(", ");
+};
+
+const calculateSuppliedQuantity = (dc) => {
+  if (!dc) return 0;
+  let count = 0;
+
+  // 1. New Transformers
+  if (dc.selectedTransformers && Array.isArray(dc.selectedTransformers)) {
+    count += dc.selectedTransformers.length;
+  } else if (dc.subSerialNumberFrom && dc.subSerialNumberTo) {
+    const start = parseInt(dc.subSerialNumberFrom, 10);
+    const end = parseInt(dc.subSerialNumberTo, 10);
+    if (!isNaN(start) && !isNaN(end)) count += end - start + 1;
+  }
+
+  // 2. Repaired Transformers
+  if (dc.repairedSerialNumbers && Array.isArray(dc.repairedSerialNumbers)) {
+    count += dc.repairedSerialNumbers.length;
+  }
+
+  // 3. Other Consignee Serial Numbers
+  if (dc.otherConsigneeSerialNumbers) {
+    const parts = dc.otherConsigneeSerialNumbers.split(",").map((s) => s.trim()).filter(Boolean);
+    parts.forEach((part) => {
+      if (part.includes("-")) {
+        const [start, end] = part.split("-").map((n) => parseInt(n.trim(), 10));
+        if (!isNaN(start) && !isNaN(end)) count += end - start + 1;
+      } else {
+        count += 1;
+      }
+    });
+  }
+
+  return count;
+};
+
 const AddDeliveryDetails = () => {
   const { setAlertBox } = useContext(MyContext);
   const navigate = useNavigate();
@@ -34,9 +94,19 @@ const AddDeliveryDetails = () => {
       api.get("/delivery-challans?all=true").then((res) => res.data),
   });
 
-  const availableChallans = deliveryChallans?.filter(
-    (challan) => !challan.deliveryDetail,
-  );
+  const { data: deliveryDetailsAll } = useQuery({
+    queryKey: ["deliveryDetailsAll"],
+    queryFn: () =>
+      api.get("/delivery-details?all=true").then((res) => res.data),
+  });
+
+  const availableChallans = deliveryChallans?.filter((challan) => {
+    // Check if this challan ID exists in the delivery details list
+    const isUsed = deliveryDetailsAll?.some(
+      (detail) => detail.deliveryChalanId === challan.id
+    );
+    return !isUsed;
+  });
 
   const addDeliveryDetailsMutation = useMutation({
     mutationFn: (newDetails) => api.post("/delivery-details", newDetails),
@@ -167,7 +237,7 @@ const AddDeliveryDetails = () => {
                   />
                   <TextField
                     label="Supplied Quantity"
-                    value={selectedData.finalInspection.inspectedQuantity}
+                    value={calculateSuppliedQuantity(selectedData)}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
@@ -179,13 +249,13 @@ const AddDeliveryDetails = () => {
                   />
                   <TextField
                     label="Serial No"
-                    value={selectedData.selectedTransformers?.join(", ") || "N/A"}
+                    value={compressSerials(selectedData.selectedTransformers) || "N/A"}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
                   <TextField
                     label="Sub Serial No"
-                    value={selectedData.repairedSerialNumbers?.join(", ") || "N/A"}
+                    value={compressSerials(selectedData.repairedSerialNumbers) || "N/A"}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
