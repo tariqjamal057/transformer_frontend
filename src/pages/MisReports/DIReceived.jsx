@@ -252,7 +252,33 @@ const DIReceived = () => {
                               )}
                               <TableCell>{dueDate}</TableCell>
                               <TableCell>{c.consignee?.name}</TableCell>
-                              <TableCell>{c.subSnNumber}</TableCell>
+                              <TableCell>
+                                {(() => {
+                                  const parts = [];
+                                  if (c.subSnNumber) parts.push(c.subSnNumber);
+                                  if (
+                                    c.repairedTransformerIds &&
+                                    Array.isArray(c.repairedTransformerIds)
+                                  ) {
+                                    c.repairedTransformerIds.forEach(
+                                      (oldId) => {
+                                        const mapping =
+                                          row.repaired_transformer_mapping?.find(
+                                            (m) =>
+                                              String(m.oldSrNo) ===
+                                              String(oldId),
+                                          );
+                                        parts.push(
+                                          mapping
+                                            ? `${oldId}`
+                                            : oldId,
+                                        );
+                                      },
+                                    );
+                                  }
+                                  return parts.join(", ") || "—";
+                                })()}
+                              </TableCell>
                               <TableCell>{c.quantity}</TableCell>
                               <TableCell>{c.dispatch}</TableCell>
                               <TableCell>{c.pending}</TableCell>

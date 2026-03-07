@@ -183,6 +183,20 @@ const FiltersComponent = ({
           return dayjs(baseDate).add(days, "day").format("DD MMM YYYY");
         };
 
+        const getConsigneeSerials = (consignee) => {
+          const parts = [];
+          if (consignee.subSnNumber) parts.push(consignee.subSnNumber);
+          if (consignee.repairedTransformerIds && Array.isArray(consignee.repairedTransformerIds)) {
+            consignee.repairedTransformerIds.forEach((oldId) => {
+              const mapping = item.repaired_transformer_mapping?.find(
+                (m) => String(m.oldSrNo) === String(oldId),
+              );
+              parts.push(mapping ? `${oldId}` : oldId);
+            });
+          }
+          return parts.join(", ");
+        };
+
         excelRows.push([
           normalize(cIdx === 0 ? index + 1 : ""),
           normalize(
@@ -242,7 +256,7 @@ const FiltersComponent = ({
             ? [normalize(getDueDateForConsignee(c))]
             : []),
           normalize(c?.consigneeName || c?.consignee?.name),
-          normalize(c?.subSnNumber),
+          normalize(getConsigneeSerials(c)),
           normalize(c?.quantity),
           normalize(c?.dispatch),
           normalize(c?.pending),
@@ -731,6 +745,20 @@ const FiltersComponent = ({
           return dayjs(baseDate).add(days, "day").format("DD MMM YYYY");
         };
 
+        const getConsigneeSerials = (consignee) => {
+          const parts = [];
+          if (consignee.subSnNumber) parts.push(consignee.subSnNumber);
+          if (consignee.repairedTransformerIds && Array.isArray(consignee.repairedTransformerIds)) {
+            consignee.repairedTransformerIds.forEach((oldId) => {
+              const mapping = item.repaired_transformer_mapping?.find(
+                (m) => String(m.oldSrNo) === String(oldId),
+              );
+              parts.push(mapping ? `${oldId}` : oldId);
+            });
+          }
+          return parts.join(", ");
+        };
+
         pdfData.push([
           normalize(cIdx === 0 ? index + 1 : ""),
           normalize(
@@ -789,7 +817,7 @@ const FiltersComponent = ({
             ? [normalize(getDueDateForConsignee(c))]
             : []),
           normalize(c?.consigneeName || c?.consignee?.name),
-          normalize(c?.subSnNumber),
+          normalize(getConsigneeSerials(c)),
           normalize(c?.quantity),
           normalize(c?.dispatch),
           normalize(c?.pending),
