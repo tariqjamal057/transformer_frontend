@@ -152,7 +152,7 @@ const ProductionFilter = ({
           normalize(sIdx === 0 ? item.actualSuppliedTotal : ""),
           normalize(sIdx === 0 ? item.balanceDueToBeInspectedInCurrentMonth : ""),
           normalize(sIdx === 0 ? item.balancePending : ""),
-          normalize(sIdx === 0 ? item.snNumber : ""),
+          normalize(sIdx === 0 ? "" : ""), // item.snNumber
           normalize(sIdx === 0 ? item.plannedForMonth : ""),
         ]);
       }
@@ -255,7 +255,7 @@ const ProductionFilter = ({
           normalize(sIdx === 0 ? item.actualSuppliedTotal : ""),
           normalize(sIdx === 0 ? item.balanceDueToBeInspectedInCurrentMonth : ""),
           normalize(sIdx === 0 ? item.balancePending : ""),
-          normalize(sIdx === 0 ? item.snNumber : ""),
+          normalize(sIdx === 0 ? "" : ""), //item.snNumber
           normalize(sIdx === 0 ? item.plannedForMonth : ""),
         ]);
       }
