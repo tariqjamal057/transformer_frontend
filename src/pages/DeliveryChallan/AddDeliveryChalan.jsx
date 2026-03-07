@@ -26,6 +26,34 @@ import { useNavigate } from "react-router-dom";
 import { MyContext } from "../../App";
 import api from "../../services/api";
 
+const parseRange = (text) => {
+  if (!text) return [];
+  const parts = text
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const results = [];
+  parts.forEach((part) => {
+    if (part.includes("-")) {
+      const [start, end] = part.split("-").map((n) => parseInt(n.trim(), 10));
+      if (!isNaN(start) && !isNaN(end) && start <= end) {
+        for (let i = start; i <= end; i++) results.push(String(i));
+      }
+    } else if (part.toUpperCase().includes(" TO ")) {
+      const [start, end] = part
+        .toUpperCase()
+        .split(" TO ")
+        .map((n) => parseInt(n.trim(), 10));
+      if (!isNaN(start) && !isNaN(end) && start <= end) {
+        for (let i = start; i <= end; i++) results.push(String(i));
+      }
+    } else {
+      results.push(part);
+    }
+  });
+  return results;
+};
+
 const AddDeliveryChalan = () => {
   const { setAlertBox } = useContext(MyContext);
   const navigate = useNavigate();
@@ -43,7 +71,10 @@ const AddDeliveryChalan = () => {
   const [poDate, setPoDate] = useState(null);
   const [chalanDescription, setChalanDescription] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
-  const [otherConsigneeSerialNumbers, setOtherConsigneeSerialNumbers] = useState("");
+  const [otherConsigneeSerialNumbers, setOtherConsigneeSerialNumbers] =
+    useState("");
+  const [newTransformerSerialsText, setNewTransformerSerialsText] =
+    useState("");
 
   // New state for split selection
   const [selectedNewTransformers, setSelectedNewTransformers] = useState([]);
@@ -129,7 +160,7 @@ const AddDeliveryChalan = () => {
           // 2. Repaired Transformers Assigned
           if (consignee.repairedTransformerIds) {
             consignee.repairedTransformerIds.forEach((id) =>
-              assignedSerials.add(String(id))
+              assignedSerials.add(String(id)),
             );
           }
 
@@ -138,7 +169,7 @@ const AddDeliveryChalan = () => {
           // Calculate Used
           let totalUsed = 0;
           const relevantChallans = deliveryChallansAll.filter(
-            (dc) => dc.finalInspectionId === fi.id
+            (dc) => dc.finalInspectionId === fi.id,
           );
 
           relevantChallans.forEach((dc) => {
@@ -192,6 +223,7 @@ const AddDeliveryChalan = () => {
     setConsigneeAddress("");
     setConsigneeGSTNo("");
     setSelectedNewTransformers([]);
+    setNewTransformerSerialsText("");
     setSelectedRepairedTransformers([]);
     setAvailableNewTransformers([]);
     setAvailableRepairedTransformers([]);
@@ -248,7 +280,7 @@ const AddDeliveryChalan = () => {
           // 2. Repaired Transformers Assigned
           if (consignee.repairedTransformerIds) {
             consignee.repairedTransformerIds.forEach((id) =>
-              assignedSerials.add(String(id))
+              assignedSerials.add(String(id)),
             );
           }
 
@@ -257,7 +289,7 @@ const AddDeliveryChalan = () => {
           // Calculate Used
           let totalUsed = 0;
           const relevantChallans = deliveryChallansAll.filter(
-            (dc) => dc.finalInspectionId === record.id
+            (dc) => dc.finalInspectionId === record.id,
           );
 
           relevantChallans.forEach((dc) => {
@@ -296,6 +328,7 @@ const AddDeliveryChalan = () => {
 
       // Sub-serial number population
       setSelectedNewTransformers([]);
+      setNewTransformerSerialsText("");
       setSelectedRepairedTransformers([]);
       setAvailableNewTransformers([]);
       setAvailableRepairedTransformers([]);
@@ -316,6 +349,7 @@ const AddDeliveryChalan = () => {
       setConsigneeAddress("");
       setConsigneeGSTNo("");
       setSelectedNewTransformers([]);
+      setNewTransformerSerialsText("");
       setSelectedRepairedTransformers([]);
       setAvailableNewTransformers([]);
       setAvailableRepairedTransformers([]);
@@ -422,7 +456,7 @@ const AddDeliveryChalan = () => {
               Array.isArray(dc.repairedSerialNumbers)
             ) {
               dc.repairedSerialNumbers.forEach((s) =>
-                usedRepaired.add(String(s))
+                usedRepaired.add(String(s)),
               );
             }
           }
@@ -462,6 +496,7 @@ const AddDeliveryChalan = () => {
     setAvailableRepairedTransformers(filteredRepaired);
 
     setSelectedNewTransformers([]);
+    setNewTransformerSerialsText("");
     setSelectedRepairedTransformers([]);
   };
 
@@ -500,10 +535,14 @@ const AddDeliveryChalan = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    const enteredNewSerials = parseRange(newTransformerSerialsText);
+    const enteredOtherSerials = parseRange(otherConsigneeSerialNumbers);
+
     const missingFields = [];
     if (!selectedDeliveryScheduleId) missingFields.push("TN Number");
     if (!selectedFinalInspectionId) missingFields.push("Serial Number");
-    if (selectedNewTransformers.length === 0) missingFields.push("New Transformers");
+    if (enteredNewSerials.length === 0) missingFields.push("New Transformers");
     if (!challanNo) missingFields.push("Consignee Receipt No");
     if (!consigneeId) missingFields.push("Consignee Name");
     if (!materialDescriptionId) missingFields.push("Material Description");
@@ -518,77 +557,122 @@ const AddDeliveryChalan = () => {
     }
     if (!selectedRecord) return;
 
-    // Process otherConsigneeSerialNumbers
-    let manualNewSerials = [];
-    let manualRepairedSerials = [];
+    // 1. Check for used serials (anywhere in this inspection)
+    const usedSerialsInInspection = new Set();
+    deliveryChallansAll?.forEach((dc) => {
+      if (dc.finalInspectionId === selectedRecord.id) {
+        if (dc.selectedTransformers && dc.selectedTransformers.length > 0) {
+          dc.selectedTransformers.forEach((s) =>
+            usedSerialsInInspection.add(String(s)),
+          );
+        } else if (dc.subSerialNumberFrom && dc.subSerialNumberTo) {
+          const start = parseInt(dc.subSerialNumberFrom, 10);
+          const end = parseInt(dc.subSerialNumberTo, 10);
+          for (let i = start; i <= end; i++)
+            usedSerialsInInspection.add(String(i));
+        }
 
-    if (otherConsigneeSerialNumbers.trim()) {
-      const parts = otherConsigneeSerialNumbers.split(",").map((s) => s.trim()).filter(Boolean);
-      const enteredSerials = [];
+        if (dc.repairedSerialNumbers) {
+          dc.repairedSerialNumbers.forEach((s) =>
+            usedSerialsInInspection.add(String(s)),
+          );
+        }
 
-      parts.forEach((part) => {
-        if (part.includes("-")) {
-          const [start, end] = part.split("-").map((n) => parseInt(n, 10));
-          if (!isNaN(start) && !isNaN(end) && start <= end) {
-            for (let i = start; i <= end; i++) {
-              enteredSerials.push(String(i));
+        if (dc.otherConsigneeSerialNumbers) {
+          parseRange(dc.otherConsigneeSerialNumbers).forEach((s) =>
+            usedSerialsInInspection.add(s),
+          );
+        }
+      }
+    });
+
+    const duplicateNew = enteredNewSerials.filter((s) =>
+      usedSerialsInInspection.has(s),
+    );
+    if (duplicateNew.length > 0) {
+      setAlertBox({
+        open: true,
+        msg: `Serial numbers already used in other challans: ${duplicateNew.join(", ")}`,
+        error: true,
+      });
+      return;
+    }
+
+    const duplicateOther = enteredOtherSerials.filter((s) =>
+      usedSerialsInInspection.has(s),
+    );
+    if (duplicateOther.length > 0) {
+      setAlertBox({
+        open: true,
+        msg: `Other serial numbers already used in other challans: ${duplicateOther.join(", ")}`,
+        error: true,
+      });
+      return;
+    }
+
+    // 2. Validate against Inspection Record
+    const validNewAll = new Set();
+    const validRepairedAll = new Set();
+    const validNewForThisConsignee = new Set();
+
+    if (selectedRecord.consignees) {
+      selectedRecord.consignees.forEach((c) => {
+        const isCurrentConsignee = c.consigneeId === consigneeId;
+        // New Transformers
+        if (c.subSnNumber) {
+          const rangeParts = c.subSnNumber.split(" TO ");
+          if (rangeParts.length === 2) {
+            const s = parseInt(rangeParts[0], 10);
+            const e = parseInt(rangeParts[1], 10);
+            for (let i = s; i <= e; i++) {
+              validNewAll.add(String(i));
+              if (isCurrentConsignee) validNewForThisConsignee.add(String(i));
             }
+          } else {
+            validNewAll.add(c.subSnNumber);
+            if (isCurrentConsignee) validNewForThisConsignee.add(c.subSnNumber);
           }
-        } else {
-          enteredSerials.push(part);
+        }
+        // Repaired Transformers
+        if (c.repairedTransformerIds) {
+          c.repairedTransformerIds.forEach((id) => {
+            validRepairedAll.add(String(id));
+          });
         }
       });
+    }
 
-      // Validation against Inspection Record
-      const validNew = new Set();
-      const validRepaired = new Set();
-
-      if (selectedRecord.consignees) {
-        selectedRecord.consignees.forEach((c) => {
-          // New Transformers
-          if (c.subSnNumber) {
-            const rangeParts = c.subSnNumber.split(" TO ");
-            if (rangeParts.length === 2) {
-              const s = parseInt(rangeParts[0], 10);
-              const e = parseInt(rangeParts[1], 10);
-              for (let i = s; i <= e; i++) validNew.add(String(i));
-            } else {
-              validNew.add(c.subSnNumber);
-            }
-          }
-          // Repaired Transformers
-          if (c.repairedTransformerIds) {
-            c.repairedTransformerIds.forEach((id) => validRepaired.add(String(id)));
-          }
-        });
-      }
-
-      const invalidSerials = [];
-      enteredSerials.forEach((s) => {
-        if (validNew.has(s)) {
-          manualNewSerials.push(s);
-        } else if (validRepaired.has(s)) {
-          manualRepairedSerials.push(s);
-        } else {
-          invalidSerials.push(s);
-        }
+    // Validate New Serials (must be from this consignee's range)
+    const invalidNewSerials = enteredNewSerials.filter(
+      (s) => !validNewForThisConsignee.has(s),
+    );
+    if (invalidNewSerials.length > 0) {
+      setAlertBox({
+        open: true,
+        msg: `Serial numbers not assigned to this consignee in the inspection: ${invalidNewSerials.join(", ")}`,
+        error: true,
       });
+      return;
+    }
 
-      if (invalidSerials.length > 0) {
-        setAlertBox({
-          open: true,
-          msg: `Invalid Serial Numbers (not found in Inspection): ${invalidSerials.join(", ")}`,
-          error: true,
-        });
-        return;
-      }
+    // Validate Other Serials (must be from the whole inspection)
+    const invalidOtherSerials = enteredOtherSerials.filter(
+      (s) => !validNewAll.has(s) && !validRepairedAll.has(s),
+    );
+    if (invalidOtherSerials.length > 0) {
+      setAlertBox({
+        open: true,
+        msg: `Other Serial Numbers not found in current inspection: ${invalidOtherSerials.join(", ")}`,
+        error: true,
+      });
+      return;
     }
 
     let subSerialNumberFrom = null;
     let subSerialNumberTo = null;
 
-    if (selectedNewTransformers.length > 0) {
-      const numericSerials = selectedNewTransformers.map((n) => parseInt(n, 10));
+    if (enteredNewSerials.length > 0) {
+      const numericSerials = enteredNewSerials.map((n) => parseInt(n, 10));
       subSerialNumberFrom = String(Math.min(...numericSerials));
       subSerialNumberTo = String(Math.max(...numericSerials));
     }
@@ -598,7 +682,7 @@ const AddDeliveryChalan = () => {
       challanNo,
       subSerialNumberFrom,
       subSerialNumberTo,
-      selectedTransformers: selectedNewTransformers,
+      selectedTransformers: enteredNewSerials,
       repairedSerialNumbers: selectedRepairedTransformers,
       otherConsigneeSerialNumbers,
       consignorName,
@@ -666,28 +750,15 @@ const AddDeliveryChalan = () => {
               </Grid>
 
               <Grid item size={1}>
-                <FormControl fullWidth required>
-                  <InputLabel>Serial No</InputLabel>
-                  <Select
-                    multiple
-                    value={selectedNewTransformers}
-                    onChange={(e) => setSelectedNewTransformers(e.target.value)}
-                    input={
-                      <OutlinedInput label="Serial No" />
-                    }
-                    renderValue={(selected) => selected.join(", ")}
-                    disabled={!availableNewTransformers.length}
-                  >
-                    {availableNewTransformers?.map((s) => (
-                      <MenuItem key={s.id} value={s.id}>
-                        <Checkbox
-                          checked={selectedNewTransformers.includes(s.id)}
-                        />
-                        <ListItemText primary={s.serialNo} />
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <TextField
+                  fullWidth
+                  label="Serial No"
+                  value={newTransformerSerialsText}
+                  onChange={(e) => setNewTransformerSerialsText(e.target.value)}
+                  required
+                  disabled={!consigneeId}
+                  placeholder="e.g. 101-105, 110"
+                />
               </Grid>
 
               <Grid item size={1}>
@@ -720,7 +791,9 @@ const AddDeliveryChalan = () => {
                   fullWidth
                   label="Other Consignee Serial Numbers (e.g. 1021-1050, 1055, 456)"
                   value={otherConsigneeSerialNumbers}
-                  onChange={(e) => setOtherConsigneeSerialNumbers(e.target.value)}
+                  onChange={(e) =>
+                    setOtherConsigneeSerialNumbers(e.target.value)
+                  }
                 />
               </Grid>
 

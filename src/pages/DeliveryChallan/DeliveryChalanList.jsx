@@ -23,6 +23,32 @@ import api from "../../services/api";
 import { MyContext } from "../../App";
 import Swal from "sweetalert2";
 
+const compressSerials = (serials) => {
+  if (!serials || !Array.isArray(serials) || serials.length === 0) return "";
+  const nums = serials
+    .map((n) => parseInt(n, 10))
+    .filter((n) => !isNaN(n))
+    .sort((a, b) => a - b);
+
+  if (nums.length === 0) return serials.join(", ");
+
+  const parts = [];
+  let start = nums[0];
+  let end = nums[0];
+
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] === end + 1) {
+      end = nums[i];
+    } else {
+      parts.push(start === end ? `${start}` : `${start}-${end}`);
+      start = nums[i];
+      end = nums[i];
+    }
+  }
+  parts.push(start === end ? `${start}` : `${start}-${end}`);
+  return parts.join(", ");
+};
+
 const DeliveryChalanList = () => {
   const { setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
@@ -317,12 +343,12 @@ const DeliveryChalanList = () => {
 
                       {/* Serial No */}
                       <td>
-                        {(item?.selectedTransformers || []).join(', ') || ''}
+                        {compressSerials(item?.selectedTransformers) || ''}
                       </td>
 
                       {/* Sub Serial No */}
                       <td>
-                        {(item?.repairedSerialNumbers || []).join(', ') || ''}
+                        {compressSerials(item?.repairedSerialNumbers) || ''}
                       </td>
 
                       {/* Other Consignee Transformer */}
