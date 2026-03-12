@@ -58,7 +58,10 @@ const calculateSuppliedQuantity = (dc) => {
 
   // 3. Other Consignee Serial Numbers
   if (dc.otherConsigneeSerialNumbers) {
-    const parts = dc.otherConsigneeSerialNumbers.split(",").map((s) => s.trim()).filter(Boolean);
+    const parts = dc.otherConsigneeSerialNumbers
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
     parts.forEach((part) => {
       if (part.includes("-")) {
         const [start, end] = part.split("-").map((n) => parseInt(n.trim(), 10));
@@ -113,7 +116,8 @@ const DeliveryDetailsList = () => {
   const ratings = [
     ...new Set(
       deliveryDetails?.items?.map(
-        (item) => item.deliveryChallan?.finalInspection?.deliverySchedule?.rating,
+        (item) =>
+          item.deliveryChallan?.finalInspection?.deliverySchedule?.rating,
       ),
     ),
   ];
@@ -390,12 +394,12 @@ const DeliveryDetailsList = () => {
                           </td>
 
                           <td>
-                            {dc.finalInspection.deliverySchedule.tnNumber}
+                            {dc?.finalInspection?.deliverySchedule?.tnNumber}
                           </td>
 
                           <td>
-                            {dc.finalInspection.serialNumberFrom} TO{" "}
-                            {dc.finalInspection.serialNumberTo}
+                            {dc?.finalInspection?.serialNumberFrom} TO{" "}
+                            {dc?.finalInspection?.serialNumberTo}
                           </td>
 
                           {/* Selected Serial No */}
@@ -414,11 +418,11 @@ const DeliveryDetailsList = () => {
                           {/* PO Number / Date */}
                           <td>
                             <div className="fw-semibold">
-                              {dc.finalInspection.deliverySchedule.poDetails}
+                              {dc?.finalInspection?.deliverySchedule?.poDetails}
                             </div>
                             <div className="text-muted small">
                               {new Date(
-                                dc.finalInspection.deliverySchedule.poDate,
+                                dc.finalInspection?.deliverySchedule?.poDate,
                               ).toLocaleDateString()}
                             </div>
                           </td>
@@ -445,12 +449,12 @@ const DeliveryDetailsList = () => {
                           {/* G.P. Expiry Date */}
                           <td>
                             {dayjs(
-                              dc.finalInspection.deliverySchedule
-                                .deliveryScheduleDate,
+                              dc?.finalInspection?.deliverySchedule
+                                ?.deliveryScheduleDate,
                             )
                               .add(
-                                dc.finalInspection.deliverySchedule
-                                  .guaranteePeriodMonths,
+                                dc?.finalInspection?.deliverySchedule
+                                  ?.guaranteePeriodMonths,
                                 "month",
                               )
                               .format("YYYY-MM-DD")}
@@ -460,12 +464,12 @@ const DeliveryDetailsList = () => {
                           <td className="text-start">
                             <div>
                               <strong>TN:</strong>{" "}
-                              {dc.finalInspection.deliverySchedule.tnNumber}
+                              {dc?.finalInspection?.deliverySchedule?.tnNumber}
                             </div>
                             <div>
                               <strong>Serial No:</strong>{" "}
-                              {dc.finalInspection.serialNumberFrom} TO{" "}
-                              {dc.finalInspection.serialNumberTo}
+                              {dc?.finalInspection?.serialNumberFrom} TO{" "}
+                              {dc?.finalInspection?.serialNumberTo}
                             </div>
                             <div>
                               <strong>DI No:</strong> {dc.finalInspection.diNo}
@@ -481,7 +485,7 @@ const DeliveryDetailsList = () => {
                           {/* Inspection Officers */}
                           <td>
                             <div className="d-flex flex-column gap-1">
-                              {dc.finalInspection.inspectionOfficers.map(
+                              {dc?.finalInspection?.inspectionOfficers?.map(
                                 (officer, idx) => (
                                   <span
                                     key={`${item.id}-${idx}`}
