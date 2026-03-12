@@ -113,14 +113,14 @@ const DeliveryDetailsList = () => {
   const ratings = [
     ...new Set(
       deliveryDetails?.items?.map(
-        (item) => item.deliveryChallan.finalInspection.deliverySchedule.rating,
+        (item) => item.deliveryChallan?.finalInspection?.deliverySchedule?.rating,
       ),
     ),
   ];
   const consignees = [
     ...new Set(
       deliveryDetails?.items?.map(
-        (item) => item.deliveryChallan.consignee.name,
+        (item) => item.deliveryChallan?.consignee?.name,
       ),
     ),
   ];
@@ -134,15 +134,15 @@ const DeliveryDetailsList = () => {
   const filteredItems = deliveryDetails?.items?.filter((item) => {
     const tnMatch =
       !selectedTnNumber ||
-      item.deliveryChallan.finalInspection.deliverySchedule.tnNumber ===
+      item.deliveryChallan?.finalInspection?.deliverySchedule?.tnNumber ===
         selectedTnNumber;
     const ratingMatch =
       !selectedRating ||
-      item.deliveryChallan.finalInspection.deliverySchedule.rating ===
+      item.deliveryChallan?.finalInspection?.deliverySchedule?.rating ===
         selectedRating;
     const consigneeMatch =
       !selectedConsignee ||
-      item.deliveryChallan.consignee.name === selectedConsignee;
+      item.deliveryChallan?.consignee?.name === selectedConsignee;
     return tnMatch && ratingMatch && consigneeMatch;
   });
 
