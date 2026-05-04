@@ -79,63 +79,74 @@ const FinalInspectionList = () => {
         TNNumber: "TN-001",
         serialNumberFrom: 101,
         serialNumberTo: 105,
-        offerDate: "2024-01-10",
+        offerDate: "10/01/2024",
         offeredQuantity: 5,
-        inspectionDate: "2024-01-15",
+        inspectionDate: "15/01/2024",
         inspectedQuantity: 5,
+        grandTotal: 500,
         diNo: "DI-12345",
-        diDate: "2024-01-16",
+        diDate: "16/01/2024",
         warranty: "60 Months",
         nominationLetterNo: "NL-001",
-        nominationDate: "2024-01-14",
+        nominationDate: "14/01/2024",
         inspectionOfficer: "Officer A",
         ConsigneeName: "Consignee Alpha",
         ConsigneeQuantity: 3,
-        ConsigneeSubSerialNumber: "101-103",
+        ConsigneeSerialNumber: "101 TO 103",
+        ConsigneeSubSerialNumber: "",
         TRFSINo: "101",
         PolySealNo: "PS-001",
+        SealingDetails: "Sample sealing note",
       },
       {
-        Company: "", // Empty for subsequent rows in the same group
-        Discom: "", // Empty
-        TNNumber: "", // Empty
-        serialNumberFrom: "", // Empty
-        serialNumberTo: "", // Empty
-        offerDate: "", // Empty
-        offeredQuantity: "", // Empty
-        inspectionDate: "", // Empty
-        inspectedQuantity: "", // Empty
-        diNo: "", // Empty
-        diDate: "", // Empty
-        warranty: "", // Empty
-        nominationLetterNo: "", // Empty
-        nominationDate: "", // Empty
+        Company: "",
+        Discom: "",
+        TNNumber: "",
+        serialNumberFrom: "",
+        serialNumberTo: "",
+        offerDate: "",
+        offeredQuantity: "",
+        inspectionDate: "",
+        inspectedQuantity: "",
+        grandTotal: "",
+        diNo: "",
+        diDate: "",
+        warranty: "",
+        nominationLetterNo: "",
+        nominationDate: "",
         inspectionOfficer: "Officer B",
         ConsigneeName: "Consignee Beta",
         ConsigneeQuantity: 2,
-        ConsigneeSubSerialNumber: "104-105",
+        ConsigneeSerialNumber: "104 TO 105",
+        ConsigneeSubSerialNumber: "R-123",
         TRFSINo: "102",
         PolySealNo: "PS-002",
+        SealingDetails: "",
       },
       {
-        Company: "Sample Company B",
-        Discom: "Sample Discom Y",
-        TNNumber: "TN-002",
-        serialNumberFrom: 201,
-        serialNumberTo: 202,
-        offerDate: "2024-02-01",
-        offeredQuantity: 2,
-        inspectionDate: "2024-02-05",
-        inspectedQuantity: 2,
-        diNo: "DI-67890",
-        diDate: "2024-02-06",
-        warranty: "36 Months",
-        inspectionOfficer: "Officer Gamma",
-        ConsigneeName: "Consignee Delta",
-        ConsigneeQuantity: 2,
-        ConsigneeSubSerialNumber: "201-202",
-        TRFSINo: "201",
-        PolySealNo: "PS-003",
+        Company: "",
+        Discom: "",
+        TNNumber: "",
+        serialNumberFrom: "",
+        serialNumberTo: "",
+        offerDate: "",
+        offeredQuantity: "",
+        inspectionDate: "",
+        inspectedQuantity: "",
+        grandTotal: "",
+        diNo: "",
+        diDate: "",
+        warranty: "",
+        nominationLetterNo: "",
+        nominationDate: "",
+        inspectionOfficer: "",
+        ConsigneeName: "Consignee Beta",
+        ConsigneeQuantity: 0,
+        ConsigneeSerialNumber: "",
+        ConsigneeSubSerialNumber: "R-124",
+        TRFSINo: "",
+        PolySealNo: "",
+        SealingDetails: "",
       },
     ];
 
@@ -146,27 +157,27 @@ const FinalInspectionList = () => {
       {
         "Field Name": "Company",
         Description: "Name of the Company (e.g., Sample Company A)",
-        Required: "Yes",
+        Required: "Yes (Main Row)",
       },
       {
         "Field Name": "Discom",
         Description: "Name of the Supply Tender (e.g., Sample Discom X)",
-        Required: "Yes",
+        Required: "Yes (Main Row)",
       },
       {
         "Field Name": "TNNumber",
-        Description: "Tender Number from Delivery Schedule",
-        Required: "Yes",
+        Description: "Tender Number from Delivery Schedule (e.g., TN-001)",
+        Required: "Yes (Main Row)",
       },
       {
         "Field Name": "serialNumberFrom",
         Description: "Starting serial number (e.g., 101)",
-        Required: "Yes",
+        Required: "Yes (Main Row)",
       },
       {
         "Field Name": "serialNumberTo",
         Description: "Ending serial number (e.g., 105)",
-        Required: "Yes",
+        Required: "Yes (Main Row)",
       },
       {
         "Field Name": "offeredQuantity",
@@ -174,74 +185,58 @@ const FinalInspectionList = () => {
         Required: "Yes",
       },
       {
-        "Field Name": "inspectionOfficers",
-        Description: "Name of an inspection officer. Add one per row.",
+        "Field Name": "inspectionOfficer",
+        Description: "Name of an inspection officer. Add one per row if multiple.",
         Required: "Yes (at least one)",
       },
       {
         "Field Name": "ConsigneeName",
-        Description:
-          "Name of a consignee. All 3 consignee fields are required together.",
+        Description: "Name of a consignee. Group sub-rows under this.",
         Required: "Yes",
       },
       {
         "Field Name": "ConsigneeQuantity",
-        Description:
-          "Quantity for this consignee. All 3 consignee fields are required together.",
-        Required: "Yes",
+        Description: "Quantity of NEW transformers for this consignee.",
+        Required: "No (defaults to 0)",
+      },
+      {
+        "Field Name": "ConsigneeSerialNumber",
+        Description: "Range of serial numbers for new transformers (e.g., 101 TO 103).",
+        Required: "No",
       },
       {
         "Field Name": "ConsigneeSubSerialNumber",
-        Description:
-          "Sub serial number for this consignee (e.g., 101-103). All 3 consignee fields are required together.",
-        Required: "Yes",
+        Description: "Serial number of a REPAIRED transformer (e.g., R-123).",
+        Required: "No",
       },
       {
         "Field Name": "TRFSINo",
-        Description:
-          "TRF SI No for sealing. Both TRF SI No and Poly Seal No are required together. Add one per row.",
-        Required: "Yes",
+        Description: "TRF SI No for sealing.",
+        Required: "No",
       },
       {
         "Field Name": "PolySealNo",
-        Description:
-          "Poly Seal No for sealing. Both TRF SI No and Poly Seal No are required together. Add one per row.",
-        Required: "Yes",
+        Description: "Poly Seal No for sealing.",
+        Required: "No",
       },
-      // ... other fields and their descriptions
+      {
+        "Field Name": "SealingDetails",
+        Description: "Additional notes about the sealing process.",
+        Required: "No",
+      },
       {
         "Field Name": "offerDate",
-        Description: "Date of offer (YYYY-MM-DD)",
+        Description: "Date of offer (DD/MM/YYYY)",
         Required: "Yes",
       },
       {
         "Field Name": "inspectionDate",
-        Description: "Date of inspection (YYYY-MM-DD)",
+        Description: "Date of inspection (DD/MM/YYYY)",
         Required: "Yes",
       },
       {
-        "Field Name": "diNo",
-        Description: "DI Number",
-        Required: "No",
-      },
-      {
-        "Field Name": "diDate",
-        Description: "DI Date (YYYY-MM-DD)",
-        Required: "No",
-      },
-      {
-        "Field Name": "warranty",
-        Description: "Warranty period (e.g., 60 Months)",
-        Required: "No",
-      },
-      {
-        "Field Name": "nominationLetterNo",
-        Description: "Nomination Letter Number",
-        Required: "No",
-      },
-      {
-        "Field Name": "nominationDate",
-        Description: "Nomination Date (YYYY-MM-DD)",
+        "Field Name": "grandTotal",
+        Description: "Grand total count of transformers in this inspection.",
         Required: "No",
       },
     ];
@@ -260,8 +255,9 @@ const FinalInspectionList = () => {
       type: "array",
     });
     const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-    saveAs(data, "final_inspection_sample.xlsx");
+    saveAs(data, "final_inspection_bulk_sample.xlsx");
   };
+
 
   const { mutate: bulkUpload, isPending: isUploading } = useMutation({
     mutationFn: (file) => {

@@ -1,0 +1,4 @@
+Company,Discom,tnNumber,rating,wound,phase,loa,loaDate,po,poDate,commencementDays,commencementDate,deliveryScheduleDate,guaranteePeriodMonths,totalQuantity,chalanDescription,imposedLetterNo,imposedDate,liftingLetterNo,liftingDate,delivery_period_start,delivery_period_end,delivery_period_quantity
+Sample Company,Sample Discom,TN-001,100,COPPER,THREE,LOA-123,01/01/2024,PO-123,05/01/2024,10,15/01/2024,15/04/2024,24,300,Sample Description,IL-001,01/02/2024,LL-001,10/02/2024,15/01/2024,15/02/2024,100
+,,,,,,,,,,,,,,,,IL-002,01/03/2024,LL-002,10/03/2024,16/02/2024,15/03/2024,100
+,,,,,,,,,,,,,,,,,,,,16/03/2024,15/04/2024,100

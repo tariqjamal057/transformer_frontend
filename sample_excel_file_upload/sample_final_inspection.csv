@@ -1,0 +1,4 @@
+Company,Discom,TNNumber,serialNumberFrom,serialNumberTo,offerDate,offeredQuantity,inspectionDate,inspectedQuantity,grandTotal,diNo,diDate,warranty,nominationLetterNo,nominationDate,inspectionOfficer,ConsigneeName,ConsigneeQuantity,ConsigneeSerialNumber,ConsigneeSubSerialNumber,TRFSINo,PolySealNo,SealingDetails
+Sample Company,Sample Discom,TN-001,101,105,10/01/2024,5,15/01/2024,5,500,DI-123,16/01/2024,24 Months,NL-123,12/01/2024,Officer A,Consignee Alpha,3,101 TO 103,,101,PS-001,Sample sealing note
+,,,,,,,,,,,,,,,Officer B,Consignee Beta,2,104 TO 105,R-555,102,PS-002,
+,,,,,,,,,,,,,,,,Consignee Beta,0,,R-666,,,

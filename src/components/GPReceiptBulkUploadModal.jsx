@@ -8,6 +8,7 @@ import {
   Button,
   IconButton,
   Typography,
+  Box,
 } from "@mui/material";
 import { useDropzone } from "react-dropzone";
 import * as XLSX from "xlsx";
@@ -17,87 +18,74 @@ import api from "../services/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MyContext } from "../App";
 
-const sampleHeaders = [
-  {
-    deliveryChallanId: "clx... (example)",
-    accountReceiptNoteNo: "ACC-123",
-    accountReceiptNoteDate: "2024-01-01",
-    sinNo: "SIN-123",
-    consigneeName: "Consignee Name",
-    discomReceiptNoteNo: "DIS-123",
-    discomReceiptNoteDate: "2024-01-01",
-    remarks: "Some remarks",
-    trfsiNo: "TRFSI-123",
-    rating: "100",
-    sealNoTimeOfGPReceived: "SEAL-123",
-    consigneeTFRSerialNo: "TFR-123",
-    originalTfrSrNo: "SR-123",
-    oilLevel: "OK",
-    hvBushing: "OK",
-    lvBushing: "OK",
-    htMetalParts: "OK",
-    ltMetalParts: "OK",
-    mAndpBox: "OK",
-    mAndpBoxCover: "OK",
-    mccb: "OK",
-    icb: "OK",
-    copperFlexibleCable: "OK",
-    alWire: "OK",
-    conservator: "OK",
-    radiator: "OK",
-    fuse: "OK",
-    channel: "OK",
-    core: "OK",
-    polySealNo: "POLY-123",
-  },
-];
-
 const GPReceiptBulkUploadModal = ({ open, handleClose }) => {
   const { setAlertBox } = useContext(MyContext);
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadErrors, setUploadErrors] = useState([]);
 
   const bulkUploadMutation = useMutation({
-    mutationFn: (formData) =>
-      api.post("/new-gp-receipt-records/bulk-upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }),
+    mutationFn: (file) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return api.post("/new-gp-receipt-records/bulk-upload", formData);
+    },
     onSuccess: (response) => {
       setAlertBox({
         open: true,
-        msg: `Bulk upload successful! Created ${response.data.createdRecords.length} records.`,
+        msg: `Bulk upload successful!`,
         error: false,
       });
       queryClient.invalidateQueries(["newGpReceiptRecords"]);
       setSelectedFile(null);
+      setUploadErrors([]);
       handleClose();
     },
     onError: (error) => {
-      const errorMessage = error.response?.data?.error || error.message;
-      setAlertBox({ open: true, msg: errorMessage, error: true });
-    },
+      let errors = [];
+      if (error.response?.data?.details && Array.isArray(error.response.data.details)) {
+        errors = error.response.data.details;
+      } else {
+        errors = [{ error: error.response?.data?.error || "Upload failed" }];
+      }
+      setUploadErrors(errors);
+    }
   });
 
   const onDrop = (acceptedFiles) => {
     setSelectedFile(acceptedFiles[0]);
+    setUploadErrors([]);
   };
 
   const { getRootProps, getInputProps } = useDropzone({ onDrop });
 
   const handleUpload = () => {
-    if (!selectedFile) {
+    if (selectedFile) {
+      bulkUploadMutation.mutate(selectedFile);
+    } else {
       setAlertBox({ open: true, msg: "Please select a file.", error: true });
-      return;
     }
-    const formData = new FormData();
-    formData.append("file", selectedFile);
-    bulkUploadMutation.mutate(formData);
   };
 
   const handleDownloadSample = () => {
-    const worksheet = XLSX.utils.json_to_sheet(sampleHeaders);
+    const sampleData = [
+      {
+        "Challan No": "CH-123",
+        "Account Receipt Note No": "ACC-123",
+        "Account Receipt Note Date": "10/01/2024",
+        "SIN No": "SIN-123",
+        "Consignee Name": "Consignee Alpha",
+        "Discom Receipt Note No": "DIS-123",
+        "Discom Receipt Note Date": "11/01/2024",
+        "Rec. Challan Item No": "REC-001",
+        "Rec. Challan Item Date": "12/01/2024",
+        "TRFSI No": "TRF-001",
+        "Rating": "100",
+        "Poly Seal No": "PS-001",
+        "Remarks": "Sample remarks"
+      }
+    ];
+    const worksheet = XLSX.utils.json_to_sheet(sampleData);
     const workbook = { Sheets: { Sheet1: worksheet }, SheetNames: ["Sheet1"] };
     const excelBuffer = XLSX.write(workbook, {
       bookType: "xlsx",
@@ -109,6 +97,7 @@ const GPReceiptBulkUploadModal = ({ open, handleClose }) => {
 
   const handleModalClose = () => {
     setSelectedFile(null);
+    setUploadErrors([]);
     handleClose();
   };
 
@@ -146,6 +135,17 @@ const GPReceiptBulkUploadModal = ({ open, handleClose }) => {
             </Typography>
           )}
         </div>
+        
+        {uploadErrors.length > 0 && (
+          <Box sx={{ mt: 2, p: 2, bgcolor: '#ffebee', borderRadius: 1 }}>
+            <Typography color="error" variant="subtitle2">Upload Errors:</Typography>
+            {uploadErrors.map((err, idx) => (
+              <Typography key={idx} variant="caption" color="error" display="block">
+                • Row {err.row || '?'}: {err.error}
+              </Typography>
+            ))}
+          </Box>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={handleModalClose} variant="outlined">
@@ -155,14 +155,9 @@ const GPReceiptBulkUploadModal = ({ open, handleClose }) => {
           onClick={handleUpload}
           variant="contained"
           color="primary"
-          disabled={!selectedFile || bulkUploadMutation.isLoading}
-          startIcon={
-            bulkUploadMutation.isLoading ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : null
-          }
+          disabled={!selectedFile || bulkUploadMutation.isPending}
         >
-          {bulkUploadMutation.isLoading ? "Uploading..." : "Upload Records"}
+          {bulkUploadMutation.isPending ? <CircularProgress size={20} color="inherit" /> : "Upload Records"}
         </Button>
       </DialogActions>
     </Dialog>

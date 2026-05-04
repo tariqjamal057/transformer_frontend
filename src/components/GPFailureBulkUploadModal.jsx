@@ -8,6 +8,7 @@ import {
   Button,
   IconButton,
   Typography,
+  Box,
 } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
 import * as XLSX from 'xlsx';
@@ -17,64 +18,81 @@ import api from '../services/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MyContext } from '../App';
 
-const sampleHeaders = [
-  {
-    deliveryChallanId: 'clx... (example)',
-    trfsiNo: '12345',
-    rating: '100',
-    subDivision: 'North',
-    failureDetails: '[{"failureDate":"2026-01-10","informationDate":"2026-01-11","place":"Substation A"}]',
-    guaranteeExpiry: '2028-01-10',
-    guaranteeStatus: 'Under Guarantee',
-  }
-];
-
 const GPFailureBulkUploadModal = ({ open, handleClose }) => {
   const { setAlertBox } = useContext(MyContext);
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadErrors, setUploadErrors] = useState([]);
 
   const bulkUploadMutation = useMutation({
-    mutationFn: (formData) =>
-      api.post('/gp-failures/bulk-upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }),
+    mutationFn: (file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return api.post('/gp-failures/bulk-upload', formData);
+    },
     onSuccess: (response) => {
       setAlertBox({
         open: true,
-        msg: `Bulk upload successful! Created ${response.data.createdFailures.count} records.`,
+        msg: `Bulk upload successful!`,
         error: false,
       });
       queryClient.invalidateQueries(['gpFailures']);
       setSelectedFile(null);
+      setUploadErrors([]);
       handleClose();
     },
     onError: (error) => {
-      const errorMessage = error.response?.data?.error || error.message;
-      setAlertBox({ open: true, msg: errorMessage, error: true });
-    },
+      let errors = [];
+      if (error.response?.data?.details && Array.isArray(error.response.data.details)) {
+        errors = error.response.data.details;
+      } else {
+        errors = [{ error: error.response?.data?.error || "Upload failed" }];
+      }
+      setUploadErrors(errors);
+    }
   });
 
   const onDrop = (acceptedFiles) => {
     setSelectedFile(acceptedFiles[0]);
+    setUploadErrors([]);
   };
 
   const { getRootProps, getInputProps } = useDropzone({ onDrop });
 
   const handleUpload = () => {
-    if (!selectedFile) {
+    if (selectedFile) {
+      bulkUploadMutation.mutate(selectedFile);
+    } else {
       setAlertBox({ open: true, msg: 'Please select a file.', error: true });
-      return;
     }
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-    bulkUploadMutation.mutate(formData);
   };
 
   const handleDownloadSample = () => {
-    const worksheet = XLSX.utils.json_to_sheet(sampleHeaders);
+    const sampleData = [
+      {
+        "Challan No": "CH-123",
+        "TRFSI No": "TRF-001",
+        "Rating": "100",
+        "Sub Division": "North",
+        "Failure Date": "10/01/2024",
+        "Information Date": "11/01/2024",
+        "Place": "Substation A",
+        "Guarantee Expiry": "10/01/2026",
+        "Guarantee Status": "Under Guarantee"
+      },
+      {
+        "Challan No": "",
+        "TRFSI No": "",
+        "Rating": "",
+        "Sub Division": "",
+        "Failure Date": "15/01/2024",
+        "Information Date": "16/01/2024",
+        "Place": "Substation B",
+        "Guarantee Expiry": "",
+        "Guarantee Status": ""
+      }
+    ];
+    const worksheet = XLSX.utils.json_to_sheet(sampleData);
     const workbook = { Sheets: { Sheet1: worksheet }, SheetNames: ['Sheet1'] };
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
@@ -83,6 +101,7 @@ const GPFailureBulkUploadModal = ({ open, handleClose }) => {
 
   const handleModalClose = () => {
     setSelectedFile(null);
+    setUploadErrors([]);
     handleClose();
   };
 
@@ -114,6 +133,17 @@ const GPFailureBulkUploadModal = ({ open, handleClose }) => {
             <Typography>Drag 'n' drop an Excel file here, or click to select a file</Typography>
           )}
         </div>
+
+        {uploadErrors.length > 0 && (
+          <Box sx={{ mt: 2, p: 2, bgcolor: '#ffebee', borderRadius: 1 }}>
+            <Typography color="error" variant="subtitle2">Upload Errors:</Typography>
+            {uploadErrors.map((err, idx) => (
+              <Typography key={idx} variant="caption" color="error" display="block">
+                • Row {err.row || '?'}: {err.error}
+              </Typography>
+            ))}
+          </Box>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={handleModalClose} variant="outlined">
@@ -123,10 +153,9 @@ const GPFailureBulkUploadModal = ({ open, handleClose }) => {
           onClick={handleUpload}
           variant="contained"
           color="primary"
-          disabled={!selectedFile || bulkUploadMutation.isLoading}
-          startIcon={bulkUploadMutation.isLoading ? <CircularProgress size={20} color="inherit" /> : null}
+          disabled={!selectedFile || bulkUploadMutation.isPending}
         >
-          {bulkUploadMutation.isLoading ? 'Uploading...' : 'Upload Failures'}
+          {bulkUploadMutation.isPending ? <CircularProgress size={20} color="inherit" /> : 'Upload Failures'}
         </Button>
       </DialogActions>
     </Dialog>
