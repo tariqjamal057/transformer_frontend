@@ -555,13 +555,7 @@ const FinalInspectionList = () => {
                         ))}
                       </td>
                       <td>
-                        {item.consignees?.map((consignee, idx) => (
-                          <div key={idx} className="mb-1">
-                            {(
-                              consignee?.repairedTransformerIds || []
-                            ).join(", ") || ""}
-                          </div>
-                        ))}
+                        {item.subSerialNumber || "-"}
                       </td>
                       <td>
                         <div className="d-flex flex-wrap justify-content-center gap-1">

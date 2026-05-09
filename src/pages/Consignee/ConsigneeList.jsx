@@ -11,6 +11,8 @@ import {
   Button,
   TextField,
   IconButton,
+  Box,
+  Typography,
 } from "@mui/material";
 import { IoCloseSharp } from "react-icons/io5";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -36,6 +38,7 @@ const ConsigneeList = () => {
 
   const [bulkUploadModalOpen, setBulkUploadModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadErrors, setUploadErrors] = useState([]); // State for bulk upload errors
 
   const {
     data: consignees,
@@ -82,6 +85,7 @@ const ConsigneeList = () => {
       queryClient.invalidateQueries(["consignees"]);
       setBulkUploadModalOpen(false);
       setSelectedFile(null); // Clear selected file on success
+      setUploadErrors([]);
       setAlertBox({
         open: true,
         msg: "Bulk upload successful!",
@@ -89,22 +93,33 @@ const ConsigneeList = () => {
       });
     },
     onError: (error) => {
-      setAlertBox({
-        open: true,
-        msg: error.message,
-        error: true,
-      });
+      let errors = [];
+      if (
+        error.response?.data?.details &&
+        Array.isArray(error.response.data.details)
+      ) {
+        errors = error.response.data.details;
+      } else {
+        const errorMessage =
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          "An unexpected error occurred.";
+        errors = [{ error: errorMessage }];
+      }
+      setUploadErrors(errors);
     },
   });
 
   const onDrop = (acceptedFiles) => {
     setSelectedFile(acceptedFiles[0]);
+    setUploadErrors([]); // Clear previous errors on new file drop
   };
 
   const { getRootProps, getInputProps } = useDropzone({ onDrop });
 
   const handleBulkUploadSubmit = () => {
     if (selectedFile) {
+      setUploadErrors([]);
       bulkUpload(selectedFile);
     } else {
       setAlertBox({
@@ -187,6 +202,12 @@ const ConsigneeList = () => {
     updateMutation.mutate({ name, address, gstNo, email, phone });
   };
 
+  const handleCloseBulkUploadModal = () => {
+    setBulkUploadModalOpen(false);
+    setSelectedFile(null);
+    setUploadErrors([]);
+  };
+
   return (
     <>
       <div className="right-content w-100">
@@ -212,20 +233,12 @@ const ConsigneeList = () => {
         {/* Bulk Upload Modal */}
         <Dialog
           open={bulkUploadModalOpen}
-          onClose={() => {
-            setBulkUploadModalOpen(false);
-            setSelectedFile(null);
-          }}
+          onClose={handleCloseBulkUploadModal}
           fullWidth
         >
           <DialogTitle className="d-flex justify-content-between align-items-center">
             Bulk Upload Consignees
-            <IconButton
-              onClick={() => {
-                setBulkUploadModalOpen(false);
-                setSelectedFile(null);
-              }}
-            >
+            <IconButton onClick={handleCloseBulkUploadModal}>
               <IoCloseSharp />
             </IconButton>
           </DialogTitle>
@@ -249,15 +262,51 @@ const ConsigneeList = () => {
                 <p>Drag 'n' drop a file here, or click to select a file</p>
               )}
             </div>
+            {uploadErrors.length > 0 && (
+              <Box
+                sx={{
+                  mt: 2,
+                  p: 2,
+                  border: "1px solid",
+                  borderColor: "error.main",
+                  borderRadius: 1,
+                  maxHeight: "200px",
+                  overflowY: "auto",
+                  backgroundColor: "#ffebee",
+                }}
+              >
+                <Typography color="error" variant="h6" gutterBottom>
+                  Upload Failed
+                </Typography>
+                {uploadErrors.map((err, index) => (
+                  <Box key={index} sx={{ mb: 1 }}>
+                    <Typography color="error.main" variant="body2">
+                      <strong>
+                        - Row {err.row} (Name: {err.name}):
+                      </strong>
+                      {Array.isArray(err.errors) ? (
+                        <ul
+                          style={{
+                            margin: 0,
+                            paddingLeft: "20px",
+                            fontSize: "0.8rem",
+                          }}
+                        >
+                          {err.errors.map((e, i) => (
+                            <li key={i}>{e}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span style={{ marginLeft: "8px" }}>{err.error}</span>
+                      )}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
           </DialogContent>
           <DialogActions>
-            <Button
-              onClick={() => {
-                setBulkUploadModalOpen(false);
-                setSelectedFile(null);
-              }}
-              variant="outlined"
-            >
+            <Button onClick={handleCloseBulkUploadModal} variant="outlined">
               Cancel
             </Button>
             <Button

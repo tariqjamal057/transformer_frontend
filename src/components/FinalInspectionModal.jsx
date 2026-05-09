@@ -112,9 +112,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     const used = new Set();
     allInspections?.forEach(fi => {
       if (fi.id !== inspectionData?.id) {
-        fi.consignees?.forEach(c => {
-          c.repairedTransformerIds?.forEach(id => used.add(String(id)));
-        });
+        fi.repaired_transformer_srno?.forEach(sn => used.add(String(sn)));
       }
     });
     return used;
@@ -142,7 +140,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
         newQuantity: c.newQuantity !== undefined ? c.newQuantity : (c.quantity - (c.repairedTransformerIds?.length || 0))
       }));
       setConsigneeList(loadedConsignees);
-      setRepairedTransformerSrno([]); 
+      setRepairedTransformerSrno(inspectionData.repaired_transformer_srno || []); 
     }
   }, [inspectionData]);
 
@@ -157,6 +155,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
   const availableTransformers = useMemo(() => {
     if (!damagedTransformers) return [];
     const flattened = [];
+    
     damagedTransformers.forEach((t) => {
       const serials = Array.isArray(t.serialNo) ? t.serialNo : [t.serialNo];
       serials.forEach((sn) => {
@@ -205,8 +204,10 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     else setWarranty("");
   };
 
+  const [selectedConsigneeSubSerials, setSelectedConsigneeSubSerials] = useState([]);
+
   const handleAddConsignee = () => {
-    if (!selectedConsignee || (!consigneeQuantity && repairedTransformerSrno.length === 0)) {
+    if (!selectedConsignee || (!consigneeQuantity && selectedConsigneeSubSerials.length === 0)) {
       setAlertBox({ open: true, msg: "Please select consignee and quantity or sub-serials.", error: true });
       return;
     }
@@ -233,17 +234,17 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     const newConsignee = {
       consigneeId: selectedConsignee,
       consigneeName: selectedConsigneeObj?.name,
-      quantity: requestedNewQty + repairedTransformerSrno.length,
+      quantity: requestedNewQty + selectedConsigneeSubSerials.length,
       newQuantity: requestedNewQty,
-      repairedQuantity: repairedTransformerSrno.length,
+      repairedQuantity: selectedConsigneeSubSerials.length,
       subSnNumber: subSnNumber,
-      repairedTransformerIds: [...repairedTransformerSrno],
+      repairedTransformerIds: [...selectedConsigneeSubSerials],
     };
 
     setConsigneeList([...consigneeList, newConsignee]);
     setSelectedConsignee("");
     setConsigneeQuantity("");
-    setRepairedTransformerSrno([]); 
+    setSelectedConsigneeSubSerials([]); 
   };
 
   const handleDeleteConsignee = (idx) => {
@@ -251,6 +252,14 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     updated.splice(idx, 1);
     setConsigneeList(updated);
   };
+
+  const assignedSubSerials = useMemo(() => {
+    return new Set(consigneeList.flatMap(c => (c.repairedTransformerIds || []).map(String)));
+  }, [consigneeList]);
+
+  const availableSubSerialsForConsignee = useMemo(() => {
+    return repairedTransformerSrno.filter(sn => !assignedSubSerials.has(String(sn)));
+  }, [repairedTransformerSrno, assignedSubSerials]);
 
   const handleExcelUpload = (e) => {
     const file = e.target.files[0];
@@ -298,6 +307,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       diDate: diDate ? dayjs(diDate).toISOString() : null,
       warranty: String(warranty),
       repaired_transformer_srno: totalRepairedPool,
+      subSerialNumber: totalRepairedPool.join(", "),
       repaired_transformer_mapping: repairedTransformerMapping,
       consignees: consigneeList.map(c => ({
         consigneeId: c.consigneeId,
@@ -369,15 +379,38 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
 
           <Grid container spacing={3} columns={{ xs: 1, sm: 2 }}>
             <Grid item size={2}><Typography variant="h6" sx={{ mt: 2 }}>Consignee Details</Typography></Grid>
-            <Grid item size={1}>
-              <FormControl fullWidth>
-                <InputLabel>Consignee</InputLabel>
-                <Select value={selectedConsignee} onChange={(e) => setSelectedConsignee(e.target.value)} label="Consignee">
-                  {(consignees || []).map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
-                </Select>
-              </FormControl>
+            <Grid item size={2}>
+              <Box display="flex" gap={2} alignItems="flex-start">
+                <FormControl fullWidth sx={{ flex: 1.5 }}>
+                  <InputLabel>Consignee</InputLabel>
+                  <Select value={selectedConsignee} onChange={(e) => setSelectedConsignee(e.target.value)} label="Consignee">
+                    {(consignees || []).map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+                  </Select>
+                </FormControl>
+
+                <TextField label="Quantity" type="number" fullWidth sx={{ flex: 1 }} value={consigneeQuantity} onChange={(e) => setConsigneeQuantity(e.target.value)} />
+
+                <FormControl fullWidth sx={{ flex: 2 }}>
+                  <InputLabel>Sub Serial No</InputLabel>
+                  <Select
+                    multiple
+                    input={<OutlinedInput label="Sub Serial No" />}
+                    value={selectedConsigneeSubSerials}
+                    onChange={(e) => setSelectedConsigneeSubSerials(e.target.value)}
+                    renderValue={(selected) => selected.join(", ")}
+                  >
+                    {availableSubSerialsForConsignee.map((sn) => (
+                      <MenuItem key={sn} value={String(sn)}>
+                        <Checkbox checked={selectedConsigneeSubSerials.includes(String(sn))} />
+                        <ListItemText primary={sn} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <Button variant="contained" color="primary" sx={{ height: '56px', flex: 1 }} onClick={handleAddConsignee}>Add</Button>
+              </Box>
             </Grid>
-            <Grid item size={1}><Box display="flex" gap={1}><TextField label="Quantity" type="number" fullWidth value={consigneeQuantity} onChange={(e) => setConsigneeQuantity(e.target.value)} /><Button variant="contained" color="primary" onClick={handleAddConsignee}>Add</Button></Box></Grid>
             <Grid item size={2}>
               <Table size="small">
                 <TableHead><TableRow><TableCell>Consignee</TableCell><TableCell>Quantity</TableCell><TableCell>Serial No.</TableCell><TableCell>Sub-Serial No.</TableCell><TableCell>Action</TableCell></TableRow></TableHead>

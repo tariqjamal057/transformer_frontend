@@ -171,19 +171,7 @@ const MaterialOfferedButNominationPending = () => {
                       {row.serialNumberFrom} to {row.serialNumberTo}
                     </TableCell>
                     <TableCell>
-                      {row.consignees?.length > 0 ? (
-                        row.consignees.map(c => {
-                          const parts = [];
-                          // if (c.repairedTransformerIds) parts.push(c.repairedTransformerIds);
-                          if (c.repairedTransformerIds) {
-                            c.repairedTransformerIds.forEach(oldId => {
-                              const mapping = row.repaired_transformer_mapping?.find(m => String(m.oldSrNo) === String(oldId));
-                              parts.push(mapping ? `${oldId}` : oldId);
-                            });
-                          }
-                          return parts.join(", ");
-                        }).filter(Boolean).join(", ")
-                      ) : "—"}
+                      {row.subSerialNumber || ""}
                     </TableCell>
                     <TableCell>{row.offeredQuantity}</TableCell>
                   </TableRow>

@@ -101,9 +101,7 @@ const AddFinalInspection = () => {
   const globallyUsedRepairedSerials = useMemo(() => {
     const used = new Set();
     allInspections?.forEach(fi => {
-      fi.consignees?.forEach(c => {
-        c.repairedTransformerIds?.forEach(id => used.add(String(id)));
-      });
+      fi.repaired_transformer_srno?.forEach(sn => used.add(String(sn)));
     });
     return used;
   }, [allInspections]);
@@ -122,7 +120,7 @@ const AddFinalInspection = () => {
       damagedTransformers.forEach((t) => {
         const serials = Array.isArray(t.serialNo) ? t.serialNo : [t.serialNo];
         serials.forEach((sn) => {
-          // Check if this serial is in the globally used list
+          // Check if this specific serial is in the globally used list
           if (!globallyUsedRepairedSerials.has(String(sn))) {
             flattened.push({ id: t.id, serialNo: sn });
           }
@@ -211,8 +209,10 @@ const AddFinalInspection = () => {
     reader.readAsArrayBuffer(file);
   };
 
+  const [selectedConsigneeSubSerials, setSelectedConsigneeSubSerials] = useState([]);
+
   const handleAddConsignee = () => {
-    if (!selectedConsignee || (!consigneeQuantity && repairedTransformerSrno.length === 0)) {
+    if (!selectedConsignee || (!consigneeQuantity && selectedConsigneeSubSerials.length === 0)) {
       setAlertBox({ open: true, msg: "Please select consignee and quantity or sub-serials.", error: true });
       return;
     }
@@ -244,17 +244,17 @@ const AddFinalInspection = () => {
     const newConsignee = {
       consigneeId: selectedConsignee,
       consigneeName: selectedConsigneeObj?.name,
-      quantity: requestedNewQty + repairedTransformerSrno.length,
+      quantity: requestedNewQty + selectedConsigneeSubSerials.length,
       newQuantity: requestedNewQty,
-      repairedQuantity: repairedTransformerSrno.length,
+      repairedQuantity: selectedConsigneeSubSerials.length,
       subSnNumber: subSnNumber,
-      repairedTransformerIds: [...repairedTransformerSrno],
+      repairedTransformerIds: [...selectedConsigneeSubSerials],
     };
 
     setConsigneeList([...consigneeList, newConsignee]);
     setSelectedConsignee("");
     setConsigneeQuantity("");
-    setRepairedTransformerSrno([]); 
+    setSelectedConsigneeSubSerials([]); 
   };
 
   const handleDeleteConsignee = (idx) => {
@@ -262,6 +262,14 @@ const AddFinalInspection = () => {
     updated.splice(idx, 1);
     setConsigneeList(updated);
   };
+
+  const assignedSubSerials = useMemo(() => {
+    return new Set(consigneeList.flatMap(c => (c.repairedTransformerIds || []).map(String)));
+  }, [consigneeList]);
+
+  const availableSubSerialsForConsignee = useMemo(() => {
+    return repairedTransformerSrno.filter(sn => !assignedSubSerials.has(String(sn)));
+  }, [repairedTransformerSrno, assignedSubSerials]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -282,6 +290,7 @@ const AddFinalInspection = () => {
       sealingDetails,
       warranty: warranty || null,
       repaired_transformer_srno: totalRepairedPool,
+      subSerialNumber: totalRepairedPool.join(", "),
       repaired_transformer_mapping: repairedTransformerMapping,
       status: "Active",
       grandTotal: total ? parseInt(total, 10) : null,
@@ -413,17 +422,38 @@ const AddFinalInspection = () => {
               
               <Grid item size={2}><Typography variant="h6" sx={{ mt: 2 }}>Consignee Details</Typography></Grid>
 
-              <Grid item size={1}>
-                <FormControl fullWidth>
-                  <InputLabel>Select Consignee</InputLabel>
-                  <Select value={selectedConsignee} onChange={(e) => setSelectedConsignee(e.target.value)} label="Select Consignee">
-                    {(consignees || []).map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
-                  </Select>
-                </FormControl>
-              </Grid>
+              <Grid item size={2}>
+                <Box display="flex" gap={2} alignItems="flex-start">
+                  <FormControl fullWidth sx={{ flex: 1.5 }}>
+                    <InputLabel>Select Consignee</InputLabel>
+                    <Select value={selectedConsignee} onChange={(e) => setSelectedConsignee(e.target.value)} label="Select Consignee">
+                      {(consignees || []).map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+                    </Select>
+                  </FormControl>
 
-              <Grid item size={1}><TextField label="Quantity" type="number" fullWidth value={consigneeQuantity} onChange={(e) => setConsigneeQuantity(e.target.value)} /></Grid>
-              <Grid item size={1}><Button variant="contained" color="primary" onClick={handleAddConsignee} sx={{ height: '56px' }} fullWidth>Add Consignee</Button></Grid>
+                  <TextField label="Quantity" type="number" fullWidth sx={{ flex: 1 }} value={consigneeQuantity} onChange={(e) => setConsigneeQuantity(e.target.value)} />
+
+                  <FormControl fullWidth sx={{ flex: 2 }}>
+                    <InputLabel>Sub Serial No</InputLabel>
+                    <Select
+                      multiple
+                      input={<OutlinedInput label="Sub Serial No" />}
+                      value={selectedConsigneeSubSerials}
+                      onChange={(e) => setSelectedConsigneeSubSerials(e.target.value)}
+                      renderValue={(selected) => selected.join(", ")}
+                    >
+                      {availableSubSerialsForConsignee.map((sn) => (
+                        <MenuItem key={sn} value={String(sn)}>
+                          <Checkbox checked={selectedConsigneeSubSerials.includes(String(sn))} />
+                          <ListItemText primary={sn} />
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <Button variant="contained" color="primary" onClick={handleAddConsignee} sx={{ height: '56px', flex: 1 }} fullWidth>Add Consignee</Button>
+                </Box>
+              </Grid>
 
               <Grid item size={12}>
                 <Table size="small">
@@ -458,7 +488,7 @@ const AddFinalInspection = () => {
                 </div>
               </Grid>
 
-              <Grid item xs={2}>
+              <Grid item xs={2} >
                 <Button type="submit" onClick={handleSubmit} className="btn-blue btn-lg w-40 gap-2 mt-2 d-flex" style={{ margin: "auto" }} disabled={addFinalInspectionMutation.isPending}>
                   <FaCloudUploadAlt />
                   {addFinalInspectionMutation.isPending ? <CircularProgress color="inherit" size={20} /> : "PUBLISH AND VIEW"}
