@@ -92,9 +92,10 @@ const AddFinalInspection = () => {
   });
 
   const { data: totalInspectedQuantityData } = useQuery({
-    queryKey: ["totalInspectedQuantity"],
-    queryFn: () => api.get(`/final-inspections/total-inspected-quantity`).then((res) => res.data.totalInspectedQuantity),
+    queryKey: ["totalInspectedQuantity", tnDetail?.id],
+    queryFn: () => api.get(`/final-inspections/total-inspected-quantity${tnDetail?.id ? `?deliveryScheduleId=${tnDetail.id}` : ''}`).then((res) => res.data.totalInspectedQuantity),
     placeholderData: 0,
+    enabled: true,
   });
 
   // Calculate used serial numbers from ALL existing inspections
@@ -110,9 +111,14 @@ const AddFinalInspection = () => {
 
   useEffect(() => {
     if (totalInspectedQuantityData !== undefined) {
-      setTotal(totalInspectedQuantityData);
+      const currentInspected = parseInt(inspectedQuantity, 10);
+      if (!isNaN(currentInspected)) {
+        setTotal(totalInspectedQuantityData + currentInspected);
+      } else {
+        setTotal(totalInspectedQuantityData);
+      }
     }
-  }, [totalInspectedQuantityData]);
+  }, [totalInspectedQuantityData, inspectedQuantity, tnDetail]);
 
   useEffect(() => {
     if (damagedTransformers) {

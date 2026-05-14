@@ -52,6 +52,31 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
   const queryClient = useQueryClient();
   const { setAlertBox } = useContext(MyContext);
 
+  const [tnDetail, setTnDetail] = useState("");
+  const [serialNumberFrom, setSerialNumberFrom] = useState("");
+  const [serialNumberTo, setSerialNumberTo] = useState("");
+  const [inspectionDate, setInspectionDate] = useState(null);
+  const [inspectedQuantity, setInspectedQuantity] = useState("");
+  const [nominationLetterNo, setNominationLetterNo] = useState("");
+  const [nominationDate, setNominationDate] = useState(null);
+  const [offerDate, setOfferDate] = useState(null);
+  const [offeredQuantity, setOfferedQuantity] = useState("");
+  const [inspectionOfficer, setInspectionOfficer] = useState("");
+  const [selectedInspectionOfficer, setSelectedInspectionOfficer] = useState([]);
+  const [total, setTotal] = useState("");
+  const [diNo, setDiNo] = useState("");
+  const [diDate, setDiDate] = useState(null);
+  const [warranty, setWarranty] = useState("");
+  const [repairedTransformerSrno, setRepairedTransformerSrno] = useState([]);
+  const [repairedTransformerMapping, setRepairedTransformerMapping] = useState([]);
+
+  const [consigneeList, setConsigneeList] = useState([]);
+  const [selectedConsignee, setSelectedConsignee] = useState("");
+  const [consigneeQuantity, setConsigneeQuantity] = useState("");
+
+  const [sealingDetails, setSealingDetails] = useState([]);
+  const [fileName, setFileName] = useState("");
+
   const { data: deliverySchedules } = useQuery({
     queryKey: ["allDeliverySchedules"],
     queryFn: () => api.get("/delivery-schedules?all=true").then((res) => res.data),
@@ -77,35 +102,11 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
   });
 
   const { data: totalInspectedQuantityData } = useQuery({
-    queryKey: ["totalInspectedQuantity"],
-    queryFn: () => api.get(`/final-inspections/total-inspected-quantity`).then((res) => res.data.totalInspectedQuantity),
+    queryKey: ["totalInspectedQuantity", tnDetail?.id],
+    queryFn: () => api.get(`/final-inspections/total-inspected-quantity${tnDetail?.id ? `?deliveryScheduleId=${tnDetail.id}` : ''}`).then((res) => res.data.totalInspectedQuantity),
     placeholderData: 0,
+    enabled: true,
   });
-
-  const [tnDetail, setTnDetail] = useState("");
-  const [serialNumberFrom, setSerialNumberFrom] = useState("");
-  const [serialNumberTo, setSerialNumberTo] = useState("");
-  const [inspectionDate, setInspectionDate] = useState(null);
-  const [inspectedQuantity, setInspectedQuantity] = useState("");
-  const [nominationLetterNo, setNominationLetterNo] = useState("");
-  const [nominationDate, setNominationDate] = useState(null);
-  const [offerDate, setOfferDate] = useState(null);
-  const [offeredQuantity, setOfferedQuantity] = useState("");
-  const [inspectionOfficer, setInspectionOfficer] = useState("");
-  const [selectedInspectionOfficer, setSelectedInspectionOfficer] = useState([]);
-  const [total, setTotal] = useState("");
-  const [diNo, setDiNo] = useState("");
-  const [diDate, setDiDate] = useState(null);
-  const [warranty, setWarranty] = useState("");
-  const [repairedTransformerSrno, setRepairedTransformerSrno] = useState([]);
-  const [repairedTransformerMapping, setRepairedTransformerMapping] = useState([]);
-
-  const [consigneeList, setConsigneeList] = useState([]);
-  const [selectedConsignee, setSelectedConsignee] = useState("");
-  const [consigneeQuantity, setConsigneeQuantity] = useState("");
-
-  const [sealingDetails, setSealingDetails] = useState([]);
-  const [fileName, setFileName] = useState("");
 
   // Calculate serials used by OTHER inspections (excluding this one)
   const usedByOthersRepairedSerials = useMemo(() => {
@@ -148,9 +149,14 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     if (inspectionData && inspectionData.total !== undefined && inspectionData.total !== null) {
       setTotal(inspectionData.total);
     } else if (totalInspectedQuantityData !== undefined) {
-      setTotal(totalInspectedQuantityData);
+      const currentInspected = parseInt(inspectedQuantity, 10);
+      if (!isNaN(currentInspected)) {
+        setTotal(totalInspectedQuantityData + currentInspected);
+      } else {
+        setTotal(totalInspectedQuantityData);
+      }
     }
-  }, [inspectionData, totalInspectedQuantityData]);
+  }, [inspectionData, totalInspectedQuantityData, inspectedQuantity, tnDetail]);
 
   const availableTransformers = useMemo(() => {
     if (!damagedTransformers) return [];
