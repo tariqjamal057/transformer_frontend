@@ -25,7 +25,7 @@ import { saveAs } from "file-saver";
 import { useDropzone } from "react-dropzone";
 
 const ConsigneeList = () => {
-  const { setAlertBox, hasPermission } = useContext(MyContext);
+  const { userRole, setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -361,12 +361,14 @@ const ConsigneeList = () => {
                             >
                               <FaPencilAlt />
                             </button>
-                            {/* <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleDelete(item.id)}
-                            >
-                            <MdDelete />
-                            </button> */}
+                            {userRole === "OWNER" && (
+                              <button
+                                className="btn btn-sm btn-danger"
+                                onClick={() => handleDelete(item.id)}
+                              >
+                                <MdDelete />
+                              </button>
+                            )}
                           </div>
                         </td>
                       )}

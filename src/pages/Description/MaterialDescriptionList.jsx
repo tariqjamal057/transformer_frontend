@@ -331,12 +331,14 @@ const MaterialDescriptionList = () => {
                               >
                                 <FaPencilAlt />
                               </button>
-                              {/* <button
-                              className="btn btn-sm btn-danger"
-                              onClick={() => handleDelete(item.id)}
-                            >
-                              <MdDelete />
-                            </button> */}
+                              {userRole === "OWNER" && (
+                                <button
+                                  className="btn btn-sm btn-danger"
+                                  onClick={() => handleDelete(item.id)}
+                                >
+                                  <MdDelete />
+                                </button>
+                              )}
                             </div>
                           </td>
                         )}

@@ -30,7 +30,7 @@ import {
 import { IoCloseSharp } from "react-icons/io5";
 
 const FinalInspectionList = () => {
-  const { setAlertBox, hasPermission } = useContext(MyContext);
+  const { setAlertBox, hasPermission, userRole } = useContext(MyContext);
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -633,16 +633,17 @@ const FinalInspectionList = () => {
                               onClick={() => handleEditClick(item)}
                             >
                               <FaPencilAlt />
-                            </button>
-                            {/* <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleDelete(item.id)}
-                          >
-                            <FaTrash />
-                          </button> */}
-                          </div>
-                        </td>
-                      )}
+                              </button>
+                              {userRole === "OWNER" && (
+                              <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDelete(item.id)}
+                              >
+                              <FaTrash />
+                              </button>
+                              )}
+                              </div>
+                              </td>                      )}
                     </tr>
                   ))
                 ) : (

@@ -1,4 +1,5 @@
 import { useContext, useState } from "react";
+import { FaTrash } from "react-icons/fa";
 import { Button } from "@mui/material";
 import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
@@ -6,16 +7,50 @@ import html2canvas from "html2canvas";
 import { createRoot } from "react-dom/client";
 import { MyContext } from "../../App";
 import GPReceiptTemplate from "../../components/GPReceiptTemplate";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api";
 import Pagination from "../../components/Pagination";
 import GPReceiptNoteBulkUploadModal from "../../components/GPReceiptNoteBulkUploadModal";
 import dayjs from "dayjs";
+import Swal from "sweetalert2";
 
 const GPReceiptNote = () => {
-  const { setAlertBox, hasPermission } = useContext(MyContext);
+  const { setAlertBox, hasPermission, userRole } = useContext(MyContext);
   const [currentPage, setCurrentPage] = useState(1);
   const [openBulkUploadModal, setOpenBulkUploadModal] = useState(false);
+
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/gp-receipt-notes/${id}`),
+    onSuccess: () => {
+      setAlertBox({
+        open: true,
+        msg: "GP Receipt Note deleted successfully!",
+        error: false,
+      });
+      queryClient.invalidateQueries(["gpReceiptNotes"]);
+    },
+    onError: (error) => {
+      setAlertBox({ open: true, msg: error.message, error: true });
+    },
+  });
+
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteMutation.mutate(id);
+      }
+    });
+  };
 
   const { data: gpReceiptNotes, isLoading } = useQuery({
     queryKey: ["gpReceiptNotes", currentPage],
@@ -155,6 +190,14 @@ const GPReceiptNote = () => {
                           >
                             Download PDF
                           </button>
+                          {userRole === "OWNER" && (
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDelete(note.id)}
+                            >
+                              <FaTrash />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

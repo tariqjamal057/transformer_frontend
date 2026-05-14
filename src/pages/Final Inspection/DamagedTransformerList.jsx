@@ -401,14 +401,15 @@ const DamagedTransformerList = () => {
                           >
                             <FaPencilAlt />
                           </button>
-                          {hasPermission("CTLOrDamageTransformerDelete") && (
-                            <button
-                              className="btn btn-sm btn-danger"
-                              onClick={() => handleDelete(row.id)}
-                            >
-                              <FaTrash />
-                            </button>
-                          )}
+                          {userRole === "OWNER" &&
+                            hasPermission("CTLOrDamageTransformerDelete") && (
+                              <button
+                                className="btn btn-sm btn-danger"
+                                onClick={() => handleDelete(row.id)}
+                              >
+                                <FaTrash />
+                              </button>
+                            )}
                         </div>
                       </td>
                     )}

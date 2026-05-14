@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Button, InputAdornment, TextField } from "@mui/material";
 import { Link } from "react-router-dom";
-import { FaPencilAlt } from "react-icons/fa";
+import { FaPencilAlt, FaTrash } from "react-icons/fa";
 import SearchIcon from "@mui/icons-material/Search";
 import * as XLSX from "xlsx"; // For Excel export
 import jsPDF from "jspdf";
@@ -16,7 +16,7 @@ import GPReceiptBulkUploadModal from "../../components/GPReceiptBulkUploadModal"
 import dayjs from "dayjs";
 
 const NewGPReceiptRecordList = () => {
-  const { setAlertBox, hasPermission } = useContext(MyContext);
+  const { setAlertBox, hasPermission, userRole } = useContext(MyContext);
   const queryClient = useQueryClient();
 
   const [openModal, setOpenModal] = useState(false);
@@ -48,6 +48,37 @@ const NewGPReceiptRecordList = () => {
   const handleModalClose = () => {
     setOpenModal(false);
     setSelectedGPReceiptRecord(null);
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/new-gp-receipt-records/${id}`),
+    onSuccess: () => {
+      setAlertBox({
+        open: true,
+        msg: "GP Receipt Record deleted successfully!",
+        error: false,
+      });
+      queryClient.invalidateQueries(["newGpReceiptRecords"]);
+    },
+    onError: (error) => {
+      setAlertBox({ open: true, msg: error.message, error: true });
+    },
+  });
+
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteMutation.mutate(id);
+      }
+    });
   };
 
   // ✅ Excel Export Function
@@ -408,6 +439,14 @@ const NewGPReceiptRecordList = () => {
                             >
                               <FaPencilAlt />
                             </button>
+                            {userRole === "OWNER" && (
+                              <button
+                                className="btn btn-sm btn-danger"
+                                onClick={() => handleDelete(item.id)}
+                              >
+                                <FaTrash />
+                              </button>
+                            )}
                           </div>
                         </td>
                       )}

@@ -18,7 +18,7 @@ import api from "../../services/api";
 import { MyContext } from "../../App";
 
 const ChalanDescriptionList = () => {
-  const { setAlertBox } = useContext(MyContext);
+  const { userRole, setAlertBox } = useContext(MyContext);
   const queryClient = useQueryClient();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -140,12 +140,14 @@ const ChalanDescriptionList = () => {
                             >
                               <FaPencilAlt />
                             </button>
-                            <button
-                              className="btn btn-sm btn-danger"
-                              onClick={() => handleDelete(item.id)}
-                            >
-                              <MdDelete />
-                            </button>
+                            {userRole === "OWNER" && (
+                              <button
+                                className="btn btn-sm btn-danger"
+                                onClick={() => handleDelete(item.id)}
+                              >
+                                <MdDelete />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

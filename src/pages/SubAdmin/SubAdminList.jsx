@@ -32,7 +32,7 @@ import { useDropzone } from "react-dropzone";
 import { defaultPermissions } from "../../data/permission";
 
 const SubAdminList = () => {
-  const { setAlertBox, hasPermission } = useContext(MyContext);
+  const { setAlertBox, hasPermission, userRole } = useContext(MyContext);
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -422,12 +422,14 @@ const SubAdminList = () => {
                             >
                               <FaPencilAlt />
                             </button>
-                            {/* <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleDeleteClick(item.id)}
-                          >
-                            <FaTrash />
-                          </button> */}
+                            {userRole === "OWNER" && (
+                              <button
+                                className="btn btn-sm btn-danger"
+                                onClick={() => handleDeleteClick(item.id)}
+                              >
+                                <FaTrash />
+                              </button>
+                            )}
                           </div>
                         </td>
                       )}

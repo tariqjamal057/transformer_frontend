@@ -14,7 +14,7 @@ import ViewNewGPInformationModal from "../../components/ViewNewGPInformationModa
 import NewGPInformationBulkUploadModal from "../../components/NewGPInformationBulkUploadModal";
 
 const NewGPInformationList = () => {
-  const { setAlertBox, hasPermission } = useContext(MyContext);
+  const { setAlertBox, hasPermission, userRole } = useContext(MyContext);
   const queryClient = useQueryClient();
 
   const [openEditModal, setOpenEditModal] = useState(false);
@@ -172,12 +172,14 @@ const NewGPInformationList = () => {
                             >
                               <FaPencilAlt />
                             </button>
-                            {/* <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleDelete(item.id)}
-                          >
-                            <FaTrash />
-                          </button> */}
+                            {userRole === "OWNER" && (
+                              <button
+                                className="btn btn-sm btn-danger"
+                                onClick={() => handleDelete(item.id)}
+                              >
+                                <FaTrash />
+                              </button>
+                            )}
                           </div>
                         </td>
                       )}

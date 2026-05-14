@@ -299,12 +299,14 @@ const GPFailureInformationList = () => {
                               >
                                 <FaPencilAlt />
                               </button>
-                              {/* <button
-                              className="btn btn-sm btn-danger"
-                              onClick={() => handleDelete(item.id)}
-                            >
-                              <FaTrash />
-                            </button> */}
+                              {userRole === "OWNER" && (
+                                <button
+                                  className="btn btn-sm btn-danger"
+                                  onClick={() => handleDelete(item.id)}
+                                >
+                                  <FaTrash />
+                                </button>
+                              )}
                             </div>
                           </td>
                         )}

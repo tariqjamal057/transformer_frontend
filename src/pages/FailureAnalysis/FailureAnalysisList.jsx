@@ -13,7 +13,7 @@ import Pagination from "../../components/Pagination";
 import dayjs from "dayjs";
 
 const FailureAnalysisList = () => {
-  const { setAlertBox, hasPermission } = useContext(MyContext);
+  const { setAlertBox, hasPermission, userRole } = useContext(MyContext);
   const queryClient = useQueryClient();
 
   const [openModal, setOpenModal] = useState(false);
@@ -205,12 +205,14 @@ const FailureAnalysisList = () => {
                               >
                                 <FaPencilAlt />
                               </button>
-                              {/* <button
-                              className="btn btn-sm btn-danger"
-                              onClick={() => handleDelete(item.id)}
-                            >
-                              <FaTrash />
-                            </button> */}
+                              {userRole === "OWNER" && (
+                                <button
+                                  className="btn btn-sm btn-danger"
+                                  onClick={() => handleDelete(item.id)}
+                                >
+                                  <FaTrash />
+                                </button>
+                              )}
                             </div>
                           </td>
                         )}

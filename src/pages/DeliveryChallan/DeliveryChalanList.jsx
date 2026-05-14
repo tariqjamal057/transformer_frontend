@@ -50,7 +50,7 @@ const compressSerials = (serials) => {
 };
 
 const DeliveryChalanList = () => {
-  const { setAlertBox, hasPermission } = useContext(MyContext);
+  const { userRole, setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
 
   const [openModal, setOpenModal] = useState(false);
@@ -448,12 +448,14 @@ const DeliveryChalanList = () => {
                               <FaFileDownload />
                             </button>
                           </Tooltip>
-                          {/* <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleDelete(item.id)}
-                          >
-                            <FaTrash />
-                          </button> */}
+                          {userRole === "OWNER" && (
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              <FaTrash />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

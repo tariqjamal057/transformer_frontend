@@ -41,7 +41,7 @@ import { useDropzone } from "react-dropzone";
 
 const DeliverySchedule = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const { setProgress, setAlertBox, setIsHideSidebarAndHeader, hasPermission } =
+  const { setProgress, setAlertBox, setIsHideSidebarAndHeader, hasPermission, userRole } =
     useContext(MyContext);
   const queryClient = useQueryClient();
 
@@ -545,6 +545,37 @@ const DeliverySchedule = () => {
     }
   };
 
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/delivery-schedules/${id}`),
+    onSuccess: () => {
+      setAlertBox({
+        open: true,
+        msg: "Delivery Schedule deleted successfully!",
+        error: false,
+      });
+      queryClient.invalidateQueries(["deliverySchedules"]);
+    },
+    onError: (error) => {
+      setAlertBox({ open: true, msg: error.message, error: true });
+    },
+  });
+
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteMutation.mutate(id);
+      }
+    });
+  };
+
   const { mutate: updateDeliverySchedule } = useMutation({
     mutationFn: (updatedData) =>
       api.put(`/delivery-schedules/${selectedDelivery.id}`, updatedData),
@@ -968,6 +999,14 @@ const DeliverySchedule = () => {
                               >
                                 <FaPencilAlt />
                               </button>
+                              {userRole === "OWNER" && (
+                                <button
+                                  className="btn btn-sm btn-danger"
+                                  onClick={() => handleDelete(item.id)}
+                                >
+                                  <MdDelete />
+                                </button>
+                              )}
                             </div>
                           </td>
                         )}

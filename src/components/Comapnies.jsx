@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../services/api";
 
 const Companies = () => {
-  const { setAlertBox, setIsHideSidebarAndHeader } = useContext(MyContext);
+  const { userRole, setAlertBox, setIsHideSidebarAndHeader } = useContext(MyContext);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -256,21 +256,23 @@ const Companies = () => {
                     >
                       <MdEdit />
                     </button>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (
-                          window.confirm(
-                            "Are you sure you want to delete this company?"
-                          )
-                        ) {
-                          deleteCompany(company.id);
-                        }
-                      }}
-                    >
-                      <MdDelete />
-                    </button>
+                    {userRole === "OWNER" && (
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (
+                            window.confirm(
+                              "Are you sure you want to delete this company?"
+                            )
+                          ) {
+                            deleteCompany(company.id);
+                          }
+                        }}
+                      >
+                        <MdDelete />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))

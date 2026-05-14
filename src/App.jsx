@@ -83,6 +83,9 @@ const AppContent = () => {
   });
 
   const [isHideSidebarAndHeader, setIsHideSidebarAndHeader] = useState(false);
+  const [userRole, setUserRole] = useState(() => {
+    return localStorage.getItem("role") || "";
+  });
   const [userPermissions, setUserPermissions] = useState(() => {
     const userData = localStorage.getItem("Transformer user");
     if (userData) {
@@ -143,6 +146,8 @@ const AppContent = () => {
         setAlertBox,
         setIsHideSidebarAndHeader,
         hasPermission,
+        userRole,
+        setUserRole,
       }}
     >
       <LoadingBar

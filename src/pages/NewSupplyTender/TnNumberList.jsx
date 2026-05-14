@@ -17,7 +17,7 @@ import api from "../../services/api";
 import { MyContext } from "../../App";
 
 const TnNumberList = () => {
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, userRole } = useContext(MyContext);
   const queryClient = useQueryClient();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -143,12 +143,14 @@ const TnNumberList = () => {
                           >
                             <FaPencilAlt />
                           </button>
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleDelete(item.id)}
-                          >
-                            <FaTrash />
-                          </button>
+                          {userRole === "OWNER" && (
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              <FaTrash />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

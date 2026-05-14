@@ -76,7 +76,7 @@ const calculateSuppliedQuantity = (dc) => {
 };
 
 const DeliveryDetailsList = () => {
-  const { setAlertBox, hasPermission } = useContext(MyContext);
+  const { userRole, setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -546,12 +546,14 @@ const DeliveryDetailsList = () => {
                               >
                                 <MdEdit />
                               </IconButton>
-                              {/* <IconButton
-                                color="error"
-                                onClick={() => handleDeleteClick(item.id)}
-                              >
-                                <MdDelete />
-                              </IconButton> */}
+                              {userRole === "OWNER" && (
+                                <IconButton
+                                  color="error"
+                                  onClick={() => handleDeleteClick(item.id)}
+                                >
+                                  <MdDelete />
+                                </IconButton>
+                              )}
                             </div>
                           </td>
                         </tr>

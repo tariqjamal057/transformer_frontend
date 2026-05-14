@@ -29,7 +29,7 @@ const DeffermentList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = 10; // or calculate based on data length
 
-  const { setProgress, setAlertBox, setIsHideSidebarAndHeader } =
+  const { setProgress, setAlertBox, setIsHideSidebarAndHeader, userRole } =
     useContext(MyContext);
     
   const queryClient = useQueryClient();
@@ -211,15 +211,17 @@ const DeffermentList = () => {
                             <FaPencilAlt />
                           </button>
 
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick(item.id);
-                            }}
-                          >
-                            <MdDelete />
-                          </button>
+                          {userRole === "OWNER" && (
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(item.id);
+                              }}
+                            >
+                              <MdDelete />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

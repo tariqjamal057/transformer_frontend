@@ -8,7 +8,7 @@ import { MdDelete, MdEdit } from "react-icons/md";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const SupplyTenders = () => {
-  const { setAlertBox, setIsHideSidebarAndHeader } = useContext(MyContext);
+  const { userRole, setAlertBox, setIsHideSidebarAndHeader } = useContext(MyContext);
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
@@ -179,21 +179,23 @@ const SupplyTenders = () => {
                     >
                       <MdEdit />
                     </button>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (
-                          window.confirm(
-                            "Are you sure you want to delete this supply tender?"
-                          )
-                        ) {
-                          deleteTender(item.id);
-                        }
-                      }}
-                    >
-                      <MdDelete />
-                    </button>
+                    {userRole === "OWNER" && (
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (
+                            window.confirm(
+                              "Are you sure you want to delete this supply tender?"
+                            )
+                          ) {
+                            deleteTender(item.id);
+                          }
+                        }}
+                      >
+                        <MdDelete />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))

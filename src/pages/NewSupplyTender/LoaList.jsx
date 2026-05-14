@@ -21,7 +21,7 @@ import api from "../../services/api";
 import { MyContext } from "../../App";
 
 const LoaList = () => {
-  const { setAlertBox } = useContext(MyContext);
+  const { setAlertBox, userRole } = useContext(MyContext);
   const queryClient = useQueryClient();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -155,15 +155,17 @@ const LoaList = () => {
                             <FaPencilAlt />
                           </button>
 
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick(item.id);
-                            }}
-                          >
-                            <FaTrash />
-                          </button>
+                          {userRole === "OWNER" && (
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(item.id);
+                              }}
+                            >
+                              <FaTrash />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
