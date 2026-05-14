@@ -97,6 +97,13 @@ const SupplyTenders = () => {
       setAlertBox({open: true, msg: "Please select a Supply discom first!", error: true});
       return;
     }
+
+    // Find the full supply tender object and store it
+    const tenderToStore = supplytenders.find(t => t.id === selectedSupplyTender);
+    if (tenderToStore) {
+      localStorage.setItem("selectedSupplyTender", JSON.stringify(tenderToStore));
+    }
+
     try {
       const response = await api.post("/auth/select-supply-tender", { supplyTenderId: selectedSupplyTender });
       localStorage.setItem("token", response.data.token);

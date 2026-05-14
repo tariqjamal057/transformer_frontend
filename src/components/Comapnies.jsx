@@ -47,6 +47,8 @@ const Companies = () => {
       return;
     }
     localStorage.setItem("companyId", selectedCompany);
+    localStorage.removeItem("selectedSupplyTenderId");
+    localStorage.removeItem("selectedSupplyTender");
 
     // Find the full company object and store it
     const companyToStore = companies.find(c => c.id === selectedCompany);

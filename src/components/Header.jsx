@@ -38,6 +38,9 @@ const Header = () => {
   const navigate = useNavigate();
 
   const selectedCompany = JSON.parse(localStorage.getItem("selectedCompany"));
+  const selectedSupplyTender = JSON.parse(localStorage.getItem("selectedSupplyTender"));
+  const discomName = selectedSupplyTender?.name || "";
+
   const companyLogo = selectedCompany?.logo 
     ? `${import.meta.env.VITE_IMAGE_BASE_URL}${selectedCompany.logo.replace(/\\/g, "/")}` 
     : logo;
@@ -77,7 +80,7 @@ const Header = () => {
             <div className="col-sm-2 part1">
               <Link to={"/"} className="d-flex align-items-center logo">
                 {<img src={companyLogo} alt="logo" style={{ width: "auto", height: "50px"}} />}
-                {/*<span className="ms-2">RIVIE</span>*/}
+                <span className="ms-2">{discomName}</span>
               </Link>
             </div>
 
@@ -117,6 +120,7 @@ const Header = () => {
                   }}
                   onClick={() => {
                     localStorage.removeItem("selectedSupplyTenderId");
+                    localStorage.removeItem("selectedSupplyTender");
                     navigate("/companies");
                   }}
                   onMouseOver={(e) =>
