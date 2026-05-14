@@ -36,6 +36,34 @@ import { useNavigate } from "react-router-dom";
 import { MyContext } from "../../App";
 import { Cancel } from "@mui/icons-material";
 
+const parseRange = (text) => {
+  if (!text) return [];
+  const parts = text
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const results = [];
+  parts.forEach((part) => {
+    if (part.includes("-")) {
+      const [start, end] = part.split("-").map((n) => parseInt(n.trim(), 10));
+      if (!isNaN(start) && !isNaN(end) && start <= end) {
+        for (let i = start; i <= end; i++) results.push(String(i));
+      }
+    } else if (part.toUpperCase().includes(" TO ")) {
+      const [start, end] = part
+        .toUpperCase()
+        .split(" TO ")
+        .map((n) => parseInt(n.trim(), 10));
+      if (!isNaN(start) && !isNaN(end) && start <= end) {
+        for (let i = start; i <= end; i++) results.push(String(i));
+      }
+    } else {
+      results.push(part);
+    }
+  });
+  return results;
+};
+
 const AddFinalInspection = () => {
   const { setAlertBox } = useContext(MyContext);
   const navigate = useNavigate();
@@ -59,7 +87,8 @@ const AddFinalInspection = () => {
 
   const [consigneeList, setConsigneeList] = useState([]); 
   const [selectedConsignee, setSelectedConsignee] = useState("");
-  const [consigneeQuantity, setConsigneeQuantity] = useState("");
+  const [consigneeSerialNo, setConsigneeSerialNo] = useState("");
+  const [consigneeSubSerialNo, setConsigneeSubSerialNo] = useState("");
 
   const [sealingDetails, setSealingDetails] = useState([]);
   const [fileName, setFileName] = useState("");
@@ -215,34 +244,58 @@ const AddFinalInspection = () => {
     reader.readAsArrayBuffer(file);
   };
 
-  const [selectedConsigneeSubSerials, setSelectedConsigneeSubSerials] = useState([]);
-
   const handleAddConsignee = () => {
-    if (!selectedConsignee || (!consigneeQuantity && selectedConsigneeSubSerials.length === 0)) {
-      setAlertBox({ open: true, msg: "Please select consignee and quantity or sub-serials.", error: true });
+    if (!selectedConsignee || (!consigneeSerialNo && !consigneeSubSerialNo)) {
+      setAlertBox({ open: true, msg: "Please select consignee and enter serial numbers.", error: true });
       return;
     }
 
     const from = parseInt(serialNumberFrom);
     const to = parseInt(serialNumberTo);
     if (isNaN(from) || isNaN(to) || from > to) {
-      setAlertBox({ open: true, msg: "Invalid serial number range", error: true });
+      setAlertBox({ open: true, msg: "Please enter valid serial number range first.", error: true });
       return;
     }
 
-    const requestedNewQty = parseInt(consigneeQuantity) || 0;
-    const newDistributed = consigneeList.reduce((sum, c) => sum + (c.newQuantity || 0), 0);
+    const enteredNewSerials = parseRange(consigneeSerialNo);
+    const enteredRepairedSerials = parseRange(consigneeSubSerialNo);
 
-    if (newDistributed + requestedNewQty > (to - from + 1)) {
-      setAlertBox({ open: true, msg: "New Quantity exceeds available pool!", error: true });
+    // 1. Validate New Serials
+    if (enteredNewSerials.length > 0) {
+      const invalidSerials = enteredNewSerials.filter(s => {
+        const num = parseInt(s);
+        return isNaN(num) || num < from || num > to;
+      });
+      if (invalidSerials.length > 0) {
+        setAlertBox({ open: true, msg: `New Serials out of range: ${invalidSerials.join(", ")}`, error: true });
+        return;
+      }
+    }
+
+    // 2. Validate Repaired Serials
+    if (enteredRepairedSerials.length > 0) {
+      const pool = new Set(repairedTransformerSrno.map(String));
+      const invalidRepaired = enteredRepairedSerials.filter(s => !pool.has(String(s)));
+      if (invalidRepaired.length > 0) {
+        setAlertBox({ open: true, msg: `Sub Serials not in pool: ${invalidRepaired.join(", ")}`, error: true });
+        return;
+      }
+    }
+
+    // 3. Check for duplicates in already assigned list
+    const alreadyAssignedNew = new Set(consigneeList.flatMap(c => parseRange(c.subSnNumber)));
+    const alreadyAssignedRepaired = new Set(consigneeList.flatMap(c => c.repairedTransformerIds || []));
+
+    const duplicateNew = enteredNewSerials.filter(s => alreadyAssignedNew.has(s));
+    if (duplicateNew.length > 0) {
+      setAlertBox({ open: true, msg: `New Serials already assigned: ${duplicateNew.join(", ")}`, error: true });
       return;
     }
 
-    let subSnNumber = null;
-    if (requestedNewQty > 0) {
-      const startSn = from + newDistributed;
-      const endSn = startSn + requestedNewQty - 1;
-      subSnNumber = `${startSn} TO ${endSn}`;
+    const duplicateRepaired = enteredRepairedSerials.filter(s => alreadyAssignedRepaired.has(s));
+    if (duplicateRepaired.length > 0) {
+      setAlertBox({ open: true, msg: `Sub Serials already assigned: ${duplicateRepaired.join(", ")}`, error: true });
+      return;
     }
 
     const selectedConsigneeObj = consignees.find((c) => c.id === selectedConsignee);
@@ -250,17 +303,17 @@ const AddFinalInspection = () => {
     const newConsignee = {
       consigneeId: selectedConsignee,
       consigneeName: selectedConsigneeObj?.name,
-      quantity: requestedNewQty + selectedConsigneeSubSerials.length,
-      newQuantity: requestedNewQty,
-      repairedQuantity: selectedConsigneeSubSerials.length,
-      subSnNumber: subSnNumber,
-      repairedTransformerIds: [...selectedConsigneeSubSerials],
+      quantity: enteredNewSerials.length + enteredRepairedSerials.length,
+      newQuantity: enteredNewSerials.length,
+      repairedQuantity: enteredRepairedSerials.length,
+      subSnNumber: consigneeSerialNo,
+      repairedTransformerIds: enteredRepairedSerials,
     };
 
     setConsigneeList([...consigneeList, newConsignee]);
     setSelectedConsignee("");
-    setConsigneeQuantity("");
-    setSelectedConsigneeSubSerials([]); 
+    setConsigneeSerialNo("");
+    setConsigneeSubSerialNo("");
   };
 
   const handleDeleteConsignee = (idx) => {
@@ -268,14 +321,6 @@ const AddFinalInspection = () => {
     updated.splice(idx, 1);
     setConsigneeList(updated);
   };
-
-  const assignedSubSerials = useMemo(() => {
-    return new Set(consigneeList.flatMap(c => (c.repairedTransformerIds || []).map(String)));
-  }, [consigneeList]);
-
-  const availableSubSerialsForConsignee = useMemo(() => {
-    return repairedTransformerSrno.filter(sn => !assignedSubSerials.has(String(sn)));
-  }, [repairedTransformerSrno, assignedSubSerials]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -437,25 +482,9 @@ const AddFinalInspection = () => {
                     </Select>
                   </FormControl>
 
-                  <TextField label="Quantity" type="number" fullWidth sx={{ flex: 1 }} value={consigneeQuantity} onChange={(e) => setConsigneeQuantity(e.target.value)} />
+                  <TextField label="Serial No" fullWidth sx={{ flex: 1.5 }} value={consigneeSerialNo} onChange={(e) => setConsigneeSerialNo(e.target.value)} placeholder="e.g. 101-105, 110" />
 
-                  <FormControl fullWidth sx={{ flex: 2 }}>
-                    <InputLabel>Sub Serial No</InputLabel>
-                    <Select
-                      multiple
-                      input={<OutlinedInput label="Sub Serial No" />}
-                      value={selectedConsigneeSubSerials}
-                      onChange={(e) => setSelectedConsigneeSubSerials(e.target.value)}
-                      renderValue={(selected) => selected.join(", ")}
-                    >
-                      {availableSubSerialsForConsignee.map((sn) => (
-                        <MenuItem key={sn} value={String(sn)}>
-                          <Checkbox checked={selectedConsigneeSubSerials.includes(String(sn))} />
-                          <ListItemText primary={sn} />
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <TextField label="Sub Serial No" fullWidth sx={{ flex: 1.5 }} value={consigneeSubSerialNo} onChange={(e) => setConsigneeSubSerialNo(e.target.value)} placeholder="e.g. 201-205, 210" />
 
                   <Button variant="contained" color="primary" onClick={handleAddConsignee} sx={{ height: '56px', flex: 1 }} fullWidth>Add Consignee</Button>
                 </Box>
@@ -494,7 +523,7 @@ const AddFinalInspection = () => {
                 </div>
               </Grid>
 
-              <Grid item xs={2} >
+              <Grid item size={2} >
                 <Button type="submit" onClick={handleSubmit} className="btn-blue btn-lg w-40 gap-2 mt-2 d-flex" style={{ margin: "auto" }} disabled={addFinalInspectionMutation.isPending}>
                   <FaCloudUploadAlt />
                   {addFinalInspectionMutation.isPending ? <CircularProgress color="inherit" size={20} /> : "PUBLISH AND VIEW"}

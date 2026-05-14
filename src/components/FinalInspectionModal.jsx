@@ -19,9 +19,6 @@ import {
   TableRow,
   TableCell,
   TableBody,
-  Checkbox,
-  ListItemText,
-  OutlinedInput,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
@@ -39,13 +36,41 @@ const style = {
   left: "50%",
   transform: "translate(-50%, -50%)",
   width: "90%",
-  maxWidth: 600,
+  maxWidth: 800,
   bgcolor: "background.paper",
   boxShadow: 24,
   p: 4,
   borderRadius: 2,
   maxHeight: "90vh",
   overflowY: "auto",
+};
+
+const parseRange = (text) => {
+  if (!text) return [];
+  const parts = text
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const results = [];
+  parts.forEach((part) => {
+    if (part.includes("-")) {
+      const [start, end] = part.split("-").map((n) => parseInt(n.trim(), 10));
+      if (!isNaN(start) && !isNaN(end) && start <= end) {
+        for (let i = start; i <= end; i++) results.push(String(i));
+      }
+    } else if (part.toUpperCase().includes(" TO ")) {
+      const [start, end] = part
+        .toUpperCase()
+        .split(" TO ")
+        .map((n) => parseInt(n.trim(), 10));
+      if (!isNaN(start) && !isNaN(end) && start <= end) {
+        for (let i = start; i <= end; i++) results.push(String(i));
+      }
+    } else {
+      results.push(part);
+    }
+  });
+  return results;
 };
 
 const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
@@ -72,7 +97,8 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
 
   const [consigneeList, setConsigneeList] = useState([]);
   const [selectedConsignee, setSelectedConsignee] = useState("");
-  const [consigneeQuantity, setConsigneeQuantity] = useState("");
+  const [consigneeSerialNo, setConsigneeSerialNo] = useState("");
+  const [consigneeSubSerialNo, setConsigneeSubSerialNo] = useState("");
 
   const [sealingDetails, setSealingDetails] = useState([]);
   const [fileName, setFileName] = useState("");
@@ -108,7 +134,6 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     enabled: true,
   });
 
-  // Calculate serials used by OTHER inspections (excluding this one)
   const usedByOthersRepairedSerials = useMemo(() => {
     const used = new Set();
     allInspections?.forEach(fi => {
@@ -135,12 +160,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       setDiDate(inspectionData.diDate ? dayjs(inspectionData.diDate) : null);
       setWarranty(inspectionData?.deliverySchedule?.guaranteePeriodMonths || "");
       setSealingDetails(inspectionData.sealingDetails || []);
-      
-      const loadedConsignees = (inspectionData.consignees || []).map(c => ({
-        ...c,
-        newQuantity: c.newQuantity !== undefined ? c.newQuantity : (c.quantity - (c.repairedTransformerIds?.length || 0))
-      }));
-      setConsigneeList(loadedConsignees);
+      setConsigneeList(inspectionData.consignees || []);
       setRepairedTransformerSrno(inspectionData.repaired_transformer_srno || []); 
     }
   }, [inspectionData]);
@@ -157,22 +177,6 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       }
     }
   }, [inspectionData, totalInspectedQuantityData, inspectedQuantity, tnDetail]);
-
-  const availableTransformers = useMemo(() => {
-    if (!damagedTransformers) return [];
-    const flattened = [];
-    
-    damagedTransformers.forEach((t) => {
-      const serials = Array.isArray(t.serialNo) ? t.serialNo : [t.serialNo];
-      serials.forEach((sn) => {
-        // Only show if not used by OTHER inspections
-        if (!usedByOthersRepairedSerials.has(String(sn))) {
-          flattened.push({ id: t.id, serialNo: sn });
-        }
-      });
-    });
-    return flattened;
-  }, [damagedTransformers, usedByOthersRepairedSerials]);
 
   const totalRepairedPool = useMemo(() => {
     const assigned = consigneeList.flatMap(c => (c.repairedTransformerIds || []).map(String));
@@ -210,29 +214,55 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     else setWarranty("");
   };
 
-  const [selectedConsigneeSubSerials, setSelectedConsigneeSubSerials] = useState([]);
-
   const handleAddConsignee = () => {
-    if (!selectedConsignee || (!consigneeQuantity && selectedConsigneeSubSerials.length === 0)) {
-      setAlertBox({ open: true, msg: "Please select consignee and quantity or sub-serials.", error: true });
+    if (!selectedConsignee || (!consigneeSerialNo && !consigneeSubSerialNo)) {
+      setAlertBox({ open: true, msg: "Please select consignee and enter serial numbers.", error: true });
       return;
     }
 
     const from = parseInt(serialNumberFrom);
     const to = parseInt(serialNumberTo);
-    const requestedNewQty = parseInt(consigneeQuantity) || 0;
-    const newDistributed = consigneeList.reduce((sum, c) => sum + (c.newQuantity || 0), 0);
-
-    if (newDistributed + requestedNewQty > (to - from + 1)) {
-      setAlertBox({ open: true, msg: "New Quantity exceeds pool!", error: true });
+    if (isNaN(from) || isNaN(to) || from > to) {
+      setAlertBox({ open: true, msg: "Please enter valid range first.", error: true });
       return;
     }
 
-    let subSnNumber = null;
-    if (requestedNewQty > 0) {
-      const startSn = from + newDistributed;
-      const endSn = startSn + requestedNewQty - 1;
-      subSnNumber = `${startSn} TO ${endSn}`;
+    const enteredNewSerials = parseRange(consigneeSerialNo);
+    const enteredRepairedSerials = parseRange(consigneeSubSerialNo);
+
+    if (enteredNewSerials.length > 0) {
+      const invalidSerials = enteredNewSerials.filter(s => {
+        const num = parseInt(s);
+        return isNaN(num) || num < from || num > to;
+      });
+      if (invalidSerials.length > 0) {
+        setAlertBox({ open: true, msg: `New Serials out of range: ${invalidSerials.join(", ")}`, error: true });
+        return;
+      }
+    }
+
+    if (enteredRepairedSerials.length > 0) {
+      const pool = new Set(repairedTransformerSrno.map(String));
+      const invalidRepaired = enteredRepairedSerials.filter(s => !pool.has(String(s)));
+      if (invalidRepaired.length > 0) {
+        setAlertBox({ open: true, msg: `Sub Serials not in pool: ${invalidRepaired.join(", ")}`, error: true });
+        return;
+      }
+    }
+
+    const alreadyAssignedNew = new Set(consigneeList.flatMap(c => parseRange(c.subSnNumber)));
+    const alreadyAssignedRepaired = new Set(consigneeList.flatMap(c => c.repairedTransformerIds || []));
+
+    const duplicateNew = enteredNewSerials.filter(s => alreadyAssignedNew.has(s));
+    if (duplicateNew.length > 0) {
+      setAlertBox({ open: true, msg: `New Serials already assigned: ${duplicateNew.join(", ")}`, error: true });
+      return;
+    }
+
+    const duplicateRepaired = enteredRepairedSerials.filter(s => alreadyAssignedRepaired.has(s));
+    if (duplicateRepaired.length > 0) {
+      setAlertBox({ open: true, msg: `Sub Serials already assigned: ${duplicateRepaired.join(", ")}`, error: true });
+      return;
     }
 
     const selectedConsigneeObj = consignees.find((c) => c.id === selectedConsignee);
@@ -240,17 +270,17 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     const newConsignee = {
       consigneeId: selectedConsignee,
       consigneeName: selectedConsigneeObj?.name,
-      quantity: requestedNewQty + selectedConsigneeSubSerials.length,
-      newQuantity: requestedNewQty,
-      repairedQuantity: selectedConsigneeSubSerials.length,
-      subSnNumber: subSnNumber,
-      repairedTransformerIds: [...selectedConsigneeSubSerials],
+      quantity: enteredNewSerials.length + enteredRepairedSerials.length,
+      newQuantity: enteredNewSerials.length,
+      repairedQuantity: enteredRepairedSerials.length,
+      subSnNumber: consigneeSerialNo,
+      repairedTransformerIds: enteredRepairedSerials,
     };
 
     setConsigneeList([...consigneeList, newConsignee]);
     setSelectedConsignee("");
-    setConsigneeQuantity("");
-    setSelectedConsigneeSubSerials([]); 
+    setConsigneeSerialNo("");
+    setConsigneeSubSerialNo("");
   };
 
   const handleDeleteConsignee = (idx) => {
@@ -258,14 +288,6 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
     updated.splice(idx, 1);
     setConsigneeList(updated);
   };
-
-  const assignedSubSerials = useMemo(() => {
-    return new Set(consigneeList.flatMap(c => (c.repairedTransformerIds || []).map(String)));
-  }, [consigneeList]);
-
-  const availableSubSerialsForConsignee = useMemo(() => {
-    return repairedTransformerSrno.filter(sn => !assignedSubSerials.has(String(sn)));
-  }, [repairedTransformerSrno, assignedSubSerials]);
 
   const handleExcelUpload = (e) => {
     const file = e.target.files[0];
@@ -315,13 +337,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
       repaired_transformer_srno: totalRepairedPool,
       subSerialNumber: totalRepairedPool.join(", "),
       repaired_transformer_mapping: repairedTransformerMapping,
-      consignees: consigneeList.map(c => ({
-        consigneeId: c.consigneeId,
-        consigneeName: c.consigneeName,
-        quantity: c.quantity,
-        subSnNumber: c.subSnNumber,
-        repairedTransformerIds: c.repairedTransformerIds || [],
-      })),
+      consignees: consigneeList,
       sealingDetails,
       grandTotal: total ? parseInt(total, 10) : null,
     };
@@ -363,26 +379,6 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
 
           <TextField label="Warranty Period" fullWidth value={warranty} sx={{ mt: 2 }} InputProps={{ readOnly: true }} />
 
-          <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel>Sub Serial No</InputLabel>
-            <Select
-              multiple
-              input={<OutlinedInput label="Sub Serial No" />}
-              value={repairedTransformerSrno}
-              onChange={(e) => setRepairedTransformerSrno(e.target.value)}
-              renderValue={(selected) => selected.join(", ")}
-            >
-              {(availableTransformers || [])
-                .filter(t => !consigneeList.flatMap(c => (c.repairedTransformerIds || []).map(String)).includes(String(t.serialNo)))
-                .map((t) => (
-                  <MenuItem key={`${t.id}-${t.serialNo}`} value={String(t.serialNo)}>
-                    <Checkbox checked={repairedTransformerSrno.includes(String(t.serialNo))} />
-                    <ListItemText primary={t.serialNo} />
-                  </MenuItem>
-                ))}
-            </Select>
-          </FormControl>
-
           <Grid container spacing={3} columns={{ xs: 1, sm: 2 }}>
             <Grid item size={2}><Typography variant="h6" sx={{ mt: 2 }}>Consignee Details</Typography></Grid>
             <Grid item size={2}>
@@ -394,25 +390,9 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
                   </Select>
                 </FormControl>
 
-                <TextField label="Quantity" type="number" fullWidth sx={{ flex: 1 }} value={consigneeQuantity} onChange={(e) => setConsigneeQuantity(e.target.value)} />
+                <TextField label="Serial No" fullWidth sx={{ flex: 1.5 }} value={consigneeSerialNo} onChange={(e) => setConsigneeSerialNo(e.target.value)} placeholder="e.g. 101-105, 110" />
 
-                <FormControl fullWidth sx={{ flex: 2 }}>
-                  <InputLabel>Sub Serial No</InputLabel>
-                  <Select
-                    multiple
-                    input={<OutlinedInput label="Sub Serial No" />}
-                    value={selectedConsigneeSubSerials}
-                    onChange={(e) => setSelectedConsigneeSubSerials(e.target.value)}
-                    renderValue={(selected) => selected.join(", ")}
-                  >
-                    {availableSubSerialsForConsignee.map((sn) => (
-                      <MenuItem key={sn} value={String(sn)}>
-                        <Checkbox checked={selectedConsigneeSubSerials.includes(String(sn))} />
-                        <ListItemText primary={sn} />
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <TextField label="Sub Serial No" fullWidth sx={{ flex: 1.5 }} value={consigneeSubSerialNo} onChange={(e) => setConsigneeSubSerialNo(e.target.value)} placeholder="e.g. 201-205, 210" />
 
                 <Button variant="contained" color="primary" sx={{ height: '56px', flex: 1 }} onClick={handleAddConsignee}>Add</Button>
               </Box>
