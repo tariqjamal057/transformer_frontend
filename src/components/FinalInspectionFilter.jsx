@@ -200,8 +200,8 @@ const FiltersComponent = ({
         excelRows.push([
           normalize(cIdx === 0 ? index + 1 : ""),
           normalize(
-            cIdx === 0 && (item.offeredDate || item.offerDate)
-              ? dayjs(item.offeredDate || item.offerDate).format("DD MMM YYYY")
+            cIdx === 0 && item.offerDate
+              ? dayjs(item.offerDate).format("DD MMM YYYY")
               : "",
           ),
           normalize(
@@ -387,8 +387,8 @@ const FiltersComponent = ({
       return {
         "S.No": index + 1,
         "Offered Date":
-          item.offeredDate || item.offerDate
-            ? dayjs(item.offeredDate || item.offerDate).format("DD MMM YYYY")
+          item.offerDate
+            ? dayjs(item.offerDate).format("DD MMM YYYY")
             : "",
         "Firm Name":
           item.companyName ||
@@ -762,8 +762,8 @@ const FiltersComponent = ({
         pdfData.push([
           normalize(cIdx === 0 ? index + 1 : ""),
           normalize(
-            cIdx === 0 && (item.offeredDate || item.offerDate)
-              ? dayjs(item.offeredDate || item.offerDate).format("DD MMM YYYY")
+            cIdx === 0 && item.offerDate
+              ? dayjs(item.offerDate).format("DD MMM YYYY")
               : "",
           ),
           normalize(

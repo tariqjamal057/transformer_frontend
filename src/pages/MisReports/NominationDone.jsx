@@ -140,7 +140,7 @@ const NominationDone = () => {
                                 {idx + 1}
                               </TableCell>
                               <TableCell rowSpan={row.consignees.length}>
-                                {dayjs(row.offerDate).format("DD MMM YYYY")}
+                                {row.offerDate ? dayjs(row.offerDate).format("DD MMM YYYY") : ""}
                               </TableCell>
                               <TableCell rowSpan={row.consignees.length}>
                                 {
@@ -201,7 +201,7 @@ const NominationDone = () => {
                       <TableRow>
                         <TableCell>{idx + 1}</TableCell>
                         <TableCell>
-                          {dayjs(row.offeredDate).format("DD MMM YYYY")}
+                          {row.offerDate ? dayjs(row.offerDate).format("DD MMM YYYY") : ""}
                         </TableCell>
                         <TableCell>{row.companyName}</TableCell>
                         <TableCell>{row.discom}</TableCell>
