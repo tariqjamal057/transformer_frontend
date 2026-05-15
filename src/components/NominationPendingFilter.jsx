@@ -353,18 +353,7 @@ const FiltersComponent = ({
               c?.consigneeName,
           )
           .join(", ") || "";
-      const srNumbers =
-        item.consignees?.map((c) => {
-          const parts = [];
-        //   if (c.subSnNumber) parts.push(c.subSnNumber);
-          if (c.repairedTransformerIds) {
-            c.repairedTransformerIds.forEach(oldId => {
-              const mapping = item.repaired_transformer_mapping?.find(m => String(m.oldSrNo) === String(oldId));
-              parts.push(mapping ? `${oldId}` : oldId);
-            });
-          }
-          return parts.join(", ");
-        }).filter(Boolean).join(", ") || "";
+      const srNumbers = item.subSerialNumber || "";
       const qtys = item.consignees?.map((c) => c.quantity).join(", ") || "";
       const dispatches =
         item.consignees?.map((c) => c.dispatch).join(", ") || "";
@@ -511,18 +500,7 @@ const FiltersComponent = ({
 
     // Step 1: Prepare data as array
     const pdfData = filteredData.map((item, index) => {
-      const srNumbers =
-        item.consignees?.map((c) => {
-          const parts = [];
-          if (c.subSnNumber) parts.push(c.subSnNumber);
-          if (c.repairedTransformerIds) {
-            c.repairedTransformerIds.forEach(oldId => {
-              const mapping = item.repaired_transformer_mapping?.find(m => String(m.oldSrNo) === String(oldId));
-              parts.push(mapping ? `${oldId}` : oldId);
-            });
-          }
-          return parts.join(", ");
-        }).filter(Boolean).join(", ") || "";
+      const srNumbers = item.subSerialNumber || "";
 
       return [
         index + 1, // S.No
