@@ -17,7 +17,7 @@ import GPFailureBulkUploadModal from "../../components/GPFailureBulkUploadModal"
 import Pagination from "../../components/Pagination";
 
 const GPFailureInformationList = () => {
-  const { setAlertBox, hasPermission } = useContext(MyContext);
+  const { userRole, setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
 
   const [openModal, setOpenModal] = useState(false);

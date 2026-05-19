@@ -199,7 +199,7 @@ const DeliveryDetailsList = () => {
     const serials = dc.otherConsigneeSerialNumbers
       .split(",")
       .map((s) => s.trim());
-    const consignees = dc.finalInspection?.consignees || [];
+    const consignees = dc?.finalInspection?.consignees || [];
 
     const mapped = serials.map((serialRange) => {
       // Check if it's a range
@@ -404,12 +404,12 @@ const DeliveryDetailsList = () => {
 
                           {/* Selected Serial No */}
                           <td>
-                            {compressSerials(dc.selectedTransformers) || "-"}
+                            {compressSerials(dc?.selectedTransformers) || "-"}
                           </td>
 
                           {/* Repaired Serial No */}
                           <td>
-                            {compressSerials(dc.repairedSerialNumbers) || "-"}
+                            {compressSerials(dc?.repairedSerialNumbers) || "-"}
                           </td>
 
                           {/* Other Consignee Serial No */}
@@ -421,17 +421,23 @@ const DeliveryDetailsList = () => {
                               {dc?.finalInspection?.deliverySchedule?.poDetails}
                             </div>
                             <div className="text-muted small">
-                              {new Date(
-                                dc.finalInspection?.deliverySchedule?.poDate,
-                              ).toLocaleDateString()}
+                              {dc?.finalInspection?.deliverySchedule?.poDate
+                                ? new Date(
+                                    dc.finalInspection.deliverySchedule.poDate,
+                                  ).toLocaleDateString()
+                                : "-"}
                             </div>
                           </td>
 
                           {/* Challan No */}
-                          <td>{dc.challanNo}</td>
+                          <td>{dc?.challanNo || "-"}</td>
 
                           {/* Challan Date */}
-                          <td>{new Date(dc.createdAt).toLocaleDateString()}</td>
+                          <td>
+                            {dc?.createdAt
+                              ? new Date(dc.createdAt).toLocaleDateString()
+                              : "-"}
+                          </td>
 
                           {/* Receipted Challan No */}
                           <td>{item.receiptedChallanNo}</td>
@@ -444,20 +450,23 @@ const DeliveryDetailsList = () => {
                           </td>
 
                           {/* Total Qty. */}
-                          <td>{dc.finalInspection.inspectedQuantity}</td>
+                          <td>{dc?.finalInspection?.inspectedQuantity || "-"}</td>
 
                           {/* G.P. Expiry Date */}
                           <td>
-                            {dayjs(
-                              dc?.finalInspection?.deliverySchedule
-                                ?.deliveryScheduleDate,
-                            )
-                              .add(
-                                dc?.finalInspection?.deliverySchedule
-                                  ?.guaranteePeriodMonths,
-                                "month",
-                              )
-                              .format("YYYY-MM-DD")}
+                            {dc?.finalInspection?.deliverySchedule
+                              ?.deliveryScheduleDate
+                              ? dayjs(
+                                  dc.finalInspection.deliverySchedule
+                                    .deliveryScheduleDate,
+                                )
+                                  .add(
+                                    dc.finalInspection.deliverySchedule
+                                      .guaranteePeriodMonths,
+                                    "month",
+                                  )
+                                  .format("YYYY-MM-DD")
+                              : "-"}
                           </td>
 
                           {/* Transformer Info */}
@@ -472,13 +481,16 @@ const DeliveryDetailsList = () => {
                               {dc?.finalInspection?.serialNumberTo}
                             </div>
                             <div>
-                              <strong>DI No:</strong> {dc.finalInspection.diNo}
+                              <strong>DI No:</strong>{" "}
+                              {dc?.finalInspection?.diNo || "-"}
                             </div>
                             <div>
                               <strong>DI Date:</strong>{" "}
-                              {new Date(
-                                dc.finalInspection.diDate,
-                              ).toLocaleDateString()}
+                              {dc?.finalInspection?.diDate
+                                ? new Date(
+                                    dc.finalInspection.diDate,
+                                  ).toLocaleDateString()
+                                : "-"}
                             </div>
                           </td>
 
@@ -504,37 +516,42 @@ const DeliveryDetailsList = () => {
 
                           {/* Inspection Date */}
                           <td>
-                            {new Date(
-                              dc.finalInspection.inspectionDate,
-                            ).toLocaleDateString()}
+                            {dc?.finalInspection?.inspectionDate
+                              ? new Date(
+                                  dc.finalInspection.inspectionDate,
+                                ).toLocaleDateString()
+                              : "-"}
                           </td>
 
                           {/* Consignor Details */}
                           <td className="text-start">
                             <div>
-                              <strong>Name:</strong> {dc.consignorName}
+                              <strong>Name:</strong> {dc?.consignorName || "-"}
                             </div>
                             <div>
-                              <strong>Phone:</strong> {dc.consignorPhone}
+                              <strong>Phone:</strong> {dc?.consignorPhone || "-"}
                             </div>
                             <div>
-                              <strong>Address:</strong> {dc.consignorAddress}
+                              <strong>Address:</strong>{" "}
+                              {dc?.consignorAddress || "-"}
                             </div>
                             <div>
-                              <strong>GST:</strong> {dc.consignorGST}
+                              <strong>GST:</strong> {dc?.consignorGST || "-"}
                             </div>
                           </td>
 
                           {/* Consignee Details */}
                           <td className="text-start">
                             <div>
-                              <strong>Name:</strong> {dc.consignee.name}
+                              <strong>Name:</strong> {dc?.consignee?.name || "-"}
                             </div>
                             <div>
-                              <strong>Address:</strong> {dc.consignee.address}
+                              <strong>Address:</strong>{" "}
+                              {dc?.consignee?.address || "-"}
                             </div>
                             <div>
-                              <strong>GST:</strong> {dc.consignee.gstNo}
+                              <strong>GST:</strong>{" "}
+                              {dc?.consignee?.gstNo || "-"}
                             </div>
                           </td>
                           {/* Action Buttons */}

@@ -23,7 +23,7 @@ import { saveAs } from "file-saver";
 import { useDropzone } from "react-dropzone";
 
 const MaterialDescriptionList = () => {
-  const { setAlertBox, hasPermission } = useContext(MyContext);
+  const { userRole, setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
 

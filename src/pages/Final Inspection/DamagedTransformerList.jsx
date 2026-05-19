@@ -39,7 +39,7 @@ import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
 const DamagedTransformerList = () => {
-  const { setAlertBox, hasPermission } = useContext(MyContext);
+  const { userRole, setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
