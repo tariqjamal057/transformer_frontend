@@ -28,6 +28,7 @@ const FiltersComponent = ({
   pdfTitle,
   dueDateofDeliveryIncluded = true,
   exportMode = "default",
+  pdfOrientation = "l", // "l" for landscape, "p" for portrait
 }) => {
   const [selectedCompany, setSelectedCompany] = useState("all");
   const [selectedDiscom, setSelectedDiscom] = useState("all");
@@ -488,7 +489,7 @@ const FiltersComponent = ({
 
   // ✅ Export PDF
   const exportPDF = () => {
-    const doc = new jsPDF("l", "pt", "a4"); // Landscape A4
+    const doc = new jsPDF(pdfOrientation, "pt", "a4"); 
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -585,7 +586,7 @@ const FiltersComponent = ({
         0: 30, // S.No
         1: 50, // Offered Date
         2: 90, // Firm Name
-        3: 50, // Discom
+        3: 90, // Discom
         4: 50, // TN No.
         5: 70, // Material Name
         6: 60, // Tfr Serial No
@@ -604,6 +605,18 @@ const FiltersComponent = ({
         totalTableWidth += width;
       });
 
+      // Adjust widths proportionally if in portrait mode and too wide
+      const maxWidth = pageWidth - 20; // 20pt margin on each side
+      if (totalTableWidth > maxWidth) {
+        const scaleFactor = maxWidth / totalTableWidth;
+        totalTableWidth = 0;
+        filteredColumnIndices.forEach((originalIndex, newIndex) => {
+          const newWidth = baseWidths[originalIndex] * scaleFactor;
+          styles[newIndex] = { cellWidth: newWidth };
+          totalTableWidth += newWidth;
+        });
+      }
+
       return { styles, totalTableWidth };
     };
 
@@ -618,7 +631,7 @@ const FiltersComponent = ({
       theme: "grid",
 
       styles: {
-        fontSize: 7,
+        fontSize: pdfOrientation === "p" ? 6 : 7,
         cellPadding: 2,
         halign: "center",
         valign: "middle",
@@ -630,7 +643,7 @@ const FiltersComponent = ({
       headStyles: {
         fillColor: [255, 255, 255],
         textColor: [0, 0, 0],
-        fontSize: 7,
+        fontSize: pdfOrientation === "p" ? 6 : 7,
         fontStyle: "bold",
         minCellHeight: 25,
       },
@@ -666,7 +679,7 @@ const FiltersComponent = ({
 
   // ✅ Export PDF - DI Received (Table Format with Row Expansion)
   const exportPDFForDiReceived = () => {
-    const doc = new jsPDF("l", "pt", "a4"); // Landscape A4
+    const doc = new jsPDF(pdfOrientation, "pt", "a4"); 
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();

@@ -28,6 +28,7 @@ const FiltersComponent = ({
   pdfTitle,
   dueDateofDeliveryIncluded = true,
   exportMode = "default",
+  pdfOrientation = "l", // "l" for landscape, "p" for portrait
 }) => {
   const [selectedCompany, setSelectedCompany] = useState("all");
   const [selectedDiscom, setSelectedDiscom] = useState("all");
@@ -513,7 +514,7 @@ const FiltersComponent = ({
 
   // ✅ Export PDF
   const exportPDF = () => {
-    const doc = new jsPDF("l", "pt", "a4"); // Landscape A4
+    const doc = new jsPDF(pdfOrientation, "pt", "a4"); 
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -621,13 +622,13 @@ const FiltersComponent = ({
         0: 30, // S.No
         1: 50, // Offered Date
         2: 90, // Firm Name
-        3: 50, // Discom
+        3: 90, // Discom
         4: 50, // TN No.
         5: 70, // Material Name
-        6: 60, // Tfr Serial No
-        7: 60, // Sub-serial No
+        6: 70, // Tfr Serial No
+        7: 70, // Sub-serial No
         8: 40, // Offered Qty
-        9: 110, // Inspection Officers
+        9: 110, // Inspection Officers 
         10: 60, // Date Of Inspection
         11: 50, // Inspected Qty
       };
@@ -639,6 +640,18 @@ const FiltersComponent = ({
         styles[newIndex] = { cellWidth: width };
         totalTableWidth += width;
       });
+
+      // Adjust widths proportionally if in portrait mode and too wide
+      const maxWidth = pageWidth - 20; // 20pt margin on each side
+      if (totalTableWidth > maxWidth) {
+        const scaleFactor = maxWidth / totalTableWidth;
+        totalTableWidth = 0;
+        filteredColumnIndices.forEach((originalIndex, newIndex) => {
+          const newWidth = baseWidths[originalIndex] * scaleFactor;
+          styles[newIndex] = { cellWidth: newWidth };
+          totalTableWidth += newWidth;
+        });
+      }
 
       return { styles, totalTableWidth };
     };
@@ -654,7 +667,7 @@ const FiltersComponent = ({
       theme: "grid",
 
       styles: {
-        fontSize: 7,
+        fontSize: pdfOrientation === "p" ? 6 : 7,
         cellPadding: 2,
         halign: "center",
         valign: "middle",
@@ -666,7 +679,7 @@ const FiltersComponent = ({
       headStyles: {
         fillColor: [255, 255, 255],
         textColor: [0, 0, 0],
-        fontSize: 7,
+        fontSize: pdfOrientation === "p" ? 6 : 7,
         fontStyle: "bold",
         minCellHeight: 25,
       },
@@ -702,7 +715,7 @@ const FiltersComponent = ({
 
   // ✅ Export PDF - DI Received (Table Format with Row Expansion)
   const exportPDFForDiReceived = () => {
-    const doc = new jsPDF("l", "pt", "a4"); // Landscape A4
+    const doc = new jsPDF(pdfOrientation, "pt", "a4"); 
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -872,19 +885,19 @@ const FiltersComponent = ({
       const baseWidths = {
         0: 26,
         1: 44,
-        2: 56,
-        3: 40,
+        2: 90, // Firm Name
+        3: 90, // Discom
         4: 40,
         5: 50,
-        6: 46,
+        6: 65,
         7: 36,
         8: 58,
         9: 48,
         10: 40,
         11: 44,
         12: 44,
-        13: 56, // Due Date
-        14: 58, // Consignee
+        13: 65, // Due Date
+        14: 90, // Consignee
         15: 38,
         16: 30,
         17: 38,
@@ -898,6 +911,18 @@ const FiltersComponent = ({
         styles[newIndex] = { cellWidth: width };
         totalTableWidth += width;
       });
+
+      // Adjust widths proportionally if the table is too wide for the page
+      const maxWidth = pageWidth - 20; // 10pt margin on each side
+      if (totalTableWidth > maxWidth) {
+        const scaleFactor = maxWidth / totalTableWidth;
+        totalTableWidth = 0;
+        filteredColumnIndices.forEach((originalIndex, newIndex) => {
+          const newWidth = (baseWidths[originalIndex] || 40) * scaleFactor;
+          styles[newIndex] = { cellWidth: newWidth };
+          totalTableWidth += newWidth;
+        });
+      }
 
       return { styles, totalTableWidth };
     };
