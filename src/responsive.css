@@ -18,23 +18,9 @@
         padding: 0px;
     }
 
-    header .part1{
-        max-width: 40%;
-        flex: 0 0 40%;
-    }
-
     header .logo img{
         width: 70%;
         height: 50px;
-    }
-
-    /* header .logo span{
-        font-size: 18px;
-    } */
-
-    header .part3{
-        max-width: 60%;
-        flex: 0 0 60%;
     }
 
     /*Sidebar resp*/

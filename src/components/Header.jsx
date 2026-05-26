@@ -77,7 +77,7 @@ const Header = () => {
       <header className="d-flex align-items-center">
         <div className="container-fluid w-100">
           <div className="row d-flex align-items-center w-100">
-            <div className="col-sm-2 part1">
+            <div className={`part1 ${isToggleSidebar === true ? 'toggle' : ''}`}>
               <Link to={"/"} className="d-flex align-items-center logo">
                 {<img src={companyLogo} alt="logo" style={{ width: "auto", height: "50px"}} />}
                 <span className="ms-">{discomName}</span>
@@ -85,7 +85,7 @@ const Header = () => {
             </div>
 
             {windowWidth > 992 && (
-              <div className="col-sm-3 d-flex align-items-center part2 res-hide">
+              <div className={`d-flex align-items-center part2 res-hide ${isToggleSidebar === true ? 'full' : ''}`}>
                 <Button
                   className="rounded-circle me-3"
                   onClick={() => setIsToggleSidebar(!isToggleSidebar)}
@@ -100,7 +100,7 @@ const Header = () => {
               </div>
             )}
 
-            <div className="col-sm-7 d-flex align-items-center justify-content-start part3 ms-auto">
+            <div className={`d-flex align-items-center justify-content-start part3 ms-auto ${isToggleSidebar === true ? 'full' : ''}`}>
               {/* Back to company/discom selection */}
               {localStorage.getItem("selectedSupplyTenderId") && (
                 <button

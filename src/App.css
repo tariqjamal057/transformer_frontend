@@ -159,8 +159,51 @@ body.dark header button.rounded-circle svg{
   color: #fff !important;
 }
 
-header .part2{
+header .part1 {
+  width: 20%;
+  flex: 0 0 20%;
+  transition: all 0.3s ease-in-out;
+}
+
+header .part1.toggle {
+  width: 0%;
+  flex: 0 0 0%;
+  padding: 0;
+  overflow: hidden;
+}
+
+header .part2 {
+  width: 25%;
+  flex: 0 0 25%;
   padding-left: 60px;
+  transition: all 0.3s ease-in-out;
+}
+
+header .part2.full{
+  width: 30%;
+  flex: 0 0 30%;
+}
+
+header .part3 {
+  width: 55%;
+  flex: 0 0 55%;
+  transition: all 0.3s ease-in-out;
+}
+
+header .part3.full{
+  width: 70%;
+  flex: 0 0 70%;
+}
+
+@media (max-width: 992px) {
+  header .part1 {
+    width: 40%;
+    flex: 0 0 40%;
+  }
+  header .part3 {
+    width: 60%;
+    flex: 0 0 60%;
+  }
 }
 
 /*SearchBox*/
@@ -1618,8 +1661,9 @@ body.dark .css-16wblaj-MuiInputBase-input-MuiOutlinedInput-input{
 
 header .logo span {
   margin-left: 12px;
-  font-size: larger;
   font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.8px;
 }
 
 
