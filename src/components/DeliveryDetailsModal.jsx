@@ -264,7 +264,7 @@ const DeliveryDetailsModal = ({ open, handleClose, deliveryDetailData }) => {
                 />
                 <TextField
                   label="Transformer Serial No"
-                  value={selectedData.finalInspection ? `${selectedData.finalInspection.serialNumberFrom} TO ${selectedData.finalInspection.serialNumberTo}` : ""}
+                  value={selectedData.finalInspection ? `${selectedData.finalInspection?.serialNumberFrom} TO ${selectedData.finalInspection?.serialNumberTo}` : ""}
                   fullWidth
                   InputProps={{ readOnly: true }}
                 />
@@ -291,12 +291,12 @@ const DeliveryDetailsModal = ({ open, handleClose, deliveryDetailData }) => {
                   value={
                     selectedData.finalInspection?.deliverySchedule
                       ? dayjs(
-                          selectedData.finalInspection.deliverySchedule
-                            .deliveryScheduleDate
+                          selectedData.finalInspection?.deliverySchedule
+                            ?.deliveryScheduleDate
                         )
                           .add(
-                            selectedData.finalInspection.deliverySchedule
-                              .guaranteePeriodMonths,
+                            selectedData.finalInspection?.deliverySchedule
+                              ?.guaranteePeriodMonths,
                             "month"
                           )
                           .format("DD/MM/YYYY")

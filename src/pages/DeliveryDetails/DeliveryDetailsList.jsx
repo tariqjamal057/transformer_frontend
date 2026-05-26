@@ -423,7 +423,7 @@ const DeliveryDetailsList = () => {
                             <div className="text-muted small">
                               {dc?.finalInspection?.deliverySchedule?.poDate
                                 ? new Date(
-                                    dc.finalInspection.deliverySchedule.poDate,
+                                    dc?.finalInspection?.deliverySchedule?.poDate,
                                   ).toLocaleDateString()
                                 : "-"}
                             </div>
@@ -457,12 +457,12 @@ const DeliveryDetailsList = () => {
                             {dc?.finalInspection?.deliverySchedule
                               ?.deliveryScheduleDate
                               ? dayjs(
-                                  dc.finalInspection.deliverySchedule
-                                    .deliveryScheduleDate,
+                                  dc?.finalInspection?.deliverySchedule
+                                    ?.deliveryScheduleDate,
                                 )
                                   .add(
-                                    dc.finalInspection.deliverySchedule
-                                      .guaranteePeriodMonths,
+                                    dc?.finalInspection?.deliverySchedule
+                                      ?.guaranteePeriodMonths,
                                     "month",
                                   )
                                   .format("YYYY-MM-DD")
@@ -488,7 +488,7 @@ const DeliveryDetailsList = () => {
                               <strong>DI Date:</strong>{" "}
                               {dc?.finalInspection?.diDate
                                 ? new Date(
-                                    dc.finalInspection.diDate,
+                                    dc?.finalInspection?.diDate,
                                   ).toLocaleDateString()
                                 : "-"}
                             </div>
@@ -518,7 +518,7 @@ const DeliveryDetailsList = () => {
                           <td>
                             {dc?.finalInspection?.inspectionDate
                               ? new Date(
-                                  dc.finalInspection.inspectionDate,
+                                  dc?.finalInspection?.inspectionDate,
                                 ).toLocaleDateString()
                               : "-"}
                           </td>

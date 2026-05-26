@@ -84,7 +84,7 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
   useEffect(() => {
     if (trfsiNo) {
       const found = deliveryChallans?.find((ch) => {
-        const hasTrfsi = ch.finalInspection.sealingDetails.some(
+        const hasTrfsi = ch.finalInspection?.sealingDetails?.some(
           (s) => String(s.trfSiNo) === String(trfsiNo),
         );
         if (hasTrfsi) {
@@ -95,7 +95,7 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
       if (found) {
         setSelectedChalan(found);
 
-        const seal = found.finalInspection.sealingDetails.find(
+        const seal = found.finalInspection?.sealingDetails?.find(
           (s) => String(s.trfSiNo) === String(trfsiNo),
         );
         setPolySealNo(seal?.polySealNo || "");
@@ -108,7 +108,7 @@ const GPReceiptModal = ({ open, handleClose, gpReceiptData }) => {
 
   const { mutate: updateGPReceipt, isLoading } = useMutation({
     mutationFn: (updatedData) =>
-      api.put(`/new-gp-receipt-records/${gpReceiptData.id}`, updatedData),
+      api.put(`/new-gp-receipt-records/${gpReceiptData?.id}`, updatedData),
     onSuccess: () => {
       queryClient.invalidateQueries(["newGpReceiptRecords"]);
       setAlertBox({ open: true, msg: "Updated successfully", error: false });

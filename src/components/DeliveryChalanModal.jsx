@@ -271,7 +271,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
       setInspectionDate(
         record.inspectionDate ? dayjs(record.inspectionDate) : null,
       );
-      setInspectionOfficers(record.inspectionOfficers.join(", ") || "");
+      setInspectionOfficers(record.inspectionOfficers?.join(", ") || "");
       setPoNo(record.deliverySchedule?.po || "");
       setPoDate(
         record.deliverySchedule?.poDate
@@ -281,7 +281,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
       setChalanDescription(record.deliverySchedule?.chalanDescription || "");
       setSerialNumber(
         record.snNumber ||
-          `${record.serialNumberFrom} TO ${record.serialNumberTo}` ||
+          (record.serialNumberFrom && record.serialNumberTo ? `${record.serialNumberFrom} TO ${record.serialNumberTo}` : "") ||
           "",
       );
 
@@ -802,13 +802,13 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
       setDiDate(fi.diDate ? dayjs(fi.diDate) : null);
 
       setInspectionDate(fi.inspectionDate ? dayjs(fi.inspectionDate) : null);
-      setInspectionOfficers(fi.inspectionOfficers.join(", ") || []);
+      setInspectionOfficers(fi.inspectionOfficers?.join(", ") || []);
 
-      setPoNo(ds.po || "");
-      setPoDate(ds.poDate ? dayjs(ds.poDate) : null);
+      setPoNo(ds?.po || "");
+      setPoDate(ds?.poDate ? dayjs(ds.poDate) : null);
 
       setChallanNo(deliveryChalanData.challanNo || "");
-      setChalanDescription(ds.chalanDescription || "");
+      setChalanDescription(ds?.chalanDescription || "");
       setSelectedMaterialCode(deliveryChalanData.materialDescriptionId || "");
       setMaterialDescription(
         deliveryChalanData.materialDescription?.description || "",

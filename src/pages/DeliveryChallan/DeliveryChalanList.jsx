@@ -330,14 +330,14 @@ const DeliveryChalanList = () => {
                         </div>
                         <div>
                           <strong>Serial No:</strong>{" "}
-                          {item.finalInspection.serialNumberFrom} - {item.finalInspection.serialNumberTo}
+                          {item.finalInspection?.serialNumberFrom} - {item.finalInspection?.serialNumberTo}
                         </div>
                         <div>
-                          <strong>DI No:</strong> {item.finalInspection.diNo}
+                          <strong>DI No:</strong> {item.finalInspection?.diNo}
                         </div>
                         <div>
                           <strong>DI Date:</strong>{" "}
-                          {item.finalInspection.diDate}
+                          {item.finalInspection?.diDate}
                         </div>
                       </td>
 
@@ -357,7 +357,7 @@ const DeliveryChalanList = () => {
                       {/* Inspection Officers */}
                       <td>
                         <div className="d-flex flex-column gap-1">
-                          {item.finalInspection.inspectionOfficers.map(
+                          {item.finalInspection?.inspectionOfficers?.map(
                             (officer, idx) => (
                               <span
                                 key={`${item.id}-${idx}`}
@@ -375,7 +375,7 @@ const DeliveryChalanList = () => {
                       </td>
 
                       {/* Inspection Date */}
-                      <td>{item.finalInspection.inspectionDate}</td>
+                      <td>{item.finalInspection?.inspectionDate}</td>
 
                       {/* Consignor Details */}
                       <td className="text-start">
@@ -396,27 +396,27 @@ const DeliveryChalanList = () => {
                       {/* Consignee Details */}
                       <td className="text-start">
                         <div>
-                          <strong>Name:</strong> {item.consignee.name}
+                          <strong>Name:</strong> {item.consignee?.name}
                         </div>
                         <div>
-                          <strong>Address:</strong> {item.consignee.address}
+                          <strong>Address:</strong> {item.consignee?.address}
                         </div>
                         <div>
-                          <strong>GST:</strong> {item.consignee.gstNo}
+                          <strong>GST:</strong> {item.consignee?.gstNo}
                         </div>
                       </td>
 
                       {/* Material & Challan Description */}
                       <td className="text-start">
                         <div>
-                          {item.materialDescription.description
-                            .split(" ")
+                          {item.materialDescription?.description
+                            ?.split(" ")
                             .slice(0, 12)
                             .join(" ")}
                         </div>
                         <div className="text-muted small mt-1">
-                          {item.finalInspection.deliverySchedule?.chalanDescription
-                            .split(" ")
+                          {item.finalInspection?.deliverySchedule?.chalanDescription
+                            ?.split(" ")
                             .slice(0, 10)
                             .join(" ")}
                           ...

@@ -90,9 +90,9 @@ const AddNewGPInformation = () => {
 
         const matchedChalan = deliveryChalans.find((ch) => {
           const challanRating = String(
-            ch.finalInspection.deliverySchedule.rating,
+            ch.finalInspection?.deliverySchedule?.rating,
           ).trim();
-          const matchSealing = ch.finalInspection.sealingDetails?.some(
+          const matchSealing = ch.finalInspection?.sealingDetails?.some(
             (s) => String(s.trfSiNo).trim() === trfsiNo,
           );
           return matchSealing;
@@ -104,7 +104,7 @@ const AddNewGPInformation = () => {
             rating,
             polyCarbonateSealNo,
             receivedFromACOS,
-            inspectionDate: matchedChalan.finalInspection.inspectionDate,
+            inspectionDate: matchedChalan.finalInspection?.inspectionDate,
             challanNo: matchedChalan.challanNo,
             challanDate: matchedChalan.createdAt,
             consigneeName: matchedChalan.consignee?.name,

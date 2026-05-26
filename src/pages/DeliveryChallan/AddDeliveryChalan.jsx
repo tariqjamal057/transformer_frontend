@@ -245,7 +245,7 @@ const AddDeliveryChalan = () => {
       setInspectionDate(
         record.inspectionDate ? dayjs(record.inspectionDate) : null,
       );
-      setInspectionOfficers(record.inspectionOfficers.join(", ") || "");
+      setInspectionOfficers(record.inspectionOfficers?.join(", ") || "");
       setPoNo(record.deliverySchedule?.po || "");
       setPoDate(
         record.deliverySchedule?.poDate
@@ -255,7 +255,7 @@ const AddDeliveryChalan = () => {
       setChalanDescription(record.deliverySchedule?.chalanDescription || "");
       setSerialNumber(
         record.snNumber ||
-          `${record.serialNumberFrom} TO ${record.serialNumberTo}` ||
+          (record.serialNumberFrom && record.serialNumberTo ? `${record.serialNumberFrom} TO ${record.serialNumberTo}` : "") ||
           "",
       );
 

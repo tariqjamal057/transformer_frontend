@@ -102,7 +102,7 @@ const GPFailureInformationModal = ({ open, handleClose, gpFailureData }) => {
 
   const { mutate: updateGPFailure, isLoading } = useMutation({
     mutationFn: (updatedFailure) =>
-      api.put(`/gp-failures/${gpFailureData.id}`, updatedFailure),
+      api.put(`/gp-failures/${gpFailureData?.id}`, updatedFailure),
     onSuccess: () => {
       queryClient.invalidateQueries(["gpFailures"]);
       handleClose();
@@ -116,9 +116,9 @@ const GPFailureInformationModal = ({ open, handleClose, gpFailureData }) => {
     //   return;
     // }
 
-    const challanDate = new Date(gpFailureData.deliveryChallan?.createdAt);
+    const challanDate = new Date(gpFailureData?.deliveryChallan?.createdAt);
     const guaranteeMonths =
-      gpFailureData.deliveryChallan.finalInspection.deliverySchedule.guaranteePeriodMonths;
+      gpFailureData?.deliveryChallan?.finalInspection?.deliverySchedule?.guaranteePeriodMonths || 0;
     const expiryDate = addMonths(challanDate, guaranteeMonths);
     const today = new Date();
     const isUnderGuarantee = isAfter(expiryDate, today);

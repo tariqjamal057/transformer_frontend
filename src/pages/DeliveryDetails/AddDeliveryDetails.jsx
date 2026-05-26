@@ -205,7 +205,7 @@ const AddDeliveryDetails = () => {
                 <>
                   <TextField
                     label="DI Date"
-                    value={dayjs(selectedData.finalInspection.diDate).format(
+                    value={dayjs(selectedData.finalInspection?.diDate).format(
                       "YYYY-MM-DD",
                     )}
                     fullWidth
@@ -225,13 +225,13 @@ const AddDeliveryDetails = () => {
                   />
                   <TextField
                     label="Consignee Name"
-                    value={selectedData.consignee.name}
+                    value={selectedData.consignee?.name}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
                   <TextField
                     label="Total Quantity"
-                    value={selectedData.finalInspection.inspectedQuantity}
+                    value={selectedData.finalInspection?.inspectedQuantity}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
@@ -243,7 +243,7 @@ const AddDeliveryDetails = () => {
                   />
                   <TextField
                     label="Transformer Serial No"
-                    value={`${selectedData.finalInspection.serialNumberFrom} TO ${selectedData.finalInspection.serialNumberTo}`}
+                    value={`${selectedData.finalInspection?.serialNumberFrom} TO ${selectedData.finalInspection?.serialNumberTo}`}
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
@@ -268,12 +268,12 @@ const AddDeliveryDetails = () => {
                   <TextField
                     label="GP Expiry Date"
                     value={dayjs(
-                      selectedData.finalInspection.deliverySchedule
-                        .deliveryScheduleDate,
+                      selectedData.finalInspection?.deliverySchedule
+                        ?.deliveryScheduleDate,
                     )
                       .add(
-                        selectedData.finalInspection.deliverySchedule
-                          .guaranteePeriodMonths,
+                        selectedData.finalInspection?.deliverySchedule
+                          ?.guaranteePeriodMonths,
                         "month",
                       )
                       .format("YYYY-MM-DD")}

@@ -374,7 +374,7 @@ export default function DamagedTransformerPage() {
                   value={
                     selectedSr?.challan?.finalInspection?.inspectionDate
                       ? dayjs(
-                          selectedSr.challan.finalInspection.inspectionDate,
+                          selectedSr?.challan?.finalInspection?.inspectionDate,
                         ).format("YYYY-MM-DD")
                       : ""
                   }
@@ -397,7 +397,7 @@ export default function DamagedTransformerPage() {
                   label="Challan Date"
                   value={
                     selectedSr?.challan?.challanCreatedAt
-                      ? dayjs(selectedSr.challan.challanCreatedAt).format(
+                      ? dayjs(selectedSr?.challan?.challanCreatedAt).format(
                           "YYYY-MM-DD",
                         )
                       : ""

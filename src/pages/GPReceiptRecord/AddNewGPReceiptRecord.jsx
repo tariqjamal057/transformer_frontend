@@ -89,18 +89,18 @@ const AddNewGPReceiptRecord = () => {
       const found = deliveryChallans?.find((ch) => {
         console.log("---------------- trfsiNo ", trfsiNo);
         console.log(ch.finalInspection);
-        const hasTrfsi = ch.finalInspection.sealingDetails.some(
+        const hasTrfsi = ch.finalInspection?.sealingDetails?.some(
           (s) => String(s.trfSiNo) === String(trfsiNo),
         );
         const sameRating =
-          String(ch.finalInspection.deliverySchedule.rating) === String(rating);
+          String(ch.finalInspection?.deliverySchedule?.rating) === String(rating);
         return hasTrfsi && sameRating;
       });
       console.log("found ------------", found);
       if (found) {
         setSelectedChalan(found);
 
-        const seal = found.finalInspection.sealingDetails.find(
+        const seal = found.finalInspection?.sealingDetails?.find(
           (s) => String(s.trfSiNo) === String(trfsiNo),
         );
         setPolySealNo(seal?.polySealNo || "");

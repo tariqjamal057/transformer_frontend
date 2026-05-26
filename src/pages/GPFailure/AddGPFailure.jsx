@@ -67,11 +67,11 @@ const AddGPFailureInformation = () => {
   useEffect(() => {
     if (trfsiNo && rating) {
       const found = deliveryChallans?.find((ch) => {
-        const hasTrfsi = ch.finalInspection.sealingDetails.some(
+        const hasTrfsi = ch.finalInspection?.sealingDetails?.some(
           (s) => String(s.trfSiNo) === String(trfsiNo),
         );
         const sameRating =
-          String(ch.finalInspection.deliverySchedule.rating) === String(rating);
+          String(ch.finalInspection?.deliverySchedule?.rating) === String(rating);
 
         return hasTrfsi && sameRating;
       });
@@ -127,7 +127,7 @@ const AddGPFailureInformation = () => {
 
     const challanDate = new Date(selectedChalan.createdAt);
     const guaranteeMonths =
-      selectedChalan.finalInspection.deliverySchedule.guaranteePeriodMonths;
+      selectedChalan.finalInspection?.deliverySchedule?.guaranteePeriodMonths || 0;
     const expiryDate = addMonths(challanDate, guaranteeMonths);
     const today = new Date();
     const isUnderGuarantee = isAfter(expiryDate, today);
@@ -201,8 +201,8 @@ const AddGPFailureInformation = () => {
             (() => {
               const challanDate = new Date(selectedChalan.createdAt);
               const guaranteeMonths =
-                selectedChalan.finalInspection.deliverySchedule
-                  .guaranteePeriodMonths;
+                selectedChalan.finalInspection?.deliverySchedule
+                  ?.guaranteePeriodMonths || 0;
 
               // Expiry = challanCreatedDate + guaranteePeriodMonths
               const expiryDate = addMonths(challanDate, guaranteeMonths);
@@ -228,7 +228,7 @@ const AddGPFailureInformation = () => {
                     <Grid item xs={12} sm={6}>
                       <TextField
                         label="Material Name"
-                        value={selectedChalan.materialDescription.name}
+                        value={selectedChalan.materialDescription?.name}
                         fullWidth
                         InputProps={{ readOnly: true }}
                       />
@@ -237,8 +237,8 @@ const AddGPFailureInformation = () => {
                       <TextField
                         label="TN Number"
                         value={
-                          selectedChalan.finalInspection.deliverySchedule
-                            .tnNumber
+                          selectedChalan.finalInspection?.deliverySchedule
+                            ?.tnNumber
                         }
                         fullWidth
                         InputProps={{ readOnly: true }}
@@ -247,7 +247,7 @@ const AddGPFailureInformation = () => {
                     <Grid item xs={12} sm={6}>
                       <TextField
                         label="DI No"
-                        value={selectedChalan.finalInspection.diNo}
+                        value={selectedChalan.finalInspection?.diNo}
                         fullWidth
                         InputProps={{ readOnly: true }}
                       />
@@ -255,7 +255,7 @@ const AddGPFailureInformation = () => {
                     <Grid item xs={12} sm={6}>
                       <TextField
                         label="DI Date"
-                        value={selectedChalan.finalInspection.diDate}
+                        value={selectedChalan.finalInspection?.diDate}
                         fullWidth
                         InputProps={{ readOnly: true }}
                       />
@@ -279,7 +279,7 @@ const AddGPFailureInformation = () => {
                     <Grid item xs={12} sm={6}>
                       <TextField
                         label="Consignee Name"
-                        value={selectedChalan.consignee.name}
+                        value={selectedChalan.consignee?.name}
                         fullWidth
                         InputProps={{ readOnly: true }}
                       />
