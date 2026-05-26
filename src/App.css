@@ -128,11 +128,11 @@ header .logo img{
   width: 45px;
 }
 
-header .logo span{
+/* header .logo span{
   color: #05a415;
   font-weight: 800;
   font-size: 24px;
-}
+} */
 
 header button.rounded-circle{
   min-width:40px !important;
@@ -1615,6 +1615,12 @@ body.dark .css-16wblaj-MuiInputBase-input-MuiOutlinedInput-input{
   }
 }
 
+
+header .logo span {
+  margin-left: 12px;
+  font-size: larger;
+  font-weight: 700;
+}
 
 
 /*ads slider*/

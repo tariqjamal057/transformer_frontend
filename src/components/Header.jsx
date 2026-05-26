@@ -80,7 +80,7 @@ const Header = () => {
             <div className="col-sm-2 part1">
               <Link to={"/"} className="d-flex align-items-center logo">
                 {<img src={companyLogo} alt="logo" style={{ width: "auto", height: "50px"}} />}
-                <span className="ms-2">{discomName}</span>
+                <span className="ms-">{discomName}</span>
               </Link>
             </div>
 
