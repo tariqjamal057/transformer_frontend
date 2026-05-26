@@ -3,6 +3,7 @@ import {
   Button,
   Checkbox,
   CircularProgress,
+  Box,
 } from "@mui/material";
 import * as XLSX from "xlsx";
 import { MyContext } from "../../App";
@@ -12,7 +13,7 @@ import dayjs from "dayjs";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate } from "react-router-dom";
 
-const AddOfferLetterAndSealingStatement = () => {
+const SealingStatement = () => {
   const { hasPermission, setIsHideSidebarAndHeader } = useContext(MyContext);
   const navigate = useNavigate();
 
@@ -87,30 +88,33 @@ const AddOfferLetterAndSealingStatement = () => {
     );
   };
 
-  const generateOfferLetter = () => {
+  const generateSealingStatement = () => {
     let excelData = [];
     selectedRecords.forEach((id, index) => {
       const gpRecord = newGPReceiptRecords.find((rec) => rec.id === id);
       if (!gpRecord) return;
-      const make =
-        gpRecord.deliveryChallan?.consignorName?.split(" ")[0] || "N/A";
-      const yearOfMfg = gpRecord.deliveryChallan?.createdAt
-        ? dayjs(gpRecord.deliveryChallan.createdAt).year()
-        : "N/A";
+
+      const inspection = finalInspections.find((f) =>
+        f.sealingDetails?.some(
+          (s) => Number(s.trfSiNo) === Number(gpRecord.trfsiNo),
+        ),
+      );
+      const sealingDetail = inspection?.sealingDetails?.find(
+        (s) => Number(s.trfSiNo) === Number(gpRecord.trfsiNo),
+      );
 
       excelData.push({
-        "Sr. #": index + 1,
-        "JOB No.": gpRecord.trfsiNo,
-        Make: make,
-        Ratings: gpRecord.rating,
-        "TFR Sr.No.": gpRecord.trfsiNo,
-        "Year of Mfg.": yearOfMfg,
+        "Sr#": index + 1,
+        TrfsiNo: gpRecord.trfsiNo,
+        Rating: inspection?.deliverySchedule?.rating,
+        PolyCarbonateSealNo: sealingDetail?.polySealNo,
+        ReceivedFromACOS: gpRecord.consigneeName,
       });
     });
     const ws = XLSX.utils.json_to_sheet(excelData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "OfferLetter");
-    XLSX.writeFile(wb, "OfferLetter.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "SealingStatement");
+    XLSX.writeFile(wb, "SealingStatement.xlsx");
   };
 
   const isLoading = isLoadingGP || isLoadingFI;
@@ -119,7 +123,7 @@ const AddOfferLetterAndSealingStatement = () => {
     <>
       <div className="right-content w-100">
         <div className="d-flex justify-content-between align-items-center gap-3 mb-3 card shadow border-0 w-100 flex-row p-4">
-          <h5 className="mb-0">Offer Letter</h5>
+          <h5 className="mb-0">Sealing Statement</h5>
           <Button
             variant="outlined"
             startIcon={<ArrowBackIcon />}
@@ -243,13 +247,13 @@ const AddOfferLetterAndSealingStatement = () => {
           </div>
         </div>
         <div className="text-end mt-3">
-          {hasPermission("OfferAndSealingStatement") && (
+          {hasPermission("SealingStatement") && (
             <button
               className="btn btn-primary"
-              onClick={generateOfferLetter}
+              onClick={generateSealingStatement}
               disabled={selectedRecords.length === 0}
             >
-              Generate Offer Letter
+              Generate Sealing Statement
             </button>
           )}
         </div>
@@ -258,4 +262,4 @@ const AddOfferLetterAndSealingStatement = () => {
   );
 };
 
-export default AddOfferLetterAndSealingStatement;
+export default SealingStatement;

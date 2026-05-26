@@ -42,6 +42,7 @@ export const defaultPermissions = {
   FailureAnalysisUpdate: "/failureAnalysis-list",
   FailureAnalysisList: "/failureAnalysis-list",
   OfferAndSealingStatement: "/add-OfferLetter&SealingStatement",
+  SealingStatement: "/add-SealingStatement",
   MaterialOfferedButNominationPendingReport:
     "/materialOfferedButNominationPending-list",
   NominationDoneReport: "/nomination-done",

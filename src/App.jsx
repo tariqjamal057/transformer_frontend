@@ -58,6 +58,7 @@ import InspectionDone from "./pages/MisReports/InspectionDone";
 import DIReceived from "./pages/MisReports/DIReceived";
 import ProductionPlanning from "./pages/MisReports/ProductionPlanning";
 import AddOfferLetterAndSealingStatement from "./pages/OfferLetterAndSealingStatement/AddOfferLetterAndSealingStatement";
+import SealingStatement from "./pages/OfferLetterAndSealingStatement/SealingStatement";
 import AddNewGPInformation from "./pages/NewGPInformation/AddNewGPInformation";
 import NewGPInformationList from "./pages/NewGPInformation/NewGPInformationList";
 import NewGPTranformers from "./pages/MisReports/NewGPTransformers";
@@ -494,6 +495,11 @@ const AppContent = () => {
               element={
                 <PrivateRoute element={<AddOfferLetterAndSealingStatement />} />
               }
+            />
+            <Route
+              exact
+              path={permissionMapping.SealingStatement}
+              element={<PrivateRoute element={<SealingStatement />} />}
             />
             <Route
               exact

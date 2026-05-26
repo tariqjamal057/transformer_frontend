@@ -105,7 +105,6 @@ const Sidebar = () => {
           </li>
         )}
 
-
         {hasPermission("FinalInspectionList") && (
           <li>
             <Link
@@ -216,7 +215,7 @@ const Sidebar = () => {
                       to="/GPFailureInformation-list"
                       onClick={handleCloseSidebarOnMobile}
                     >
-                      G.P. Failure Information
+                      GP FAILURE INFO
                     </Link>
                   </li>
                 )}
@@ -226,7 +225,7 @@ const Sidebar = () => {
                       to="/GPReceiptRecord-list"
                       onClick={handleCloseSidebarOnMobile}
                     >
-                      New G.P. Receipt Record
+                      GP RECEIPT RECORF PART 1
                     </Link>
                   </li>
                 )}
@@ -236,17 +235,17 @@ const Sidebar = () => {
                       to="/GPReceiptNote-list"
                       onClick={handleCloseSidebarOnMobile}
                     >
-                      G.P. Receipt Note
+                      GP RECEIPT NOTE
                     </Link>
                   </li>
                 )}
-                {hasPermission("newGPInformationList") && (
+                {hasPermission("OfferAndSealingStatement") && (
                   <li>
                     <Link
-                      to="/newGPInformation-list"
+                      to="/add-OfferLetter&SealingStatement"
                       onClick={handleCloseSidebarOnMobile}
                     >
-                      New G.P. Information
+                      Offer Letter
                     </Link>
                   </li>
                 )}
@@ -256,7 +255,37 @@ const Sidebar = () => {
                       to="/failureAnalysis-list"
                       onClick={handleCloseSidebarOnMobile}
                     >
-                      Failure Analysis
+                      Inspection Page
+                    </Link>
+                  </li>
+                )}
+                {hasPermission("SealingStatement") && (
+                  <li>
+                    <Link
+                      to="/add-SealingStatement"
+                      onClick={handleCloseSidebarOnMobile}
+                    >
+                      SEALING STATEMENT
+                    </Link>
+                  </li>
+                )}
+                {hasPermission("FailureAnalysisList") && (
+                  <li>
+                    <Link
+                      // to="/failureAnalysis-list"
+                      onClick={handleCloseSidebarOnMobile}
+                    >
+                      Challan
+                    </Link>
+                  </li>
+                )}
+                {hasPermission("newGPInformationList") && (
+                  <li>
+                    <Link
+                      to="/newGPInformation-list"
+                      onClick={handleCloseSidebarOnMobile}
+                    >
+                      NEW GP RECEIPT RECORD PART 2 
                     </Link>
                   </li>
                 )}
@@ -265,30 +294,9 @@ const Sidebar = () => {
           </li>
         )}
 
-        {hasPermission("OfferAndSealingStatement") && (
-          <li>
-            <Link
-              to="/add-OfferLetter&SealingStatement"
-              onClick={handleCloseSidebarOnMobile}
-            >
-              <Button
-                className={`w-100 ${activeTab === 7 ? "active" : ""}`}
-                onClick={() => setActiveTab(7)}
-              >
-                <span className="icon">
-                  <IoDocuments />
-                </span>
-                Offer Letter & Sealing Statement
-              </Button>
-            </Link>
-          </li>
-        )}
         {hasPermission("ActivityLogsList") && (
           <li>
-            <Link
-              to="/activity-logs"
-              onClick={handleCloseSidebarOnMobile}
-            >
+            <Link to="/activity-logs" onClick={handleCloseSidebarOnMobile}>
               <Button
                 className={`w-100 ${activeTab === 8 ? "active" : ""}`}
                 onClick={() => setActiveTab(8)}
