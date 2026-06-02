@@ -1078,7 +1078,6 @@ const DeliverySchedule = () => {
           />
 
           <TextField
-            type="number"
             label="Rating"
             fullWidth
             value={rating}
@@ -1132,7 +1131,6 @@ const DeliverySchedule = () => {
           </LocalizationProvider>
 
           <TextField
-            type="number"
             label="Commencement Days"
             fullWidth
             value={commencementDays}
@@ -1279,7 +1277,6 @@ const DeliverySchedule = () => {
           )}
 
           <TextField
-            type="number"
             label="Gurantee Period In Month"
             fullWidth
             value={guranteeInMonth}
@@ -1293,7 +1290,6 @@ const DeliverySchedule = () => {
           />
 
           <TextField
-            type="number"
             label="Total Order Quantity"
             fullWidth
             value={totalQuantity}
@@ -1371,7 +1367,6 @@ const DeliverySchedule = () => {
                 <Grid item xs={3}>
                   <TextField
                     label="Quantity"
-                    type="number"
                     value={newScheduleQty}
                     onChange={(e) => setNewScheduleQty(e.target.value)}
                     fullWidth

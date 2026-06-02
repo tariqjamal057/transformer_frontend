@@ -378,8 +378,8 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
           <TextField fullWidth sx={{ mt: 2 }} label="Rating In KVA" value={tnDetail?.rating || ""} InputProps={{ readOnly: true }} />
           <TextField fullWidth label="Wound" sx={{ mt: 2 }} value={tnDetail?.wound || ""} InputProps={{ readOnly: true }} />
           <TextField fullWidth label="Phase" sx={{ mt: 2 }} value={tnDetail?.phase || ""} InputProps={{ readOnly: true }} />
-          <TextField type="number" label="Serial Number From" fullWidth value={serialNumberFrom} onChange={(e) => setSerialNumberFrom(e.target.value)} sx={{ mt: 2 }} />
-          <TextField type="number" label="Serial Number To" fullWidth value={serialNumberTo} onChange={(e) => setSerialNumberTo(e.target.value)} sx={{ mt: 2 }} />
+          <TextField label="Serial Number From" fullWidth value={serialNumberFrom} onChange={(e) => setSerialNumberFrom(e.target.value)} sx={{ mt: 2 }} />
+          <TextField label="Serial Number To" fullWidth value={serialNumberTo} onChange={(e) => setSerialNumberTo(e.target.value)} sx={{ mt: 2 }} />
 
           <FormControl fullWidth sx={{ mt: 2 }}>
             <InputLabel>Sub Serial No</InputLabel>
@@ -403,7 +403,7 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
 
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker label="Date Of Offer" value={offerDate} onChange={setOfferDate} format="DD/MM/YYYY" slotProps={{ textField: { fullWidth: true } }} sx={{ mt: 2, width: "100%" }} />
-            <TextField label="Offered Quantity" fullWidth type="number" value={offeredQuantity} onChange={(e) => setOfferedQuantity(e.target.value)} sx={{ mt: 2 }} />
+            <TextField label="Offered Quantity" fullWidth value={offeredQuantity} onChange={(e) => setOfferedQuantity(e.target.value)} sx={{ mt: 2 }} />
             <TextField label="Nomination Letter No" fullWidth value={nominationLetterNo} onChange={(e) => setNominationLetterNo(e.target.value)} sx={{ mt: 2 }} />
             <DatePicker label="Nomination Date" value={nominationDate} onChange={setNominationDate} format="DD/MM/YYYY" slotProps={{ textField: { fullWidth: true } }} sx={{ mt: 2, width: "100%" }} />
             <Stack direction="row" gap={1} mt={2}>
@@ -412,8 +412,8 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
             </Stack>
             <Box mt={2} display="flex" flexWrap="wrap" gap={1}>{selectedInspectionOfficer.map((officer, idx) => <Chip key={idx} label={officer} onDelete={() => handleRemove(officer)} />)}</Box>
             <DatePicker label="Inspection Date" value={inspectionDate} onChange={setInspectionDate} format="DD/MM/YYYY" slotProps={{ textField: { fullWidth: true } }} sx={{ mt: 2, width: "100%" }} />
-            <TextField label="Inspected Quantity" fullWidth type="number" value={inspectedQuantity} onChange={(e) => setInspectedQuantity(e.target.value)} sx={{ mt: 2 }} />
-            <TextField label="Grand Total" fullWidth type="number" value={total} onChange={(e) => setTotal(e.target.value)} sx={{ mt: 2 }} />
+            <TextField label="Inspected Quantity" fullWidth value={inspectedQuantity} onChange={(e) => setInspectedQuantity(e.target.value)} sx={{ mt: 2 }} />
+            <TextField label="Grand Total" fullWidth value={total} onChange={(e) => setTotal(e.target.value)} sx={{ mt: 2 }} />
             <TextField label="DI No" fullWidth value={diNo} onChange={(e) => setDiNo(e.target.value)} sx={{ mt: 2 }} />
             <DatePicker label="DI Date" value={diDate} onChange={setDiDate} format="DD/MM/YYYY" slotProps={{ textField: { fullWidth: true } }} sx={{ mt: 2, width: "100%" }} />
           </LocalizationProvider>

@@ -341,7 +341,6 @@ const AddDeliverySchedule = () => {
 
             <Grid item size={1}>
               <TextField
-                type="number"
                 label="Rating"
                 fullWidth
                 required
@@ -422,7 +421,6 @@ const AddDeliverySchedule = () => {
             {/* CP Date and Days*/}
             <Grid item size={1}>
               <TextField
-                type="number"
                 label="Commencement Days"
                 fullWidth
                 value={commencementDays}
@@ -463,7 +461,6 @@ const AddDeliverySchedule = () => {
             {/* Total Quantity */}
             <Grid item size={1}>
               <TextField
-                type="number"
                 label="Total Order Quantity"
                 fullWidth
                 value={totalQuantity}
@@ -580,7 +577,6 @@ const AddDeliverySchedule = () => {
 
             <Grid item size={1}>
               <TextField
-                type="number"
                 label="Gurantee Period In Month"
                 fullWidth
                 value={guranteeInMonth}
@@ -637,7 +633,6 @@ const AddDeliverySchedule = () => {
                   <Grid item xs={3}>
                     <TextField
                       label="Quantity"
-                      type="number"
                       value={newScheduleQty}
                       onChange={(e) => setNewScheduleQty(e.target.value)}
                       fullWidth

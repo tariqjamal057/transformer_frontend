@@ -385,8 +385,8 @@ const AddFinalInspection = () => {
               </Grid>
 
               <Grid item size={1}><TextField label="Offered Quantity" required fullWidth value={offeredQuantity} onChange={(e) => setOfferedQuantity(e.target.value)} /></Grid>
-              <Grid item size={1}><TextField type="number" label="Serial Number From" required fullWidth value={serialNumberFrom} onChange={(e) => setSerialNumberFrom(e.target.value)} /></Grid>
-              <Grid item size={1}><TextField type="number" label="Serial Number To" required fullWidth value={serialNumberTo} onChange={(e) => setSerialNumberTo(e.target.value)} /></Grid>
+              <Grid item size={1}><TextField label="Serial Number From" required fullWidth value={serialNumberFrom} onChange={(e) => setSerialNumberFrom(e.target.value)} /></Grid>
+              <Grid item size={1}><TextField label="Serial Number To" required fullWidth value={serialNumberTo} onChange={(e) => setSerialNumberTo(e.target.value)} /></Grid>
 
               <Grid item size={1}>
                 <FormControl fullWidth>
@@ -446,7 +446,6 @@ const AddFinalInspection = () => {
               <Grid item size={1}>
                 <TextField
                   label="Inspected Quantity"
-                  type="number"
                   fullWidth
                   value={inspectedQuantity}
                   onChange={(e) => {
@@ -458,7 +457,7 @@ const AddFinalInspection = () => {
                 />
               </Grid>
 
-              <Grid item size={1}><TextField label="Grand Total" fullWidth type="number" value={total} onChange={(e) => setTotal(e.target.value)} /></Grid>
+              <Grid item size={1}><TextField label="Grand Total" fullWidth value={total} onChange={(e) => setTotal(e.target.value)} /></Grid>
               <Grid item size={1}><TextField label="DI No" fullWidth value={diNo} onChange={(e) => setDiNo(e.target.value)} /></Grid>
               <Grid item size={1}>
                 <DatePicker
