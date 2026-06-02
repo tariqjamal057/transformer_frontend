@@ -22,6 +22,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api";
 import { MyContext } from "../../App";
 import Swal from "sweetalert2";
+import dayjs from "dayjs";
 
 const compressSerials = (serials) => {
   if (!serials || !Array.isArray(serials) || serials.length === 0) return "";
@@ -302,7 +303,9 @@ const DeliveryChalanList = () => {
                     <td colSpan="11">Error fetching data</td>
                   </tr>
                 ) : deliveryChallans?.items?.length > 0 ? (
-                  deliveryChallans.items.map((item, index) => (
+                  [...deliveryChallans.items]
+                    .sort((a, b) => new Date(a.challanCreatedAt) - new Date(b.challanCreatedAt))
+                    .map((item, index) => (
                     <tr key={item.id}>
                       {/* Sr No */}
                       <td>
@@ -315,7 +318,7 @@ const DeliveryChalanList = () => {
                           {item.finalInspection?.deliverySchedule?.poDetails}
                         </div>
                         <div className="text-muted small">
-                          {item.finalInspection?.deliverySchedule?.poDate}
+                          {item.finalInspection?.deliverySchedule?.poDate ? dayjs(item.finalInspection.deliverySchedule.poDate).format("DD-MM-YYYY") : "-"}
                         </div>
                       </td>
 
@@ -337,7 +340,7 @@ const DeliveryChalanList = () => {
                         </div>
                         <div>
                           <strong>DI Date:</strong>{" "}
-                          {item.finalInspection?.diDate}
+                          {item.finalInspection?.diDate ? dayjs(item.finalInspection.diDate).format("DD-MM-YYYY") : "-"}
                         </div>
                       </td>
 
@@ -375,7 +378,9 @@ const DeliveryChalanList = () => {
                       </td>
 
                       {/* Inspection Date */}
-                      <td>{item.finalInspection?.inspectionDate}</td>
+                      <td>
+                        {item.finalInspection?.inspectionDate ? dayjs(item.finalInspection.inspectionDate).format("DD-MM-YYYY") : "-"}
+                      </td>
 
                       {/* Consignor Details */}
                       <td className="text-start">

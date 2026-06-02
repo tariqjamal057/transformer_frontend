@@ -242,7 +242,7 @@ export default function PdfTemplate({ item }) {
         {/* Row 3: Consignee (left) and Consignor (right) */}
         <div className="row g-0 bottom-border">
           <div className="col-6 px-3 py-2">
-            <div className="d-flex items-start">
+            <div className="d-flex align-items-start">
               <div style={{ width: "70%" }}>
                 <div className="fw-bold small">{formData.consigneeName}</div>
                 <div className="extra-small-text mt-1 lh-sm">
@@ -253,7 +253,7 @@ export default function PdfTemplate({ item }) {
               </div>
               <div
                 style={{ width: "30%" }}
-                className="d-flex justify-content-center align-items-center"
+                className="d-flex justify-content-center align-items-start"
               >
                 {formData.companyImage && (
                   <img
@@ -371,7 +371,7 @@ export default function PdfTemplate({ item }) {
           <div className="col-4 px-3 py-2 left-border">
             <div className="extra-small-text">
               <div className="mb-2">
-                <span className="fw-semibold">As On:</span> {formData.asOnDate}
+                <span className="fw-semibold">Inspected Date:</span> {formData.asOnDate}
               </div>
               <div className="mb-1">
                 <span className="fw-semibold">DI No.</span> {formData.diNo}
@@ -385,6 +385,8 @@ export default function PdfTemplate({ item }) {
 
         {/* Row 9: Certificate Section */}
         <div className="px-3 py-2 border-top-0">
+          <br/>
+          <br/>
           <div className="text-end extra-small-text mb-2">
             <span className="fw-semibold">For {formData.consigneeName}</span>
           </div>
@@ -399,7 +401,7 @@ export default function PdfTemplate({ item }) {
           </div>
 
           <div className="extra-small-text lh-sm mb-2">
-            <span className="fw-semibold">Date:</span> {formData.challanDate}
+            <span className="fw-semibold">Date:</span> _____________
           </div>
 
           <div className="extra-small-text lh-sm mb-2">
@@ -407,7 +409,7 @@ export default function PdfTemplate({ item }) {
             <strong>{formData.challanNo}</strong> Dated.{" "}
             <strong>{formData.challanDate}</strong> pertaining to P.O. No.{" "}
             <strong>{formData.poNumber}</strong> Dated.{" "}
-            <strong>{formData.poDate}</strong> and dispatched under GTR/RR No.
+            <strong>{formData.poDate}</strong> and dispatched under GTR/RR No. __________ date __________
             by truck No. <strong>{formData.lorryNo}</strong> and has been
             entered in Store Inwards Register/COs-6 at
           </div>
@@ -426,12 +428,17 @@ export default function PdfTemplate({ item }) {
           {/* Material Description and Quantity Table */}
           <div className="row g-0 border border-2 border-dark mb-3">
             <div className="col-9 p-2 extra-small-text lh-sm right-border">
+              <p className="fw-semibold mb-1">Description of Material</p>
               {formData.receiptMaterialDesc}
             </div>
             <div className="col-3 p-2 text-center">
               <div className="fw-semibold extra-small-text mb-1">QTY.</div>
-              <div className="extra-small-text mt-3">
+              <div className="extra-small-text mt-1">
                 {formData.receiptQuantity}
+              </div>
+              <div className="fw-semibold extra-small-text mt-2">Tfr. Sr. No</div>
+              <div className="extra-small-text mt-1">
+                {formData.bearingNo}
               </div>
             </div>
           </div>
@@ -439,9 +446,9 @@ export default function PdfTemplate({ item }) {
           {/* Signature Section */}
           <div className="mt-5 extra-small-text">
             <div className="text-end">
-              {formData.consigneeName}
               <br />
-              {formData.consigneeAddress}
+              {formData.consignorCompany}
+              {/* {formData.consigneeAddress}*/}
             </div>
           </div>
         </div>
