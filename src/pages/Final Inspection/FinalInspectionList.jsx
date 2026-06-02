@@ -10,7 +10,8 @@ import { Link } from "react-router-dom";
 import { FaPencilAlt, FaTrash } from "react-icons/fa";
 import SearchIcon from "@mui/icons-material/Search";
 import FinalInspectionModal from "../../components/FinalInspectionModal";
-import { format } from "date-fns";
+import dayjs from "dayjs";
+import { MdDelete, MdEdit } from "react-icons/md";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api";
 import { MyContext } from "../../App";
@@ -537,7 +538,7 @@ const FinalInspectionList = () => {
                   finalInspections.items.map((item, index) => (
                     <tr key={item.id}>
                       <td># {index + 1 + (currentPage - 1) * 10}</td>
-                      <td>{item.offerDate ? format(new Date(item.offerDate), "dd MMM yyyy") : "-"}</td>
+                      <td>{item.offerDate ? dayjs(item.offerDate).format("DD MMM YYYY") : "-"}</td>
                       <td>{item.offeredQuantity}</td>
 
                       <td>{item.deliverySchedule?.tnNumber}</td>
@@ -577,18 +578,18 @@ const FinalInspectionList = () => {
                       <td>{item.nominationLetterNo || "-"}</td>
                       <td>
                         {item.nominationDate
-                          ? format(new Date(item.nominationDate), "dd MMM yyyy")
+                          ? dayjs(item.nominationDate).format("DD MMM YYYY")
                           : "-"}
                       </td>
                       <td>
-                        {item.inspectionDate ? format(new Date(item.inspectionDate), "dd MMM yyyy") : "-"}
+                        {item.inspectionDate ? dayjs(item.inspectionDate).format("DD MMM YYYY") : "-"}
                       </td>
                       <td>{item.inspectedQuantity}</td>
                       <td>{item.grandTotal || 0}</td>
                       <td>
                         <div className="fw-semibold">{item.diNo}</div>
                         <div className="text-muted small">
-                          {item.diDate ? format(new Date(item.diDate), "dd MMM yyyy") : "-"}
+                          {item.diDate ? dayjs(item.diDate).format("DD MMM YYYY") : "-"}
                         </div>
                       </td>
                       <td className="text-start">
@@ -639,7 +640,7 @@ const FinalInspectionList = () => {
                               className="btn btn-sm btn-danger"
                               onClick={() => handleDelete(item.id)}
                               >
-                              <FaTrash />
+                              <MdDelete />
                               </button>
                               )}
                               </div>

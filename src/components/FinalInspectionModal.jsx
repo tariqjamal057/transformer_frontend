@@ -19,6 +19,9 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  Checkbox,
+  ListItemText,
+  OutlinedInput,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
@@ -95,6 +98,8 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
   const [repairedTransformerSrno, setRepairedTransformerSrno] = useState([]);
   const [repairedTransformerMapping, setRepairedTransformerMapping] = useState([]);
 
+  const [availableTransformers, setAvailableTransformers] = useState([]);
+
   const [consigneeList, setConsigneeList] = useState([]);
   const [selectedConsignee, setSelectedConsignee] = useState("");
   const [consigneeSerialNo, setConsigneeSerialNo] = useState("");
@@ -166,8 +171,24 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
   }, [inspectionData]);
 
   useEffect(() => {
-    if (inspectionData && inspectionData.total !== undefined && inspectionData.total !== null) {
-      setTotal(inspectionData.total);
+    if (damagedTransformers) {
+      const flattened = [];
+      damagedTransformers.forEach((t) => {
+        const serials = Array.isArray(t.serialNo) ? t.serialNo : [t.serialNo];
+        serials.forEach((sn) => {
+          // Check if this specific serial is in the globally used list (excluding current inspection)
+          if (!usedByOthersRepairedSerials.has(String(sn))) {
+            flattened.push({ id: t.id, serialNo: sn });
+          }
+        });
+      });
+      setAvailableTransformers(flattened);
+    }
+  }, [damagedTransformers, usedByOthersRepairedSerials]);
+
+  useEffect(() => {
+    if (inspectionData && (inspectionData.grandTotal !== undefined && inspectionData.grandTotal !== null)) {
+      setTotal(inspectionData.grandTotal);
     } else if (totalInspectedQuantityData !== undefined) {
       const currentInspected = parseInt(inspectedQuantity, 10);
       if (!isNaN(currentInspected)) {
@@ -359,6 +380,26 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
           <TextField fullWidth label="Phase" sx={{ mt: 2 }} value={tnDetail?.phase || ""} InputProps={{ readOnly: true }} />
           <TextField type="number" label="Serial Number From" fullWidth value={serialNumberFrom} onChange={(e) => setSerialNumberFrom(e.target.value)} sx={{ mt: 2 }} />
           <TextField type="number" label="Serial Number To" fullWidth value={serialNumberTo} onChange={(e) => setSerialNumberTo(e.target.value)} sx={{ mt: 2 }} />
+
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel>Sub Serial No</InputLabel>
+            <Select
+              multiple
+              input={<OutlinedInput label="Sub Serial No" />}
+              value={repairedTransformerSrno}
+              onChange={(e) => setRepairedTransformerSrno(e.target.value)}
+              renderValue={(selected) => selected.join(", ")}
+            >
+              {(availableTransformers || [])
+                .filter(t => !consigneeList.flatMap(c => (c.repairedTransformerIds || []).map(String)).includes(String(t.serialNo)))
+                .map((t) => (
+                  <MenuItem key={`${t.id}-${t.serialNo}`} value={String(t.serialNo)}>
+                    <Checkbox checked={repairedTransformerSrno.includes(String(t.serialNo))} />
+                    <ListItemText primary={t.serialNo} />
+                  </MenuItem>
+                ))}
+            </Select>
+          </FormControl>
 
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker label="Date Of Offer" value={offerDate} onChange={setOfferDate} format="DD/MM/YYYY" slotProps={{ textField: { fullWidth: true } }} sx={{ mt: 2, width: "100%" }} />
