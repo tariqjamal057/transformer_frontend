@@ -104,6 +104,7 @@ const InspectionDone = () => {
         sheetName="Inspection done but DI pending"
         pdfTitle="Inspection Done But DI Pending"
         exportMode="inspection"
+        includeSubSerial={true}
       />
       <Paper sx={{ p: 2, mt: 3 }}>
         <Typography variant="h6" mb={1}>
@@ -120,6 +121,7 @@ const InspectionDone = () => {
                 <TableCell>TN No</TableCell>
                 <TableCell>Material Name</TableCell>
                 <TableCell>Tfr. Serial No.</TableCell>
+                <TableCell>Sub-serial No</TableCell>
                 <TableCell>Offered Qty</TableCell>
                 <TableCell>Name Of Inspecting Officers</TableCell>
                 <TableCell>Date Of Inspection</TableCell>
@@ -129,19 +131,19 @@ const InspectionDone = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={11} align="center">
+                  <TableCell colSpan={12} align="center">
                     <CircularProgress />
                   </TableCell>
                 </TableRow>
               ) : isError ? (
                 <TableRow>
-                  <TableCell colSpan={11} align="center">
+                  <TableCell colSpan={12} align="center">
                     Error fetching data
                   </TableCell>
                 </TableRow>
               ) : filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} align="center">
+                  <TableCell colSpan={12} align="center">
                     No records found
                   </TableCell>
                 </TableRow>
@@ -164,6 +166,7 @@ const InspectionDone = () => {
                     <TableCell>
                       {getSnNumber(row.serialNumberFrom, row.serialNumberTo)}
                     </TableCell>
+                    <TableCell>{row.subSerialNumber || ""}</TableCell>
                     <TableCell>{row.offeredQuantity}</TableCell>
                     <TableCell>
                       <div className="d-flex flex-wrap gap-1">

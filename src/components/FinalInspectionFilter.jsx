@@ -29,6 +29,8 @@ const FiltersComponent = ({
   dueDateofDeliveryIncluded = true,
   exportMode = "default",
   pdfOrientation = "l", // "l" for landscape, "p" for portrait
+  firstCardText="Total Final Inspections",
+  includeSubSerial = false
 }) => {
   const [selectedCompany, setSelectedCompany] = useState("all");
   const [selectedDiscom, setSelectedDiscom] = useState("all");
@@ -174,14 +176,8 @@ const FiltersComponent = ({
         const c = consignees[cIdx] || {};
 
         const getDueDateForConsignee = (consignee) => {
-          const cName = consignee?.consigneeName || consignee?.consignee?.name;
-          if (!baseDate || !cName) return "";
-
-          const name = cName.toLowerCase();
-
-          const days = name === "jhunjhunu" ? 7 : 12;
-
-          return dayjs(baseDate).add(days, "day").format("DD MMM YYYY");
+          if (!baseDate) return "";
+          return dayjs(baseDate).add(13, "day").format("DD MMM YYYY");
         };
 
         const getConsigneeSerials = (consignee) => {
@@ -235,6 +231,7 @@ const FiltersComponent = ({
                     : "")
               : "",
           ),
+          ...(includeSubSerial ? [normalize(cIdx === 0 ? item.subSerialNumber : "")] : []),
           normalize(cIdx === 0 ? item.offeredQuantity : ""),
 
           // ✅ FIXED INSPECTOR LOGIC
@@ -273,6 +270,7 @@ const FiltersComponent = ({
       "TN No.",
       "Material",
       "TFR Serial No",
+      ...(includeSubSerial ? ["Sub-serial No"] : []),
       "Offered Qty",
       "Inspectors",
       "Inspection Date",
@@ -323,40 +321,9 @@ const FiltersComponent = ({
           ? item.inspectionDate
           : item.diDate || item.inspectionDate;
 
-      let dueJhunjhunu = null;
-      let dueOthers = null;
-
-      if (
-        item.consignees?.some(
-          (c) =>
-            (c.consigneeName || c.consignee?.name)?.toLowerCase() ===
-            "jhunjhunu",
-        )
-      ) {
-        dueJhunjhunu = baseDate
-          ? dayjs(baseDate).add(7, "day").format("DD MMM YYYY")
-          : "";
-      }
-      if (
-        item.consignees?.some(
-          (c) =>
-            (c.consigneeName || c.consignee?.name)?.toLowerCase() !==
-            "jhunjhunu",
-        )
-      ) {
-        dueOthers = baseDate
-          ? dayjs(baseDate).add(12, "day").format("DD MMM YYYY")
-          : "";
-      }
-
-      const dueDateMerged =
-        dueJhunjhunu && dueOthers
-          ? `${dueJhunjhunu}, ${dueOthers}`
-          : dueJhunjhunu
-            ? `${dueJhunjhunu}`
-            : dueOthers
-              ? `${dueOthers}`
-              : "";
+      const dueDateMerged = baseDate
+        ? dayjs(baseDate).add(13, "day").format("DD MMM YYYY")
+        : "";
 
       // 👉 Merge consignee details into one row
       const consigneeNames =
@@ -411,7 +378,7 @@ const FiltersComponent = ({
             ? `${item.serialNumberFrom} to ${item.serialNumberTo}`
             : "") ||
           "",
-        "Sub-serial No": srNumbers,
+        ...(includeSubSerial ? { "Sub-serial No": item.subSerialNumber || "" } : {}),
         "Offered Qty": item.offeredQuantity || "",
         "Inspection Officers": item.inspectionOfficers?.length
           ? item.inspectionOfficers.join(", ")
@@ -485,6 +452,7 @@ const FiltersComponent = ({
           ? `${item.serialNumberFrom} to ${item.serialNumberTo}`
           : "") ||
         "",
+      ...(includeSubSerial ? { "Sub-serial No": item.subSerialNumber || "" } : {}),
       "Offered Qty": item.offeredQuantity || "",
       "Inspection Officers": item.inspectionOfficers?.length
         ? item.inspectionOfficers.join(", ")
@@ -561,7 +529,7 @@ const FiltersComponent = ({
             ? `${item.serialNumberFrom} to ${item.serialNumberTo}`
             : "") ||
           "",
-        srNumbers, // Sub-serial No
+        ...(includeSubSerial ? [srNumbers] : []),
         item.offeredQuantity || 0,
         item.inspectionOfficers?.length
           ? item.inspectionOfficers.join(", ")
@@ -582,7 +550,7 @@ const FiltersComponent = ({
       "TN No.",
       "Material\nName",
       "Tfr.Serial\nNo.",
-      "Sub-serial\nNo",
+      ...(includeSubSerial ? ["Sub-serial\nNo"] : []),
       "Offered\nQty",
       "Inspection\nOfficers",
       "Date Of\nInspection",
@@ -618,20 +586,23 @@ const FiltersComponent = ({
     // Custom column widths
     const getColumnStyles = () => {
       const styles = {};
-      const baseWidths = {
-        0: 30, // S.No
-        1: 50, // Offered Date
-        2: 90, // Firm Name
-        3: 90, // Discom
-        4: 50, // TN No.
-        5: 70, // Material Name
-        6: 70, // Tfr Serial No
-        7: 70, // Sub-serial No
-        8: 40, // Offered Qty
-        9: 110, // Inspection Officers 
-        10: 60, // Date Of Inspection
-        11: 50, // Inspected Qty
-      };
+      const widths = [
+        30, // S.No
+        50, // Offered Date
+        90, // Firm Name
+        90, // Discom
+        50, // TN No.
+        70, // Material Name
+        70, // Tfr Serial No
+      ];
+      if (includeSubSerial) widths.push(70); // Sub-serial No
+      widths.push(40); // Offered Qty
+      widths.push(110); // Inspection Officers
+      widths.push(60); // Date Of Inspection
+      widths.push(50); // Inspected Qty
+
+      const baseWidths = {};
+      widths.forEach((w, i) => (baseWidths[i] = w));
 
       let totalTableWidth = 0;
 
@@ -748,14 +719,8 @@ const FiltersComponent = ({
         const c = consignees[cIdx] || {};
 
         const getDueDateForConsignee = (consignee) => {
-          const cName = consignee?.consigneeName || consignee?.consignee?.name;
-          if (!baseDate || !cName) return "";
-
-          const name = cName.toLowerCase();
-
-          const days = name === "jhunjhunu" ? 7 : 12;
-
-          return dayjs(baseDate).add(days, "day").format("DD MMM YYYY");
+          if (!baseDate) return "";
+          return dayjs(baseDate).add(13, "day").format("DD MMM YYYY");
         };
 
         const getConsigneeSerials = (consignee) => {
@@ -809,6 +774,7 @@ const FiltersComponent = ({
                     : "")
               : "",
           ),
+          ...(includeSubSerial ? [normalize(cIdx === 0 ? item.subSerialNumber : "")] : []),
           normalize(cIdx === 0 ? item.offeredQuantity : ""),
 
           // ✅ FIXED INSPECTOR LOGIC
@@ -847,6 +813,7 @@ const FiltersComponent = ({
       "TN No.",
       "Material",
       "TFR\nSerial\nNo",
+      ...(includeSubSerial ? ["Sub-serial\nNo"] : []),
       "Offered\nQty",
       "Inspectors",
       "Inspection\nDate",
@@ -882,27 +849,31 @@ const FiltersComponent = ({
     // Custom column widths - reduced to fit all 18 columns properly
     const getColumnStyles = () => {
       const styles = {};
-      const baseWidths = {
-        0: 26,
-        1: 44,
-        2: 90, // Firm Name
-        3: 90, // Discom
-        4: 40,
-        5: 50,
-        6: 65,
-        7: 36,
-        8: 58,
-        9: 48,
-        10: 40,
-        11: 44,
-        12: 44,
-        13: 65, // Due Date
-        14: 90, // Consignee
-        15: 38,
-        16: 30,
-        17: 38,
-        18: 38, // Pending
-      };
+      const widths = [
+        26, // S.No
+        44, // Offered Date
+        90, // Firm Name
+        90, // Discom
+        40, // TN No
+        50, // Material
+        65, // TFR Serial No
+      ];
+      if (includeSubSerial) widths.push(65); // Sub-serial No
+      widths.push(36); // Offered Qty
+      widths.push(58); // Inspectors
+      widths.push(48); // Inspection Date
+      widths.push(40); // Inspected Qty
+      widths.push(44); // DI No
+      widths.push(44); // DI Date
+      if (dueDateofDeliveryIncluded) widths.push(65); // Due Date
+      widths.push(90); // Consignee
+      widths.push(38); // SR No
+      widths.push(30); // Qty
+      widths.push(38); // Dispatch
+      widths.push(38); // Pending
+
+      const baseWidths = {};
+      widths.forEach((w, i) => (baseWidths[i] = w));
 
       let totalTableWidth = 0;
 
@@ -1131,7 +1102,7 @@ const FiltersComponent = ({
         <Grid item xs={12} md={6}>
           <Box sx={{ p: 2, bgcolor: "#1976d2", borderRadius: "8px" }}>
             <Typography variant="h6" sx={{ color: "#fff" }}>
-              Total Final Inspections
+              {firstCardText}
             </Typography>
             <Typography variant="h4" sx={{ color: "#fff" }}>
               {data.length}

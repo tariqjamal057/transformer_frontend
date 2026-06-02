@@ -1069,7 +1069,7 @@ const FiltersComponent = ({
         <Grid item xs={12} md={6}>
           <Box sx={{ p: 2, bgcolor: "#1976d2", borderRadius: "8px" }}>
             <Typography variant="h6" sx={{ color: "#fff" }}>
-              Total Final Inspections
+              Total Offer
             </Typography>
             <Typography variant="h4" sx={{ color: "#fff" }}>
               {data.length}

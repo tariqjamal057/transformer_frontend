@@ -105,6 +105,7 @@ const MaterialOfferedButNominationPending = () => {
         onExportExcel={true}
         sheetName="Material offered but Nomination pending detail"
         pdfTitle="Material Offered But Nomination Pending"
+        pdfOrientation="p"
       />
 
       <Paper sx={{ p: 2, mt: 3 }}>

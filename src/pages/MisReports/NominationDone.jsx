@@ -82,12 +82,14 @@ const NominationDone = () => {
         onFilteredData={setFilteredData}
         data={inspectionData}
         text="Awaiting Inspection"
+        firstCardText="Total Nominations"
         onExportPDF={true}
         onExportExcel={true}
         sheetName="Nomination Done But Inspection Pending "
         pdfTitle="Nomination Done But Inspection Pending"
         dueDateofDeliveryIncluded={false}
         exportMode="di"
+        includeSubSerial={true}
       />
       <Paper sx={{ p: 2, mt: 3 }}>
         <Typography variant="h6" mb={1}>
@@ -105,6 +107,7 @@ const NominationDone = () => {
                 <TableCell>TN No</TableCell>
                 <TableCell>Material Name</TableCell>
                 <TableCell>Tfr. Serial No.</TableCell>
+                <TableCell>Sub-serial No</TableCell>
                 <TableCell>Offered Qty</TableCell>
                 <TableCell>Inspecting Officers</TableCell>
                 <TableCell>D.I. NO.</TableCell>
@@ -117,13 +120,13 @@ const NominationDone = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={14} align="center">
+                  <TableCell colSpan={15} align="center">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={14} align="center">
+                  <TableCell colSpan={15} align="center">
                     No records found
                   </TableCell>
                 </TableRow>
@@ -160,6 +163,9 @@ const NominationDone = () => {
                               </TableCell>
                               <TableCell rowSpan={row.consignees.length}>
                                 {row.snNumber}
+                              </TableCell>
+                              <TableCell rowSpan={row.consignees.length}>
+                                {row.subSerialNumber || ""}
                               </TableCell>
                               <TableCell rowSpan={row.consignees.length}>
                                 {row.offeredQuantity}
@@ -211,6 +217,7 @@ const NominationDone = () => {
                           {row.deliverySchedule.phase}
                         </TableCell>
                         <TableCell>{row.snNumber}</TableCell>
+                        <TableCell>{row.subSerialNumber || ""}</TableCell>
                         <TableCell>{row.offeredQuantity}</TableCell>
                         <TableCell>
                           <div className="d-flex flex-wrap gap-1">

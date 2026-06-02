@@ -105,6 +105,7 @@ const DIReceived = () => {
       <FiltersComponent
         onFilteredData={setFilteredData}
         data={pendingData}
+        firstCardText="Total D.I. Received"
         text="Dispatch Pending"
         onExportPDF={true}
         onExportExcel={true}
@@ -170,18 +171,9 @@ const DIReceived = () => {
                             row.specialCase === "yes"
                               ? row.inspectionDate
                               : row.diDate || row.inspectionDate;
-                          let dueDate;
-                          if (
-                            c.consignee?.name?.toLowerCase() === "jhunjhunu"
-                          ) {
-                            dueDate = dayjs(baseDate)
-                              .add(7, "day")
-                              .format("DD MMM YYYY");
-                          } else {
-                            dueDate = dayjs(baseDate)
-                              .add(12, "day")
-                              .format("DD MMM YYYY");
-                          }
+                          const dueDate = baseDate
+                            ? dayjs(baseDate).add(13, "day").format("DD MMM YYYY")
+                            : "-";
                           return (
                             <TableRow key={`${row.id}-${cIdx}`}>
                               {cIdx === 0 && (
