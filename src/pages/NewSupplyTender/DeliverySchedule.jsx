@@ -98,6 +98,11 @@ const DeliverySchedule = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadErrors, setUploadErrors] = useState([]); // State for bulk upload errors
 
+  // State for Manual Schedule Entry (Edit Modal)
+  const [newScheduleFrom, setNewScheduleFrom] = useState(null);
+  const [newScheduleTo, setNewScheduleTo] = useState(null);
+  const [newScheduleQty, setNewScheduleQty] = useState("");
+
   const downloadSample = () => {
     const sampleData = [
       {
@@ -323,6 +328,102 @@ const DeliverySchedule = () => {
     setImposedLiftingPairs((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // ✅ New Logic: Shift manual schedules when deferment changes
+  useEffect(() => {
+    if (deliverySchedule.length === 0) return;
+
+    const validPairs = imposedLiftingPairs.filter((p) => p.imposedDate && p.liftingDate);
+
+    const isDateDeferred = (date) => {
+      return validPairs.some((pair) => {
+        const imposed = dayjs(pair.imposedDate);
+        const lifting = dayjs(pair.liftingDate);
+        return (
+          (date.isSame(imposed, "day") || date.isAfter(imposed, "day")) &&
+          (date.isSame(lifting, "day") || date.isBefore(lifting, "day"))
+        );
+      });
+    };
+
+    const findEndDate = (startDate, activeDaysNeeded) => {
+      let found = 0;
+      let cursor = dayjs(startDate);
+      while (found < activeDaysNeeded) {
+        if (!isDateDeferred(cursor)) {
+          found++;
+        }
+        if (found < activeDaysNeeded) {
+          cursor = cursor.add(1, "day");
+        }
+      }
+      return cursor;
+    };
+
+    let updatedSchedules = [];
+    let currentStart = dayjs(commencementDate);
+
+    deliverySchedule.forEach((seg, idx) => {
+      const prevStart = dayjs(seg.start, "DD MMM YYYY");
+      const prevEnd = dayjs(seg.end, "DD MMM YYYY");
+      
+      let activeDays = 0;
+      let temp = prevStart;
+      while (temp.isBefore(prevEnd) || temp.isSame(prevEnd, "day")) {
+         activeDays++; 
+         temp = temp.add(1, "day");
+      }
+
+      if (idx === 0) {
+        currentStart = dayjs(commencementDate);
+      } else {
+        currentStart = dayjs(updatedSchedules[idx - 1].end, "DD MMM YYYY").add(1, "day");
+      }
+
+      while (isDateDeferred(currentStart)) {
+        currentStart = currentStart.add(1, "day");
+      }
+
+      const newEnd = findEndDate(currentStart, activeDays);
+
+      updatedSchedules.push({
+        ...seg,
+        start: currentStart.format("DD MMM YYYY"),
+        end: newEnd.format("DD MMM YYYY"),
+      });
+    });
+
+    const hasChanged = JSON.stringify(updatedSchedules) !== JSON.stringify(deliverySchedule);
+    if (hasChanged) {
+      setDeliverySchedule(updatedSchedules);
+    }
+  }, [imposedLiftingPairs, commencementDate]);
+
+  const handleAddSchedule = () => {
+    if (!newScheduleFrom || !newScheduleTo || !newScheduleQty) {
+      setAlertBox({
+        open: true,
+        msg: "Please fill all schedule fields: From, To, and Quantity.",
+        error: true,
+      });
+      return;
+    }
+
+    const newItem = {
+      start: newScheduleFrom.format("DD MMM YYYY"),
+      end: newScheduleTo.format("DD MMM YYYY"),
+      quantity: parseInt(newScheduleQty) || 0,
+    };
+
+    setDeliverySchedule((prev) => [...prev, newItem]);
+    setNewScheduleFrom(null);
+    setNewScheduleTo(null);
+    setNewScheduleQty("");
+  };
+
+  const handleRemoveSchedule = (index) => {
+    setDeliverySchedule((prev) => prev.filter((_, i) => i !== index));
+  };
+
   useEffect(() => {
     if (commencementDays === "") {
       if (commencementDate !== null) setCommencementDate(null);
@@ -353,100 +454,6 @@ const DeliverySchedule = () => {
     ? dayjs(deliveryScheduleDate).format("YYYY-MM-DD")
     : "";
 
-  // ✅ Generate monthly delivery schedule with auto quantity
-  useEffect(() => {
-    if (isInitialLoad.current) {
-      isInitialLoad.current = false;
-      return;
-    }
-  
-    setDateError("");
-    if (!commencementDate || !deliveryScheduleDate) {
-      setDeliverySchedule([]);
-      return;
-    }
-  
-    const start = dayjs(commencementDate);
-    const end = dayjs(deliveryScheduleDate);
-  
-    if (!start.isBefore(end)) {
-      setDateError("Commencement Date (CP Date) must be before Delivery Schedule Date.");
-      setDeliverySchedule([]);
-      return;
-    }
-  
-    // Preserve quantities by index
-    const oldQuantities = deliverySchedule.map(s => s.quantity);
-
-    const validPairs = imposedLiftingPairs.filter(p => p.imposedDate && p.liftingDate);
-
-    const isDateDeferred = (date) => {
-      return validPairs.some((pair) => {
-        const imposed = dayjs(pair.imposedDate);
-        const lifting = dayjs(pair.liftingDate);
-        // Inclusive check: [imposed, lifting]
-        return (
-          (date.isSame(imposed, "day") || date.isAfter(imposed, "day")) &&
-          (date.isSame(lifting, "day") || date.isBefore(lifting, "day"))
-        );
-      });
-    };
-
-    // Calculate total active days required from original schedule
-    // Inclusive difference: end - start + 1
-    const totalActiveDaysNeeded = end.diff(start, "day") + 1;
-
-    let segments = [];
-    let processedActiveDays = 0;
-    let cursor = start;
-
-    while (processedActiveDays < totalActiveDaysNeeded) {
-      let segmentStart = cursor;
-      
-      // Standard chunk is 31 days (add(30, 'day') -> 31 inclusive).
-      // But if remaining is less, take remaining.
-      let daysToFind = 31;
-      if (totalActiveDaysNeeded - processedActiveDays < daysToFind) {
-          daysToFind = totalActiveDaysNeeded - processedActiveDays;
-      }
-      
-      let found = 0;
-      let tempCursor = segmentStart;
-      
-      // Advance tempCursor until we find 'daysToFind' active days
-      while (found < daysToFind) {
-          if (!isDateDeferred(tempCursor)) {
-              found++;
-          }
-          if (found < daysToFind) {
-              tempCursor = tempCursor.add(1, "day");
-          }
-      }
-      
-      let segmentEnd = tempCursor;
-      
-      const formattedStart = segmentStart.format("DD MMM YYYY");
-      segments.push({
-        start: formattedStart,
-        end: segmentEnd.format("DD MMM YYYY"),
-        quantity: oldQuantities[segments.length] || 0,
-      });
-      
-      cursor = segmentEnd.add(1, "day");
-      processedActiveDays += found;
-    }
-  
-    setDeliverySchedule(segments);
-  }, [commencementDate, deliveryScheduleDate, imposedLiftingPairs]);
-
-  // ✅ Handle manual quantity input
-  const handleQuantityChange = (index, value) => {
-    setDeliverySchedule((prev) =>
-      prev.map((item, i) =>
-        i === index ? { ...item, quantity: value } : item,
-      ),
-    );
-  };
 
   const handleEditClick = (item) => {
     setSelectedDelivery(item);
@@ -519,6 +526,11 @@ const DeliverySchedule = () => {
     setTotalQuantity("");
     setWound("");
     setPhase("");
+    
+    setNewScheduleFrom(null);
+    setNewScheduleTo(null);
+    setNewScheduleQty("");
+
     // Clear selected file when bulk upload modal is closed
     if (bulkUploadModalOpen) {
       setSelectedFile(null);
@@ -607,7 +619,7 @@ const DeliverySchedule = () => {
       setAlertBox({
         open: true,
         error: true,
-        msg: `Total quantity mismatch! Entered total = , expected = .`,
+        msg: `Total quantity mismatch! Entered total = ${sumOfQuantities}, expected = ${totalQuantity}.`,
       });
       return;
     }
@@ -677,6 +689,21 @@ const DeliverySchedule = () => {
   const showAddLifting =
     imposedLiftingPairs.length > 0 &&
     !imposedLiftingPairs[imposedLiftingPairs.length - 1].liftingLetterNo;
+
+  const getMinFromDate = () => {
+    if (deliverySchedule.length === 0) return commencementDate;
+    const lastSchedule = deliverySchedule[deliverySchedule.length - 1];
+    return dayjs(lastSchedule.end).add(1, "day");
+  };
+
+  const isScheduleComplete = () => {
+    if (deliverySchedule.length === 0) return false;
+    const lastSchedule = deliverySchedule[deliverySchedule.length - 1];
+    return (
+      dayjs(lastSchedule.end).isSame(dayjs(deliveryScheduleDate), "day") ||
+      dayjs(lastSchedule.end).isAfter(dayjs(deliveryScheduleDate), "day")
+    );
+  };
 
   return (
     <>
@@ -1308,6 +1335,63 @@ const DeliverySchedule = () => {
             sx={{ mt: 2 }}
           />
 
+          {/* Manual Delivery Schedule Entry */}
+          {commencementDate && deliveryScheduleDate && !isScheduleComplete() && (
+            <Box mt={3}>
+              <Typography variant="h6" mb={2}>
+                Add Delivery Schedule
+              </Typography>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={3}>
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                      label="From Date"
+                      value={newScheduleFrom}
+                      onChange={(date) => setNewScheduleFrom(date)}
+                      minDate={getMinFromDate()}
+                      maxDate={dayjs(deliveryScheduleDate)}
+                      format="DD/MM/YYYY"
+                      slotProps={{ textField: { fullWidth: true, size: "small" } }}
+                    />
+                  </LocalizationProvider>
+                </Grid>
+                <Grid item xs={3}>
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                      label="To Date"
+                      value={newScheduleTo}
+                      onChange={(date) => setNewScheduleTo(date)}
+                      minDate={newScheduleFrom || getMinFromDate()}
+                      maxDate={dayjs(deliveryScheduleDate)}
+                      format="DD/MM/YYYY"
+                      slotProps={{ textField: { fullWidth: true, size: "small" } }}
+                    />
+                  </LocalizationProvider>
+                </Grid>
+                <Grid item xs={3}>
+                  <TextField
+                    label="Quantity"
+                    type="number"
+                    value={newScheduleQty}
+                    onChange={(e) => setNewScheduleQty(e.target.value)}
+                    fullWidth
+                    size="small"
+                  />
+                </Grid>
+                <Grid item xs={3}>
+                  <Button
+                    variant="contained"
+                    onClick={handleAddSchedule}
+                    fullWidth
+                    className="btn-blue"
+                  >
+                    Add
+                  </Button>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+
           {/* Date Error Message */}
           {dateError && (
             <Typography color="error" sx={{ mt: 2, fontWeight: "bold" }}>
@@ -1328,6 +1412,7 @@ const DeliverySchedule = () => {
                   <TableRow>
                     <TableCell>Period</TableCell>
                     <TableCell align="right">Quantity Per Month</TableCell>
+                    <TableCell align="right">Action</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -1337,14 +1422,16 @@ const DeliverySchedule = () => {
                         {item.start} - {item.end}
                       </TableCell>
                       <TableCell align="right">
-                        <TextField
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            handleQuantityChange(idx, e.target.value)
-                          }
+                        {item.quantity}
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton
                           size="small"
-                        />
+                          color="error"
+                          onClick={() => handleRemoveSchedule(idx)}
+                        >
+                          <CancelIcon />
+                        </IconButton>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1352,7 +1439,7 @@ const DeliverySchedule = () => {
                     <TableCell>
                       <strong>Total</strong>
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" colSpan={2}>
                       <strong>
                         {deliverySchedule.reduce(
                           (sum, item) => sum + (parseInt(item.quantity) || 0),

@@ -16,6 +16,7 @@ import {
   TableHead,
   TableRow,
   Box,
+  IconButton,
 } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -60,6 +61,11 @@ const AddDeliverySchedule = () => {
   const [deliverySchedule, setDeliverySchedule] = useState([]);
   const [chalanDescription, setChalanDescription] = useState("");
   const [dateError, setDateError] = useState("");
+
+  // State for Manual Schedule Entry
+  const [newScheduleFrom, setNewScheduleFrom] = useState(null);
+  const [newScheduleTo, setNewScheduleTo] = useState(null);
+  const [newScheduleQty, setNewScheduleQty] = useState("");
 
 
   const addDeliveryScheduleMutation = useMutation({
@@ -125,33 +131,16 @@ const AddDeliverySchedule = () => {
     setImposedLiftingPairs((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // ✅ Generate monthly delivery schedule (dates only, no auto quantity)
+  // ✅ New Logic: Shift manual schedules when deferment changes
   useEffect(() => {
-    setDateError("");
-    if (!commencementDate || !deliveryScheduleDate) {
-      setDeliverySchedule([]);
-      return;
-    }
+    if (deliverySchedule.length === 0) return;
 
-    const start = dayjs(commencementDate);
-    const end = dayjs(deliveryScheduleDate);
-
-    if (!start.isBefore(end)) {
-      setDateError("Commencement Date (CP Date) must be before Delivery Schedule Date.");
-      setDeliverySchedule([]);
-      return;
-    }
-
-    // Preserve quantities by index
-    const oldQuantities = deliverySchedule.map(s => s.quantity);
-
-    const validPairs = imposedLiftingPairs.filter(p => p.imposedDate && p.liftingDate);
+    const validPairs = imposedLiftingPairs.filter((p) => p.imposedDate && p.liftingDate);
 
     const isDateDeferred = (date) => {
       return validPairs.some((pair) => {
         const imposed = dayjs(pair.imposedDate);
         const lifting = dayjs(pair.liftingDate);
-        // Inclusive check: [imposed, lifting]
         return (
           (date.isSame(imposed, "day") || date.isAfter(imposed, "day")) &&
           (date.isSame(lifting, "day") || date.isBefore(lifting, "day"))
@@ -159,58 +148,95 @@ const AddDeliverySchedule = () => {
       });
     };
 
-    // Calculate total active days required from original schedule
-    // Inclusive difference: end - start + 1
-    const totalActiveDaysNeeded = end.diff(start, "day") + 1;
-
-    let segments = [];
-    let processedActiveDays = 0;
-    let cursor = start;
-
-    while (processedActiveDays < totalActiveDaysNeeded) {
-      let segmentStart = cursor;
-      
-      // Standard chunk is 31 days (add(30, 'day') -> 31 inclusive).
-      // But if remaining is less, take remaining.
-      let daysToFind = 31;
-      if (totalActiveDaysNeeded - processedActiveDays < daysToFind) {
-          daysToFind = totalActiveDaysNeeded - processedActiveDays;
-      }
-      
+    const findEndDate = (startDate, activeDaysNeeded) => {
       let found = 0;
-      let tempCursor = segmentStart;
-      
-      // Advance tempCursor until we find 'daysToFind' active days
-      while (found < daysToFind) {
-          if (!isDateDeferred(tempCursor)) {
-              found++;
-          }
-          if (found < daysToFind) {
-              tempCursor = tempCursor.add(1, "day");
-          }
+      let cursor = dayjs(startDate);
+      while (found < activeDaysNeeded) {
+        if (!isDateDeferred(cursor)) {
+          found++;
+        }
+        if (found < activeDaysNeeded) {
+          cursor = cursor.add(1, "day");
+        }
       }
-      
-      let segmentEnd = tempCursor;
-      
-      const formattedStart = segmentStart.format("DD MMM YYYY");
-      segments.push({
-        start: formattedStart,
-        end: segmentEnd.format("DD MMM YYYY"),
-        quantity: oldQuantities[segments.length] || 0,
-      });
-      
-      cursor = segmentEnd.add(1, "day");
-      processedActiveDays += found;
-    }
-    
-    setDeliverySchedule(segments);
-  }, [commencementDate, deliveryScheduleDate, imposedLiftingPairs]);
+      return cursor;
+    };
 
-  // ✅ Handle manual quantity input
-  const handleQuantityChange = (index, value) => {
-    setDeliverySchedule((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, quantity: value } : item))
-    );
+    let updatedSchedules = [];
+    let currentStart = dayjs(commencementDate);
+
+    deliverySchedule.forEach((seg, idx) => {
+      // Calculate original active days (how many non-deferred days were in the original entry)
+      // This is slightly complex because we need to know the state WHEN it was added.
+      // Instead, we store the "intended duration" in a more robust way or recalculate.
+      // For now, let's assume the user intended a specific number of calendar days if no deferment, 
+      // or we use the current duration and just shift it.
+      
+      const prevStart = dayjs(seg.start, "DD MMM YYYY");
+      const prevEnd = dayjs(seg.end, "DD MMM YYYY");
+      
+      // Calculate how many active days were in this segment previously
+      let activeDays = 0;
+      let temp = prevStart;
+      while (temp.isBefore(prevEnd) || temp.isSame(prevEnd, "day")) {
+         // Note: This recalculation uses the OLD deferment state? No, we don't have it.
+         // Let's assume the user wants to keep the CURRENT duration but shift for NEW deferments.
+         activeDays++; 
+         temp = temp.add(1, "day");
+      }
+
+      // If it's the first segment, start at commencement
+      if (idx === 0) {
+        currentStart = dayjs(commencementDate);
+      } else {
+        currentStart = dayjs(updatedSchedules[idx - 1].end, "DD MMM YYYY").add(1, "day");
+      }
+
+      // Skip initial deferred days for the start
+      while (isDateDeferred(currentStart)) {
+        currentStart = currentStart.add(1, "day");
+      }
+
+      const newEnd = findEndDate(currentStart, activeDays);
+
+      updatedSchedules.push({
+        ...seg,
+        start: currentStart.format("DD MMM YYYY"),
+        end: newEnd.format("DD MMM YYYY"),
+      });
+    });
+
+    // Only update if something actually changed to avoid infinite loops
+    const hasChanged = JSON.stringify(updatedSchedules) !== JSON.stringify(deliverySchedule);
+    if (hasChanged) {
+      setDeliverySchedule(updatedSchedules);
+    }
+  }, [imposedLiftingPairs, commencementDate]);
+
+  const handleAddSchedule = () => {
+    if (!newScheduleFrom || !newScheduleTo || !newScheduleQty) {
+      setAlertBox({
+        open: true,
+        msg: "Please fill all schedule fields: From, To, and Quantity.",
+        error: true,
+      });
+      return;
+    }
+
+    const newItem = {
+      start: newScheduleFrom.format("DD MMM YYYY"),
+      end: newScheduleTo.format("DD MMM YYYY"),
+      quantity: parseInt(newScheduleQty) || 0,
+    };
+
+    setDeliverySchedule((prev) => [...prev, newItem]);
+    setNewScheduleFrom(null);
+    setNewScheduleTo(null);
+    setNewScheduleQty("");
+  };
+
+  const handleRemoveSchedule = (index) => {
+    setDeliverySchedule((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = (e) => {
@@ -240,7 +266,7 @@ const AddDeliverySchedule = () => {
       setAlertBox({
         open: true,
         error: true,
-        msg: `Total quantity mismatch! Entered total = , expected = .`,
+        msg: `Total quantity mismatch! Entered total = ${sumOfQuantities}, expected = ${totalQuantity}.`,
       });
       return;
     }
@@ -277,6 +303,18 @@ const AddDeliverySchedule = () => {
     };
 
     addDeliveryScheduleMutation.mutate(data);
+  };
+
+  const getMinFromDate = () => {
+    if (deliverySchedule.length === 0) return commencementDate;
+    const lastSchedule = deliverySchedule[deliverySchedule.length - 1];
+    return dayjs(lastSchedule.end).add(1, "day");
+  };
+
+  const isScheduleComplete = () => {
+    if (deliverySchedule.length === 0) return false;
+    const lastSchedule = deliverySchedule[deliverySchedule.length - 1];
+    return dayjs(lastSchedule.end).isSame(dayjs(deliveryScheduleDate), "day") || dayjs(lastSchedule.end).isAfter(dayjs(deliveryScheduleDate), "day");
   };
 
   return (
@@ -567,6 +605,59 @@ const AddDeliverySchedule = () => {
               />
             </Grid>
 
+            {/* Manual Delivery Schedule Entry */}
+            {commencementDate && deliveryScheduleDate && !isScheduleComplete() && (
+              <Grid item size={2}>
+                <Typography variant="h6" mb={2}>
+                  Add Delivery Schedule
+                </Typography>
+                <Grid container spacing={2} alignItems="center">
+                  <Grid item xs={3}>
+                    <DatePicker
+                      label="From Date"
+                      value={newScheduleFrom}
+                      onChange={(date) => setNewScheduleFrom(date)}
+                      minDate={getMinFromDate()}
+                      maxDate={deliveryScheduleDate}
+                      format="DD/MM/YYYY"
+                      slotProps={{ textField: { fullWidth: true, size: "small" } }}
+                    />
+                  </Grid>
+                  <Grid item xs={3}>
+                    <DatePicker
+                      label="To Date"
+                      value={newScheduleTo}
+                      onChange={(date) => setNewScheduleTo(date)}
+                      minDate={newScheduleFrom || getMinFromDate()}
+                      maxDate={deliveryScheduleDate}
+                      format="DD/MM/YYYY"
+                      slotProps={{ textField: { fullWidth: true, size: "small" } }}
+                    />
+                  </Grid>
+                  <Grid item xs={3}>
+                    <TextField
+                      label="Quantity"
+                      type="number"
+                      value={newScheduleQty}
+                      onChange={(e) => setNewScheduleQty(e.target.value)}
+                      fullWidth
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid item xs={3}>
+                    <Button
+                      variant="contained"
+                      onClick={handleAddSchedule}
+                      fullWidth
+                      className="btn-blue"
+                    >
+                      Add More Schedule
+                    </Button>
+                  </Grid>
+                </Grid>
+              </Grid>
+            )}
+
             {/* Submit Button */}
             <Grid item size={2}>
               <Button
@@ -604,6 +695,7 @@ const AddDeliverySchedule = () => {
                   <TableRow>
                     <TableCell>Period</TableCell>
                     <TableCell align="right">Quantity Per Month</TableCell>
+                    <TableCell align="right">Action</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -613,14 +705,16 @@ const AddDeliverySchedule = () => {
                         {item.start} - {item.end}
                       </TableCell>
                       <TableCell align="right">
-                        <TextField
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            handleQuantityChange(idx, e.target.value)
-                          }
+                        {item.quantity}
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton
                           size="small"
-                        />
+                          color="error"
+                          onClick={() => handleRemoveSchedule(idx)}
+                        >
+                          <CancelIcon />
+                        </IconButton>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -629,7 +723,7 @@ const AddDeliverySchedule = () => {
                     <TableCell>
                       <strong>Total</strong>
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" colSpan={2}>
                       <strong>
                         {deliverySchedule.reduce(
                           (sum, item) => sum + (parseInt(item.quantity) || 0),
