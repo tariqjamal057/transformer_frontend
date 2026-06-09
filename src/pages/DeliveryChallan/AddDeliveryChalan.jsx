@@ -147,14 +147,7 @@ const AddDeliveryChalan = () => {
 
           // 1. New Transformers Assigned
           if (consignee.subSnNumber) {
-            const parts = consignee.subSnNumber.split(" TO ");
-            if (parts.length === 2) {
-              const start = parseInt(parts[0], 10);
-              const end = parseInt(parts[1], 10);
-              for (let i = start; i <= end; i++) assignedSerials.add(String(i));
-            } else {
-              assignedSerials.add(consignee.subSnNumber);
-            }
+            parseRange(consignee.subSnNumber).forEach((s) => assignedSerials.add(s));
           }
 
           // 2. Repaired Transformers Assigned
@@ -267,14 +260,7 @@ const AddDeliveryChalan = () => {
 
           // 1. New Transformers Assigned
           if (consignee.subSnNumber) {
-            const parts = consignee.subSnNumber.split(" TO ");
-            if (parts.length === 2) {
-              const start = parseInt(parts[0], 10);
-              const end = parseInt(parts[1], 10);
-              for (let i = start; i <= end; i++) assignedSerials.add(String(i));
-            } else {
-              assignedSerials.add(consignee.subSnNumber);
-            }
+            parseRange(consignee.subSnNumber).forEach((s) => assignedSerials.add(s));
           }
 
           // 2. Repaired Transformers Assigned
@@ -406,19 +392,10 @@ const AddDeliveryChalan = () => {
     if (consigneeFromInspection) {
       // 1. Parse New Transformers Range
       if (consigneeFromInspection.subSnNumber) {
-        const parts = consigneeFromInspection.subSnNumber.split(" TO ");
-        if (parts.length === 2) {
-          const start = parseInt(parts[0], 10);
-          const end = parseInt(parts[1], 10);
-          for (let i = start; i <= end; i++) {
-            newSerials.push({ id: String(i), serialNo: String(i) });
-          }
-        } else {
-          newSerials.push({
-            id: consigneeFromInspection.subSnNumber,
-            serialNo: consigneeFromInspection.subSnNumber,
-          });
-        }
+        const assignedSerials = parseRange(consigneeFromInspection.subSnNumber);
+        assignedSerials.forEach((s) => {
+          newSerials.push({ id: s, serialNo: s });
+        });
       }
       // 2. Add Repaired Transformers
       if (consigneeFromInspection.repairedTransformerIds) {
@@ -463,24 +440,9 @@ const AddDeliveryChalan = () => {
 
           // Other Consignee Serial Numbers
           if (dc.otherConsigneeSerialNumbers) {
-            const parts = dc.otherConsigneeSerialNumbers
-              .split(",")
-              .map((s) => s.trim());
-            parts.forEach((part) => {
-              if (part.includes("-")) {
-                const [start, end] = part
-                  .split("-")
-                  .map((n) => parseInt(n, 10));
-                if (!isNaN(start) && !isNaN(end)) {
-                  for (let i = start; i <= end; i++) {
-                    usedNew.add(String(i));
-                    usedRepaired.add(String(i));
-                  }
-                }
-              } else {
-                usedNew.add(part);
-                usedRepaired.add(part);
-              }
+            parseRange(dc.otherConsigneeSerialNumbers).forEach((s) => {
+              usedNew.add(s);
+              usedRepaired.add(s);
             });
           }
         }
@@ -620,18 +582,11 @@ const AddDeliveryChalan = () => {
         const isCurrentConsignee = c.consigneeId === consigneeId;
         // New Transformers
         if (c.subSnNumber) {
-          const rangeParts = c.subSnNumber.split(" TO ");
-          if (rangeParts.length === 2) {
-            const s = parseInt(rangeParts[0], 10);
-            const e = parseInt(rangeParts[1], 10);
-            for (let i = s; i <= e; i++) {
-              validNewAll.add(String(i));
-              if (isCurrentConsignee) validNewForThisConsignee.add(String(i));
-            }
-          } else {
-            validNewAll.add(c.subSnNumber);
-            if (isCurrentConsignee) validNewForThisConsignee.add(c.subSnNumber);
-          }
+          const assignedSerials = parseRange(c.subSnNumber);
+          assignedSerials.forEach((s) => {
+            validNewAll.add(s);
+            if (isCurrentConsignee) validNewForThisConsignee.add(s);
+          });
         }
         // Repaired Transformers
         if (c.repairedTransformerIds) {

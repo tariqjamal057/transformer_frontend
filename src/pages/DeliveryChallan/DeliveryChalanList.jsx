@@ -50,6 +50,34 @@ const compressSerials = (serials) => {
   return parts.join(", ");
 };
 
+const parseRange = (text) => {
+  if (!text) return [];
+  const parts = text
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const results = [];
+  parts.forEach((part) => {
+    if (part.includes("-")) {
+      const [start, end] = part.split("-").map((n) => parseInt(n.trim(), 10));
+      if (!isNaN(start) && !isNaN(end) && start <= end) {
+        for (let i = start; i <= end; i++) results.push(String(i));
+      }
+    } else if (part.toUpperCase().includes(" TO ")) {
+      const [start, end] = part
+        .toUpperCase()
+        .split(" TO ")
+        .map((n) => parseInt(n.trim(), 10));
+      if (!isNaN(start) && !isNaN(end) && start <= end) {
+        for (let i = start; i <= end; i++) results.push(String(i));
+      }
+    } else {
+      results.push(part);
+    }
+  });
+  return results;
+};
+
 const DeliveryChalanList = () => {
   const { userRole, setAlertBox, hasPermission } = useContext(MyContext);
   const queryClient = useQueryClient();
@@ -169,55 +197,33 @@ const DeliveryChalanList = () => {
   const getOtherConsigneeDetails = (item) => {
     if (!item.otherConsigneeSerialNumbers) return "-";
 
-    const serials = item.otherConsigneeSerialNumbers
+    const serialRanges = item.otherConsigneeSerialNumbers
       .split(",")
-      .map((s) => s.trim());
+      .map((s) => s.trim())
+      .filter(Boolean);
     const consignees = item.finalInspection?.consignees || [];
 
-    const mapped = serials.map((serialRange) => {
-      // Check if it's a range
-      if (serialRange.includes("-")) {
-        const [start] = serialRange.split("-").map(Number);
-        // Find consignee for start (assuming range belongs to one)
-        const consignee = consignees.find((c) => {
-          // Check new range
-          if (c.subSnNumber) {
-            const parts = c.subSnNumber.split(" TO ");
-            if (parts.length === 2) {
-              const cStart = parseInt(parts[0], 10);
-              const cEnd = parseInt(parts[1], 10);
-              if (start >= cStart && start <= cEnd) return true;
-            } else if (parseInt(c.subSnNumber, 10) === start) {
-              return true;
-            }
-          }
-          return false;
-        });
-        return consignee
-          ? `${serialRange} (${consignee.consigneeName})`
-          : serialRange;
-      } else {
-        const serial = Number(serialRange);
-        const consignee = consignees.find((c) => {
-          // Check new
-          if (c.subSnNumber) {
-            const parts = c.subSnNumber.split(" TO ");
-            if (parts.length === 2) {
-              const cStart = parseInt(parts[0], 10);
-              const cEnd = parseInt(parts[1], 10);
-              if (serial >= cStart && serial <= cEnd) return true;
-            } else if (parseInt(c.subSnNumber, 10) === serial) {
-              return true;
-            }
-          }
-          // Check repaired
-          if (c.repairedTransformerIds?.includes(serial)) return true;
-          return false;
-        });
-        return consignee
-          ? `${serialRange} (${consignee.consigneeName})`
-          : serialRange;
-      }
+    // Pre-parse valid serials for each consignee for faster lookup
+    const consigneeSerialsMap = consignees.map((c) => ({
+      name: c.consigneeName,
+      validSerials: new Set([
+        ...parseRange(c.subSnNumber),
+        ...(c.repairedTransformerIds || []).map(String),
+      ]),
+    }));
+
+    const mapped = serialRanges.map((serialRange) => {
+      // Find which consignee this range/serial belongs to
+      // We check the first serial in the range to identify the consignee
+      const firstSerial = serialRange.includes("-")
+        ? serialRange.split("-")[0].trim()
+        : serialRange;
+
+      const consignee = consigneeSerialsMap.find((c) =>
+        c.validSerials.has(String(firstSerial)),
+      );
+
+      return consignee ? `${serialRange} (${consignee.name})` : serialRange;
     });
 
     return mapped.join(", ");

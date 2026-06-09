@@ -163,14 +163,7 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
 
           // 1. New Transformers Assigned
           if (consignee.subSnNumber) {
-            const parts = consignee.subSnNumber.split(" TO ");
-            if (parts.length === 2) {
-              const start = parseInt(parts[0], 10);
-              const end = parseInt(parts[1], 10);
-              totalAssigned += end - start + 1;
-            } else {
-              totalAssigned += 1;
-            }
+            totalAssigned += parseRange(consignee.subSnNumber).length;
           }
 
           // 2. Repaired Transformers Assigned
@@ -388,19 +381,10 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
     if (consigneeFromInspection) {
       // 1. Parse New Transformers Range
       if (consigneeFromInspection.subSnNumber) {
-        const parts = consigneeFromInspection.subSnNumber.split(" TO ");
-        if (parts.length === 2) {
-          const start = parseInt(parts[0], 10);
-          const end = parseInt(parts[1], 10);
-          for (let i = start; i <= end; i++) {
-            newSerials.push({ id: String(i), serialNo: String(i) });
-          }
-        } else {
-          newSerials.push({
-            id: consigneeFromInspection.subSnNumber,
-            serialNo: consigneeFromInspection.subSnNumber,
-          });
-        }
+        const assignedSerials = parseRange(consigneeFromInspection.subSnNumber);
+        assignedSerials.forEach((s) => {
+          newSerials.push({ id: s, serialNo: s });
+        });
       }
       // 2. Add Repaired Transformers
       if (consigneeFromInspection.repairedTransformerIds) {
@@ -571,18 +555,11 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
         const isCurrentConsignee = c.consigneeId === selectedConsigneeId;
         // New Transformers
         if (c.subSnNumber) {
-          const rangeParts = c.subSnNumber.split(" TO ");
-          if (rangeParts.length === 2) {
-            const s = parseInt(rangeParts[0], 10);
-            const e = parseInt(rangeParts[1], 10);
-            for (let i = s; i <= e; i++) {
-              validNewAll.add(String(i));
-              if (isCurrentConsignee) validNewForThisConsignee.add(String(i));
-            }
-          } else {
-            validNewAll.add(c.subSnNumber);
-            if (isCurrentConsignee) validNewForThisConsignee.add(c.subSnNumber);
-          }
+          const assignedSerials = parseRange(c.subSnNumber);
+          assignedSerials.forEach((s) => {
+            validNewAll.add(s);
+            if (isCurrentConsignee) validNewForThisConsignee.add(s);
+          });
         }
         // Repaired Transformers
         if (c.repairedTransformerIds) {
@@ -705,19 +682,10 @@ const DeliveryChalanModal = ({ open, handleClose, deliveryChalanData }) => {
 
       if (consigneeFromInspection) {
         if (consigneeFromInspection.subSnNumber) {
-          const parts = consigneeFromInspection.subSnNumber.split(" TO ");
-          if (parts.length === 2) {
-            const start = parseInt(parts[0], 10);
-            const end = parseInt(parts[1], 10);
-            for (let i = start; i <= end; i++) {
-              newSerials.push({ id: String(i), serialNo: String(i) });
-            }
-          } else {
-            newSerials.push({
-              id: consigneeFromInspection.subSnNumber,
-              serialNo: consigneeFromInspection.subSnNumber,
-            });
-          }
+          const assignedSerials = parseRange(consigneeFromInspection.subSnNumber);
+          assignedSerials.forEach((s) => {
+            newSerials.push({ id: s, serialNo: s });
+          });
         }
         if (consigneeFromInspection.repairedTransformerIds) {
           consigneeFromInspection.repairedTransformerIds.forEach((id) => {
