@@ -184,16 +184,12 @@ const FailureAnalysisList = () => {
                         <td>{failureDetails.place}</td>
                         <td>
                           {failureDetails.informationDate
-                            ? dayjs(failureDetails.informationDate).format(
-                                "DD-MM-YYYY",
-                              )
+                            ? dayjs(failureDetails.informationDate).format("DD/MM/YY")
                             : "N/A"}
                         </td>
                         <td>
                           {failureDetails.failureDate
-                            ? dayjs(failureDetails.failureDate).format(
-                                "DD-MM-YYYY",
-                              )
+                            ? dayjs(failureDetails.failureDate).format("DD/MM/YY")
                             : "N/A"}
                         </td>
                         {hasPermission("FailureAnalysisUpdate") && (

@@ -177,7 +177,7 @@ const FiltersComponent = ({
 
         const getDueDateForConsignee = (consignee) => {
           if (!baseDate) return "";
-          return dayjs(baseDate).add(13, "day").format("DD MMM YYYY");
+          return dayjs(baseDate).add(13, "day").format("DD/MM/YY");
         };
 
         const getConsigneeSerials = (consignee) => {
@@ -198,7 +198,7 @@ const FiltersComponent = ({
           normalize(cIdx === 0 ? index + 1 : ""),
           normalize(
             cIdx === 0 && item.offerDate
-              ? dayjs(item.offerDate).format("DD MMM YYYY")
+              ? dayjs(item.offerDate).format("DD/MM/YY")
               : "",
           ),
           normalize(
@@ -239,14 +239,14 @@ const FiltersComponent = ({
 
           normalize(
             cIdx === 0 && item.inspectionDate
-              ? dayjs(item.inspectionDate).format("DD MMM YYYY")
+              ? dayjs(item.inspectionDate).format("DD/MM/YY")
               : "",
           ),
           normalize(cIdx === 0 ? item.inspectedQuantity : ""),
           normalize(cIdx === 0 ? item.diNo : ""),
           normalize(
             cIdx === 0 && item.diDate
-              ? dayjs(item.diDate).format("DD MMM YYYY")
+              ? dayjs(item.diDate).format("DD/MM/YY")
               : "",
           ),
           // ✅ CONDITIONAL COLUMN
@@ -322,7 +322,7 @@ const FiltersComponent = ({
           : item.diDate || item.inspectionDate;
 
       const dueDateMerged = baseDate
-        ? dayjs(baseDate).add(13, "day").format("DD MMM YYYY")
+        ? dayjs(baseDate).add(13, "day").format("DD/MM/YY")
         : "";
 
       // 👉 Merge consignee details into one row
@@ -356,7 +356,7 @@ const FiltersComponent = ({
         "S.No": index + 1,
         "Offered Date":
           item.offerDate
-            ? dayjs(item.offerDate).format("DD MMM YYYY")
+            ? dayjs(item.offerDate).format("DD/MM/YY")
             : "",
         "Firm Name":
           item.companyName ||
@@ -384,12 +384,12 @@ const FiltersComponent = ({
           ? item.inspectionOfficers.join(", ")
           : "",
         "Inspection Date": item.inspectionDate
-          ? dayjs(item.inspectionDate).format("DD MMM YYYY")
+          ? dayjs(item.inspectionDate).format("DD/MM/YY")
           : "",
         "Inspected Qty": item.inspectedQuantity || "",
         "D.I. No": item.diNo || "",
         "D.I. Date": item.diDate
-          ? dayjs(item.diDate).format("DD MMM YYYY")
+          ? dayjs(item.diDate).format("DD/MM/YY")
           : "",
         "Due Date of Delivery": dueDateMerged,
         "Consignee Name": consigneeNames,
@@ -430,7 +430,7 @@ const FiltersComponent = ({
       "S.No": index + 1,
       "Offered Date":
         item.offeredDate || item.offerDate
-          ? dayjs(item.offeredDate || item.offerDate).format("DD MMM YYYY")
+          ? dayjs(item.offeredDate || item.offerDate).format("DD/MM/YY")
           : "",
       "Firm Name":
         item.companyName ||
@@ -458,7 +458,7 @@ const FiltersComponent = ({
         ? item.inspectionOfficers.join(", ")
         : "",
       "Inspection Date": item.inspectionDate
-        ? dayjs(item.inspectionDate).format("DD MMM YYYY")
+        ? dayjs(item.inspectionDate).format("DD/MM/YY")
         : "",
       "Inspected Qty": item.inspectedQuantity || "",
     }));
@@ -510,7 +510,7 @@ const FiltersComponent = ({
       return [
         index + 1, // S.No
         item.offeredDate || item.offerDate
-          ? dayjs(item.offeredDate || item.offerDate).format("DD MMM YYYY")
+          ? dayjs(item.offeredDate || item.offerDate).format("DD/MM/YY")
           : "",
         item.companyName ||
           item.deliverySchedule?.supplyTender?.company?.name ||
@@ -535,7 +535,7 @@ const FiltersComponent = ({
           ? item.inspectionOfficers.join(", ")
           : "",
         item.inspectionDate
-          ? dayjs(item.inspectionDate).format("DD MMM YYYY")
+          ? dayjs(item.inspectionDate).format("DD/MM/YY")
           : "",
         item.inspectedQuantity,
       ];
@@ -720,7 +720,7 @@ const FiltersComponent = ({
 
         const getDueDateForConsignee = (consignee) => {
           if (!baseDate) return "";
-          return dayjs(baseDate).add(13, "day").format("DD MMM YYYY");
+          return dayjs(baseDate).add(13, "day").format("DD/MM/YY");
         };
 
         const getConsigneeSerials = (consignee) => {
@@ -741,7 +741,7 @@ const FiltersComponent = ({
           normalize(cIdx === 0 ? index + 1 : ""),
           normalize(
             cIdx === 0 && item.offerDate
-              ? dayjs(item.offerDate).format("DD MMM YYYY")
+              ? dayjs(item.offerDate).format("DD/MM/YY")
               : "",
           ),
           normalize(
@@ -782,14 +782,14 @@ const FiltersComponent = ({
 
           normalize(
             cIdx === 0 && item.inspectionDate
-              ? dayjs(item.inspectionDate).format("DD MMM YYYY")
+              ? dayjs(item.inspectionDate).format("DD/MM/YY")
               : "",
           ),
           normalize(cIdx === 0 ? item.inspectedQuantity : ""),
           normalize(cIdx === 0 ? item.diNo : ""),
           normalize(
             cIdx === 0 && item.diDate
-              ? dayjs(item.diDate).format("DD MMM YYYY")
+              ? dayjs(item.diDate).format("DD/MM/YY")
               : "",
           ),
           ...(dueDateofDeliveryIncluded

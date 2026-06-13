@@ -211,7 +211,7 @@ const AddOfferLetterAndSealingStatement = () => {
                         <div>{item.accountReceiptNoteNo}</div>
                         <div className="text-muted small">
                           {dayjs(item.accountReceiptNoteDate).format(
-                            "DD-MM-YYYY",
+                            "DD/MM/YY",
                           )}
                         </div>
                       </td>

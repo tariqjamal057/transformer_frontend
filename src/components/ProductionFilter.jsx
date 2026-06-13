@@ -141,7 +141,7 @@ const ProductionFilter = ({
           normalize(sIdx === 0 ? item.deliverySchedule?.status : ""),
           normalize(
             sIdx === 0 && item.deliverySchedule?.scheduleDate
-              ? dayjs(item.deliverySchedule.scheduleDate).format("DD MMM YYYY")
+              ? dayjs(item.deliverySchedule.scheduleDate).format("DD/MM/YY")
               : "",
           ),
           normalize(sIdx === 0 ? item.deliverySchedule?.totalOrderQuantity : ""),
@@ -244,7 +244,7 @@ const ProductionFilter = ({
           normalize(sIdx === 0 ? item.deliverySchedule?.status : ""),
           normalize(
             sIdx === 0 && item.deliverySchedule?.scheduleDate
-              ? dayjs(item.deliverySchedule.scheduleDate).format("DD MMM YYYY")
+              ? dayjs(item.deliverySchedule.scheduleDate).format("DD/MM/YY")
               : "",
           ),
           normalize(sIdx === 0 ? item.deliverySchedule?.totalOrderQuantity : ""),

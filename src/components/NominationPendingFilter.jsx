@@ -181,14 +181,14 @@ const FiltersComponent = ({
 
           const days = name === "jhunjhunu" ? 7 : 12;
 
-          return dayjs(baseDate).add(days, "day").format("DD MMM YYYY");
+          return dayjs(baseDate).add(days, "day").format("DD/MM/YY");
         };
 
         excelRows.push([
           normalize(cIdx === 0 ? index + 1 : ""),
           normalize(
             cIdx === 0 && (item.offeredDate || item.offerDate)
-              ? dayjs(item.offeredDate || item.offerDate).format("DD MMM YYYY")
+              ? dayjs(item.offeredDate || item.offerDate).format("DD/MM/YY")
               : "",
           ),
           normalize(
@@ -228,14 +228,14 @@ const FiltersComponent = ({
 
           normalize(
             cIdx === 0 && item.inspectionDate
-              ? dayjs(item.inspectionDate).format("DD MMM YYYY")
+              ? dayjs(item.inspectionDate).format("DD/MM/YY")
               : "",
           ),
           normalize(cIdx === 0 ? item.inspectedQuantity : ""),
           normalize(cIdx === 0 ? item.diNo : ""),
           normalize(
             cIdx === 0 && item.diDate
-              ? dayjs(item.diDate).format("DD MMM YYYY")
+              ? dayjs(item.diDate).format("DD/MM/YY")
               : "",
           ),
           // ✅ CONDITIONAL COLUMN
@@ -320,7 +320,7 @@ const FiltersComponent = ({
         )
       ) {
         dueJhunjhunu = baseDate
-          ? dayjs(baseDate).add(7, "day").format("DD MMM YYYY")
+          ? dayjs(baseDate).add(7, "day").format("DD/MM/YY")
           : "";
       }
       if (
@@ -331,7 +331,7 @@ const FiltersComponent = ({
         )
       ) {
         dueOthers = baseDate
-          ? dayjs(baseDate).add(12, "day").format("DD MMM YYYY")
+          ? dayjs(baseDate).add(12, "day").format("DD/MM/YY")
           : "";
       }
 
@@ -364,7 +364,7 @@ const FiltersComponent = ({
         "S.No": index + 1,
         "Offered Date":
           item.offeredDate || item.offerDate
-            ? dayjs(item.offeredDate || item.offerDate).format("DD MMM YYYY")
+            ? dayjs(item.offeredDate || item.offerDate).format("DD/MM/YY")
             : "",
         "Firm Name":
           item.companyName ||
@@ -392,12 +392,12 @@ const FiltersComponent = ({
         //   ? item.inspectionOfficers.join(", ")
         //   : "",
         // "Inspection Date": item.inspectionDate
-        //   ? dayjs(item.inspectionDate).format("DD MMM YYYY")
+        //   ? dayjs(item.inspectionDate).format("DD/MM/YY")
         //   : "",
         // "Inspected Qty": item.inspectedQuantity || "",
         // "D.I. No": item.diNo || "",
         // "D.I. Date": item.diDate
-        //   ? dayjs(item.diDate).format("DD MMM YYYY")
+        //   ? dayjs(item.diDate).format("DD/MM/YY")
         //   : "",
         // "Due Date of Delivery": dueDateMerged,
         // "Consignee Name": consigneeNames,
@@ -438,7 +438,7 @@ const FiltersComponent = ({
       "S.No": index + 1,
       "Offered Date":
         item.offeredDate || item.offerDate
-          ? dayjs(item.offeredDate || item.offerDate).format("DD MMM YYYY")
+          ? dayjs(item.offeredDate || item.offerDate).format("DD/MM/YY")
           : "",
       "Firm Name":
         item.companyName ||
@@ -465,7 +465,7 @@ const FiltersComponent = ({
         ? item.inspectionOfficers.join(", ")
         : "",
       "Inspection Date": item.inspectionDate
-        ? dayjs(item.inspectionDate).format("DD MMM YYYY")
+        ? dayjs(item.inspectionDate).format("DD/MM/YY")
         : "",
       "Inspected Qty": item.inspectedQuantity || "",
     }));
@@ -506,7 +506,7 @@ const FiltersComponent = ({
       return [
         index + 1, // S.No
         item.offeredDate || item.offerDate
-          ? dayjs(item.offeredDate || item.offerDate).format("DD MMM YYYY")
+          ? dayjs(item.offeredDate || item.offerDate).format("DD/MM/YY")
           : "",
         item.companyName ||
           item.deliverySchedule?.supplyTender?.company?.name ||
@@ -531,7 +531,7 @@ const FiltersComponent = ({
           ? item.inspectionOfficers.join(", ")
           : "",
         item.inspectionDate
-          ? dayjs(item.inspectionDate).format("DD MMM YYYY")
+          ? dayjs(item.inspectionDate).format("DD/MM/YY")
           : "",
         item.inspectedQuantity,
       ];
@@ -719,14 +719,14 @@ const FiltersComponent = ({
 
           const days = name === "jhunjhunu" ? 7 : 12;
 
-          return dayjs(baseDate).add(days, "day").format("DD MMM YYYY");
+          return dayjs(baseDate).add(days, "day").format("DD/MM/YY");
         };
 
         pdfData.push([
           normalize(cIdx === 0 ? index + 1 : ""),
           normalize(
             cIdx === 0 && (item.offeredDate || item.offerDate)
-              ? dayjs(item.offeredDate || item.offerDate).format("DD MMM YYYY")
+              ? dayjs(item.offeredDate || item.offerDate).format("DD/MM/YY")
               : "",
           ),
           normalize(
@@ -766,14 +766,14 @@ const FiltersComponent = ({
 
           normalize(
             cIdx === 0 && item.inspectionDate
-              ? dayjs(item.inspectionDate).format("DD MMM YYYY")
+              ? dayjs(item.inspectionDate).format("DD/MM/YY")
               : "",
           ),
           normalize(cIdx === 0 ? item.inspectedQuantity : ""),
           normalize(cIdx === 0 ? item.diNo : ""),
           normalize(
             cIdx === 0 && item.diDate
-              ? dayjs(item.diDate).format("DD MMM YYYY")
+              ? dayjs(item.diDate).format("DD/MM/YY")
               : "",
           ),
           ...(dueDateofDeliveryIncluded

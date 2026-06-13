@@ -324,7 +324,7 @@ const DeliveryChalanList = () => {
                           {item.finalInspection?.deliverySchedule?.poDetails}
                         </div>
                         <div className="text-muted small">
-                          {item.finalInspection?.deliverySchedule?.poDate ? dayjs(item.finalInspection.deliverySchedule.poDate).format("DD-MM-YYYY") : "-"}
+                          {item.finalInspection?.deliverySchedule?.poDate ? dayjs(item.finalInspection.deliverySchedule.poDate).format("DD/MM/YY") : "-"}
                         </div>
                       </td>
 
@@ -346,7 +346,7 @@ const DeliveryChalanList = () => {
                         </div>
                         <div>
                           <strong>DI Date:</strong>{" "}
-                          {item.finalInspection?.diDate ? dayjs(item.finalInspection.diDate).format("DD-MM-YYYY") : "-"}
+                          {item.finalInspection?.diDate ? dayjs(item.finalInspection.diDate).format("DD/MM/YY") : "-"}
                         </div>
                       </td>
 
@@ -385,7 +385,7 @@ const DeliveryChalanList = () => {
 
                       {/* Inspection Date */}
                       <td>
-                        {item.finalInspection?.inspectionDate ? dayjs(item.finalInspection.inspectionDate).format("DD-MM-YYYY") : "-"}
+                        {item.finalInspection?.inspectionDate ? dayjs(item.finalInspection.inspectionDate).format("DD/MM/YY") : "-"}
                       </td>
 
                       {/* Consignor Details */}

@@ -102,10 +102,10 @@ const ActivityLogsList = () => {
     ) {
       return key ? (
         <div style={{ paddingLeft }}>
-          {key}: {dateValue.format("DD/MM/YYYY HH:mm:ss")}
+          {key}: {dateValue.format("DD/MM/YY")}
         </div>
       ) : (
-        <div>{dateValue.format("DD/MM/YYYY HH:mm:ss")}</div>
+        <div>{dateValue.format("DD/MM/YY")}</div>
       );
     }
 
@@ -383,7 +383,7 @@ const ActivityLogsList = () => {
                         <TableCell>{changes.after}</TableCell>
                         <TableCell>
                           {log.createdAt
-                            ? dayjs(log.createdAt).format("DD/MM/YYYY HH:mm:ss")
+                            ? dayjs(log.createdAt).format("DD/MM/YY")
                             : "N/A"}
                         </TableCell>
                       </TableRow>

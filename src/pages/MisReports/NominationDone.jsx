@@ -143,7 +143,7 @@ const NominationDone = () => {
                                 {idx + 1}
                               </TableCell>
                               <TableCell rowSpan={row.consignees.length}>
-                                {row.offerDate ? dayjs(row.offerDate).format("DD MMM YYYY") : ""}
+                                {row.offerDate ? dayjs(row.offerDate).format("DD/MM/YY") : ""}
                               </TableCell>
                               <TableCell rowSpan={row.consignees.length}>
                                 {
@@ -191,7 +191,7 @@ const NominationDone = () => {
                               </TableCell>
                               <TableCell rowSpan={row.consignees.length}>
                                 {row.diDate
-                                  ? dayjs(row.diDate).format("DD MMM YYYY")
+                                  ? dayjs(row.diDate).format("DD/MM/YY")
                                   : "-"}
                               </TableCell>
                             </>
@@ -207,7 +207,7 @@ const NominationDone = () => {
                       <TableRow>
                         <TableCell>{idx + 1}</TableCell>
                         <TableCell>
-                          {row.offerDate ? dayjs(row.offerDate).format("DD MMM YYYY") : ""}
+                          {row.offerDate ? dayjs(row.offerDate).format("DD/MM/YY") : ""}
                         </TableCell>
                         <TableCell>{row.companyName}</TableCell>
                         <TableCell>{row.discom}</TableCell>
@@ -238,7 +238,7 @@ const NominationDone = () => {
                         <TableCell>{row.diNo || "-"}</TableCell>
                         <TableCell>
                           {row.diDate
-                            ? dayjs(row.diDate).format("DD MMM YYYY")
+                            ? dayjs(row.diDate).format("DD/MM/YY")
                             : "-"}
                         </TableCell>
                         <TableCell colSpan={3} align="center">

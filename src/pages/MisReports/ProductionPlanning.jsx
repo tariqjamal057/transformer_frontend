@@ -464,7 +464,7 @@ const ProductionPlanning = () => {
                     <TableCell>
                       {row.deliverySchedule?.scheduleDate
                         ? dayjs(row.deliverySchedule.scheduleDate).format(
-                            "DD MMM YYYY",
+                            "DD/MM/YY",
                           )
                         : "-"}
                     </TableCell>

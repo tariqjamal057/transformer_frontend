@@ -18,6 +18,7 @@ import { MyContext } from "../../App";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import api from "../../services/api";
+import dayjs from "dayjs";
 import SupplyGPExpiredStatementFilter from "../../components/MisGP/SupplyGPExpiredStatementFilter";
 
 const SupplyGPExpiredStatement = () => {
@@ -148,13 +149,11 @@ const SupplyGPExpiredStatement = () => {
                     <TableCell>{row.deliverySchedule.wound}</TableCell>
                     <TableCell>{row.totalReceivedUnderGPTillDate}</TableCell>
                     <TableCell>{row.qtyBalance}</TableCell>
-                    <TableCell>
-                      {row.lastGPSupplyExpiryDate
-                        ? new Date(
-                            row.lastGPSupplyExpiryDate,
-                          ).toLocaleDateString()
-                        : "N/A"}
-                    </TableCell>
+                      <TableCell>
+                        {row.lastGPSupplyExpiryDate
+                          ? dayjs(row.lastGPSupplyExpiryDate).format("DD/MM/YY")
+                          : "N/A"}
+                      </TableCell>
                   </TableRow>
                 ))
               )}

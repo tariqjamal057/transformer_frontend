@@ -382,13 +382,13 @@ const DamagedTransformerList = () => {
                     <td>{row.ctlReportNo}</td>
                     <td>
                       {row.ctlReportDate
-                        ? dayjs(row.ctlReportDate).format("DD-MM-YYYY")
+                        ? dayjs(row.ctlReportDate).format("DD/MM/YY")
                         : "-"}
                     </td>
                     <td>{row.liftingLetterNo}</td>
                     <td>
                       {row.liftingLetterDate
-                        ? dayjs(row.liftingLetterDate).format("DD-MM-YYYY")
+                        ? dayjs(row.liftingLetterDate).format("DD/MM/YY")
                         : "-"}
                     </td>
                     <td>{row.liftingFromAcos}</td>

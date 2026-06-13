@@ -495,12 +495,12 @@ const AddDeliverySchedule = () => {
                   <Box>
                     <Typography variant="body2">
                       <strong>Imposed:</strong> {pair.imposedLetterNo} (
-                      {pair.imposedDate ? dayjs(pair.imposedDate).format("DD MMM YYYY") : ""})
+                      {pair.imposedDate ? dayjs(pair.imposedDate).format("DD/MM/YY") : ""})
                     </Typography>
                     {pair.liftingLetterNo && (
                       <Typography variant="body2">
                         <strong>Lifting:</strong> {pair.liftingLetterNo} (
-                        {pair.liftingDate ? dayjs(pair.liftingDate).format("DD MMM YYYY") : ""})
+                        {pair.liftingDate ? dayjs(pair.liftingDate).format("DD/MM/YY") : ""})
                       </Typography>
                     )}
                   </Box>

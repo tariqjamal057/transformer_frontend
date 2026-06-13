@@ -155,7 +155,7 @@ const MaterialOfferedButNominationPending = () => {
                       {(currentPage - 1) * PAGE_SIZE + idx + 1}
                     </TableCell>
                     <TableCell>
-                      {dayjs(row.offerDate).format("DD MMM YYYY")}
+                      {dayjs(row.offerDate).format("DD/MM/YY")}
                     </TableCell>
                     <TableCell>
                       {row.deliverySchedule?.supplyTender?.company?.name}

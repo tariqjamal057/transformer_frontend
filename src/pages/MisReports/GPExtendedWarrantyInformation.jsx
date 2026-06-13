@@ -148,9 +148,9 @@ const GPExtendedWarrantyInformation = () => {
                     <TableCell>{row.deliverySchedule.phase}</TableCell>
                     <TableCell>{row.deliverySchedule.wound}</TableCell>
                     <TableCell>
-                      {new Date(
-                        row.gpExpiryDateAsPerOriginalSupply,
-                      ).toLocaleDateString()}
+                      {row.gpExpiryDateAsPerOriginalSupply
+                        ? dayjs(row.gpExpiryDateAsPerOriginalSupply).format("DD/MM/YY")
+                        : "-"}
                     </TableCell>
                     <TableCell>
                       {row.remainingOriginalGuranteePeriod} Months

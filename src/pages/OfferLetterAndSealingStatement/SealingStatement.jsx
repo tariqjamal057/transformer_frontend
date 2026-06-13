@@ -214,9 +214,7 @@ const SealingStatement = () => {
                       <td>
                         <div>{item.accountReceiptNoteNo}</div>
                         <div className="text-muted small">
-                          {dayjs(item.accountReceiptNoteDate).format(
-                            "DD-MM-YYYY",
-                          )}
+                          {dayjs(item.accountReceiptNoteDate).format("DD/MM/YY")}
                         </div>
                       </td>
                       <td>{item.sinNo}</td>

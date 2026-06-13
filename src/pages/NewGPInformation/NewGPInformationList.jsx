@@ -154,7 +154,7 @@ const NewGPInformationList = () => {
                       <td>#{(currentPage - 1) * 10 + index + 1}</td>
                       <td>{item.challanReceiptedItemNo}</td>
                       <td>
-                        {dayjs(item.challanReceiptedDate).format("DD-MM-YYYY")}
+                        {dayjs(item.challanReceiptedDate).format("DD/MM/YY")}
                       </td>
                       <td>{item.records?.length || 0}</td>
                       {hasPermission("newGPInformationUpdate") && (

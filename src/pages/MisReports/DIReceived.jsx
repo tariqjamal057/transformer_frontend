@@ -172,7 +172,7 @@ const DIReceived = () => {
                               ? row.inspectionDate
                               : row.diDate || row.inspectionDate;
                           const dueDate = baseDate
-                            ? dayjs(baseDate).add(13, "day").format("DD MMM YYYY")
+                            ? dayjs(baseDate).add(13, "day").format("DD/MM/YY")
                             : "-";
                           return (
                             <TableRow key={`${row.id}-${cIdx}`}>
@@ -182,7 +182,7 @@ const DIReceived = () => {
                                     {idx + 1}
                                   </TableCell>
                                   <TableCell rowSpan={row.activeConsignees.length}>
-                                    {dayjs(row.offerDate).format("DD MMM YYYY")}
+                                    {dayjs(row.offerDate).format("DD/MM/YY")}
                                   </TableCell>
                                   <TableCell rowSpan={row.activeConsignees.length}>
                                     {row.companyName}
@@ -225,7 +225,7 @@ const DIReceived = () => {
                                   <TableCell rowSpan={row.activeConsignees.length}>
                                     {row.inspectionDate
                                       ? dayjs(row.inspectionDate).format(
-                                          "DD MMM YYYY",
+                                          "DD/MM/YY",
                                         )
                                       : "-"}
                                   </TableCell>
@@ -237,7 +237,7 @@ const DIReceived = () => {
                                   </TableCell>
                                   <TableCell rowSpan={row.activeConsignees.length}>
                                     {row.diDate
-                                      ? dayjs(row.diDate).format("DD MMM YYYY")
+                                      ? dayjs(row.diDate).format("DD/MM/YY")
                                       : "-"}
                                   </TableCell>
                                 </>
@@ -281,7 +281,7 @@ const DIReceived = () => {
                         <TableRow>
                           <TableCell>{idx + 1}</TableCell>
                           <TableCell>
-                            {dayjs(row.offerDate).format("DD MMM YYYY")}
+                            {dayjs(row.offerDate).format("DD/MM/YY")}
                           </TableCell>
                           <TableCell>{row.companyName}</TableCell>
                           <TableCell>{row.discom}</TableCell>
@@ -311,14 +311,14 @@ const DIReceived = () => {
                           </TableCell>
                           <TableCell>
                             {row.inspectionDate
-                              ? dayjs(row.inspectionDate).format("DD MMM YYYY")
+                              ? dayjs(row.inspectionDate).format("DD/MM/YY")
                               : "-"}
                           </TableCell>
                           <TableCell>{row.inspectedQuantity || ""}</TableCell>
                           <TableCell>{row.diNo || "-"}</TableCell>
                           <TableCell>
                             {row.diDate
-                              ? dayjs(row.diDate).format("DD MMM YYYY")
+                              ? dayjs(row.diDate).format("DD/MM/YY")
                               : "-"}
                           </TableCell>
                           <TableCell colSpan={6} align="center">

@@ -259,13 +259,13 @@ const AddNewGPInformation = () => {
                       <TableCell>{row.receivedFromACOS}</TableCell>
                       <TableCell>
                         {row.inspectionDate
-                          ? dayjs(row.inspectionDate).format("DD-MM-YYYY")
+                          ? dayjs(row.inspectionDate).format("DD/MM/YY")
                           : "N/A"}
                       </TableCell>
                       <TableCell>{row.challanNo}</TableCell>
                       <TableCell>
                         {row.challanDate
-                          ? dayjs(row.challanDate).format("DD-MM-YYYY")
+                          ? dayjs(row.challanDate).format("DD/MM/YY")
                           : "N/A"}
                       </TableCell>
                       <TableCell>{row.consigneeName}</TableCell>

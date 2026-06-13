@@ -113,7 +113,7 @@ const NewGPReceiptRecordList = () => {
       "Delivered to ACOS": item.deliveredToAcos,
       "Rec. Challan Item No.": item.recChallanItemNo,
       "Rec. Challan Date": item.recChallanItemDate
-        ? dayjs(item.recChallanItemDate).format("DD/MM/YYYY")
+        ? dayjs(item.recChallanItemDate).format("DD/MM/YY")
         : "",
       "Seal No Time Of G.P. Received": item.sealNoTimeOfGPReceived,
       "Date Of Supply": item.deliveryChallan?.createdAt,
@@ -200,7 +200,7 @@ const NewGPReceiptRecordList = () => {
       item.deliveredToAcos || "",
       item.recChallanItemNo || "",
       item.recChallanItemDate
-        ? dayjs(item.recChallanItemDate).format("DD/MM/YYYY")
+        ? dayjs(item.recChallanItemDate).format("DD/MM/YY")
         : "",
       item.deliveryChallan?.finalInspection?.deliverySchedule?.wound || "",
       item.deliveryChallan?.finalInspection?.deliverySchedule?.phase || "",
@@ -381,11 +381,11 @@ const NewGPReceiptRecordList = () => {
                     <tr key={index}>
                       <td># {index + 1}</td>
                       <td>{item.accountReceiptNoteNo}</td>
-                      <td>{item.accountReceiptNoteDate}</td>
+                      <td>{item.accountReceiptNoteDate? dayjs(item.accountReceiptNoteDate).format("DD/MM/YY"): "-"}</td>
                       <td>{item.sinNo}</td>
                       <td>{item.consigneeName}</td>
                       <td>{item.discomReceiptNoteNo}</td>
-                      <td>{item.discomReceiptNoteDate}</td>
+                      <td>{item.discomReceiptNoteDate?dayjs(item.discomReceiptNoteDate).format("DD/MM/YY"): "-"}</td>
                       <td>{item.trfsiNo}</td>
                       <td>{item.originalTfrSrNo}</td>
                       <td>{item.consigneeTFRSerialNo}</td>
@@ -393,7 +393,7 @@ const NewGPReceiptRecordList = () => {
                       <td>{item.recChallanItemNo}</td>
                       <td>
                         {item.recChallanItemDate
-                          ? dayjs(item.recChallanItemDate).format("DD/MM/YYYY")
+                          ? dayjs(item.recChallanItemDate).format("DD/MM/YY")
                           : ""}
                       </td>
                       <td>{item.rating}</td>
@@ -411,7 +411,7 @@ const NewGPReceiptRecordList = () => {
                       </td>
                       <td>{item.polySealNo}</td>
                       <td>{item.sealNoTimeOfGPReceived}</td>
-                      <td>{item.deliveryChallan.createdAt}</td>
+                      <td>{item.deliveryChallan.createdAt ? dayjs(item.deliveryChallan.createdAt).format("DD/M//YY"): "-"}</td>
                       <td className="text-start small">
                         <div>
                           <strong>Oil Level:</strong> {item.oilLevel}

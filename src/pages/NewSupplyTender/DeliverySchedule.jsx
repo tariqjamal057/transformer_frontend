@@ -878,7 +878,7 @@ const DeliverySchedule = () => {
                           <div>{item.po}</div>
                           <strong>
                             {item.poDate
-                              ? format(new Date(item.poDate), "dd MMM yyyy")
+                              ? dayjs(item.poDate).format("DD/MM/YY")
                               : ""}
                           </strong>
                         </td>
@@ -886,7 +886,7 @@ const DeliverySchedule = () => {
                           <div>{item.loa}</div>
                           <strong>
                             {item.loaDate
-                              ? format(new Date(item.loaDate), "dd MMM yyyy")
+                              ? dayjs(item.loaDate).format("DD/MM/YY")
                               : ""}
                           </strong>
                         </td>
@@ -894,24 +894,18 @@ const DeliverySchedule = () => {
                           <div>{item.commencementDays} Days</div>
                           <strong>
                             {item.commencementDate
-                              ? format(
-                                  new Date(item.commencementDate),
-                                  "dd MMM yyyy",
-                                )
+                              ? dayjs(item.commencementDate).format("DD/MM/YY")
                               : ""}
                           </strong>
                         </td>
                         <td>
                           {item.deliveryScheduleDate
-                            ? format(
-                                new Date(item.deliveryScheduleDate),
-                                "dd MMM yyyy",
-                              )
+                            ? dayjs(item.deliveryScheduleDate).format("DD/MM/YY")
                             : ""}
                         </td>
                         <td>
                           {item.createdAt
-                            ? format(new Date(item.createdAt), "dd MMM yyyy")
+                            ? dayjs(item.createdAt).format("DD/MM/YY")
                             : ""}
                         </td>
                         {/* Imposed Letter List */}
@@ -929,10 +923,7 @@ const DeliverySchedule = () => {
                                 <li key={i}>
                                   {letter.imposedLetterNo} -{" "}
                                   {letter.date
-                                    ? format(
-                                        new Date(letter.date),
-                                        "dd MMM yyyy",
-                                      )
+                                    ? dayjs(letter.date).format("DD/MM/YY")
                                     : ""}
                                 </li>
                               ))}
@@ -957,10 +948,7 @@ const DeliverySchedule = () => {
                                 <li key={i}>
                                   {letter.liftingLetterNo} -{" "}
                                   {letter.date
-                                    ? format(
-                                        new Date(letter.date),
-                                        "dd MMM yyyy",
-                                      )
+                                    ? dayjs(letter.date).format("DD/MM/YY")
                                     : ""}
                                 </li>
                               ))}

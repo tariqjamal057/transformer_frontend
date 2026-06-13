@@ -538,7 +538,7 @@ const FinalInspectionList = () => {
                   finalInspections.items.map((item, index) => (
                     <tr key={item.id}>
                       <td># {index + 1 + (currentPage - 1) * 10}</td>
-                      <td>{item.offerDate ? dayjs(item.offerDate).format("DD MMM YYYY") : "-"}</td>
+                      <td>{item.offerDate ? dayjs(item.offerDate).format("DD/MM/YY") : "-"}</td>
                       <td>{item.offeredQuantity}</td>
 
                       <td>{item.deliverySchedule?.tnNumber}</td>
@@ -578,18 +578,18 @@ const FinalInspectionList = () => {
                       <td>{item.nominationLetterNo || "-"}</td>
                       <td>
                         {item.nominationDate
-                          ? dayjs(item.nominationDate).format("DD MMM YYYY")
+                          ? dayjs(item.nominationDate).format("DD/MM/YY")
                           : "-"}
                       </td>
                       <td>
-                        {item.inspectionDate ? dayjs(item.inspectionDate).format("DD MMM YYYY") : "-"}
+                        {item.inspectionDate ? dayjs(item.inspectionDate).format("DD/MM/YY") : "-"}
                       </td>
                       <td>{item.inspectedQuantity}</td>
                       <td>{item.grandTotal || 0}</td>
                       <td>
                         <div className="fw-semibold">{item.diNo}</div>
                         <div className="text-muted small">
-                          {item.diDate ? dayjs(item.diDate).format("DD MMM YYYY") : "-"}
+                          {item.diDate ? dayjs(item.diDate).format("DD/MM/YY") : "-"}
                         </div>
                       </td>
                       <td className="text-start">

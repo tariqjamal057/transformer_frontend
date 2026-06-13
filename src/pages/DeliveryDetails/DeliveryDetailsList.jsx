@@ -427,9 +427,9 @@ const DeliveryDetailsList = () => {
                             </div>
                             <div className="text-muted small">
                               {dc?.finalInspection?.deliverySchedule?.poDate
-                                ? new Date(
+                                ? dayjs(
                                     dc?.finalInspection?.deliverySchedule?.poDate,
-                                  ).toLocaleDateString()
+                                  ).format("DD/MM/YY")
                                 : "-"}
                             </div>
                           </td>
@@ -440,7 +440,7 @@ const DeliveryDetailsList = () => {
                           {/* Challan Date */}
                           <td>
                             {dc?.createdAt
-                              ? new Date(dc.createdAt).toLocaleDateString()
+                              ? dayjs(dc.createdAt).format("DD/MM/YY")
                               : "-"}
                           </td>
 
@@ -449,9 +449,7 @@ const DeliveryDetailsList = () => {
 
                           {/* Receipted Challan Date */}
                           <td>
-                            {dayjs(item.receiptedChallanDate).format(
-                              "YYYY-MM-DD",
-                            )}
+                            {dayjs(item.receiptedChallanDate).format("DD/MM/YY")}
                           </td>
 
                           {/* Total Qty. */}
@@ -470,7 +468,7 @@ const DeliveryDetailsList = () => {
                                       ?.guaranteePeriodMonths,
                                     "month",
                                   )
-                                  .format("YYYY-MM-DD")
+                                  .format("DD/MM/YY")
                               : "-"}
                           </td>
 
@@ -492,9 +490,9 @@ const DeliveryDetailsList = () => {
                             <div>
                               <strong>DI Date:</strong>{" "}
                               {dc?.finalInspection?.diDate
-                                ? new Date(
+                                ? dayjs(
                                     dc?.finalInspection?.diDate,
-                                  ).toLocaleDateString()
+                                  ).format("DD/MM/YY")
                                 : "-"}
                             </div>
                           </td>
@@ -522,9 +520,9 @@ const DeliveryDetailsList = () => {
                           {/* Inspection Date */}
                           <td>
                             {dc?.finalInspection?.inspectionDate
-                              ? new Date(
+                              ? dayjs(
                                   dc?.finalInspection?.inspectionDate,
-                                ).toLocaleDateString()
+                                ).format("DD/MM/YY")
                               : "-"}
                           </td>
 

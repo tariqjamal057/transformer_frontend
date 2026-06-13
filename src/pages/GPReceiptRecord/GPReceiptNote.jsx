@@ -148,10 +148,10 @@ const GPReceiptNote = () => {
                       {/* Select Date Range */}
                       <td>
                         <div>
-                          {dayjs(note.selectDateFrom).format("DD-MM-YYYY")}
+                          {dayjs(note.selectDateFrom).format("DD/MM/YY")}
                         </div>
                         <div className="text-muted small">
-                          to {dayjs(note.selectDateTo).format("DD-MM-YYYY")}
+                          to {dayjs(note.selectDateTo).format("DD/MM/YY")}
                         </div>
                       </td>
 
@@ -163,7 +163,7 @@ const GPReceiptNote = () => {
                         <div>{note.accountReceiptNoteNo}</div>
                         <div className="text-muted small">
                           {dayjs(note.accountReceiptNoteDate).format(
-                            "DD-MM-YYYY",
+                            "DD/MM/YY",
                           )}
                         </div>
                       </td>
@@ -175,9 +175,7 @@ const GPReceiptNote = () => {
                       <td>
                         <div>{note.discomReceiptNoteNo}</div>
                         <div className="text-muted small">
-                          {dayjs(note.discomReceiptNoteDate).format(
-                            "DD-MM-YYYY",
-                          )}
+                          {dayjs(note.discomReceiptNoteDate).format("DD/MM/YY")}
                         </div>
                       </td>
 

@@ -15,6 +15,7 @@ import Swal from "sweetalert2";
 import SearchBox from "../../components/SearchBox";
 import GPFailureBulkUploadModal from "../../components/GPFailureBulkUploadModal";
 import Pagination from "../../components/Pagination";
+import dayjs from "dayjs";
 
 const GPFailureInformationList = () => {
   const { userRole, setAlertBox, hasPermission } = useContext(MyContext);
@@ -226,7 +227,7 @@ const GPFailureInformationList = () => {
                             {item.deliveryChallan?.finalInspection?.diNo}
                           </div>
                           <div className="text-muted small">
-                            {item.deliveryChallan?.finalInspection?.diDate}
+                            {item.deliveryChallan?.finalInspection?.diDate ? dayjs(item.deliveryChallan?.finalInspection?.diDate).format("DD/MM/YY") : "-"}
                           </div>
                         </td>
 
@@ -234,7 +235,7 @@ const GPFailureInformationList = () => {
                         <td>
                           <div>{item.deliveryChallan?.challanNo}</div>
                           <div className="text-muted small">
-                            {item.deliveryChallan?.createdAt}
+                            {item.deliveryChallan?.createdAt ? dayjs(item.deliveryChallan?.createdAt).format("DD/MM/YY") : "-"}
                           </div>
                         </td>
 
@@ -261,9 +262,9 @@ const GPFailureInformationList = () => {
                               <div key={idx} className="mb-1">
                                 <strong>Place:</strong> {failure.place} <br />
                                 <strong>Failure Date:</strong>{" "}
-                                {failure.failureDate} <br />
+                                {failure.failureDate ? dayjs(failure.failureDate).format("DD/MM/YY") : "-"} <br />
                                 <strong>Info Date:</strong>{" "}
-                                {failure.informationDate}
+                                {failure.informationDate ? dayjs(failure.informationDate).format("DD/MM/YY") : "-"}
                                 <hr className="my-1" />
                               </div>
                             ))}
@@ -275,7 +276,7 @@ const GPFailureInformationList = () => {
                         {/* Expiry Date */}
                         <td>
                           {expiryDate
-                            ? format(expiryDate, "yyyy-MM-dd")
+                            ? format(expiryDate, "dd/MM/yy")
                             : "N/A"}
                         </td>
 

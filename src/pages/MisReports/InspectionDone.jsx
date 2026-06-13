@@ -152,7 +152,7 @@ const InspectionDone = () => {
                   <TableRow key={row.id}>
                     <TableCell>{idx + 1}</TableCell>
                     <TableCell>
-                      {dayjs(row.offerDate).format("DD MMM YYYY")}
+                      {dayjs(row.offerDate).format("DD/MM/YY")}
                     </TableCell>
                     <TableCell>{row.supplyTender.company.name}</TableCell>
                     <TableCell>
@@ -187,7 +187,7 @@ const InspectionDone = () => {
                     </TableCell>
                     <TableCell>
                       {row.inspectionDate
-                        ? dayjs(row.inspectionDate).format("DD MMM YYYY")
+                        ? dayjs(row.inspectionDate).format("DD/MM/YY")
                         : "N/A"}
                     </TableCell>
                     <TableCell>{row.inspectedQuantity}</TableCell>

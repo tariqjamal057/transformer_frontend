@@ -73,13 +73,13 @@ const ViewNewGPInformationModal = ({ open, handleClose, newGPInformation }) => {
                   <TableCell>{record.receivedFromACOS}</TableCell>
                   <TableCell>
                     {record.inspectionDate
-                      ? dayjs(record.inspectionDate).format("DD-MM-YYYY")
+                      ? dayjs(record.inspectionDate).format("DD/MM/YY")
                       : "N/A"}
                   </TableCell>
                   <TableCell>{record.challanNo}</TableCell>
                   <TableCell>
                     {record.challanDate
-                      ? dayjs(record.challanDate).format("DD-MM-YYYY")
+                      ? dayjs(record.challanDate).format("DD/MM/YY")
                       : "N/A"}
                   </TableCell>
                   <TableCell>{record.consigneeName}</TableCell>
