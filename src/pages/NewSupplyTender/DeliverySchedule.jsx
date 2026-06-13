@@ -24,6 +24,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  Grid,
 } from "@mui/material";
 import { IoCloseSharp } from "react-icons/io5";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -1405,7 +1406,7 @@ const DeliverySchedule = () => {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Period</TableCell>
+                    <TableCell>Period (Start - End)</TableCell>
                     <TableCell align="right">Quantity Per Month</TableCell>
                     <TableCell align="right">Action</TableCell>
                   </TableRow>
@@ -1414,10 +1415,48 @@ const DeliverySchedule = () => {
                   {deliverySchedule.map((item, idx) => (
                     <TableRow key={idx}>
                       <TableCell>
-                        {item.start} - {item.end}
+                        <Box display="flex" gap={1} alignItems="center">
+                          <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                              value={dayjs(item.start, "DD MMM YYYY")}
+                              onChange={(date) => {
+                                if (date) {
+                                  const updated = [...deliverySchedule];
+                                  updated[idx].start = date.format("DD MMM YYYY");
+                                  setDeliverySchedule(updated);
+                                }
+                              }}
+                              format="DD/MM/YYYY"
+                              slotProps={{ textField: { size: "small", sx: { width: "130px" } } }}
+                            />
+                            <Typography>-</Typography>
+                            <DatePicker
+                              value={dayjs(item.end, "DD MMM YYYY")}
+                              onChange={(date) => {
+                                if (date) {
+                                  const updated = [...deliverySchedule];
+                                  updated[idx].end = date.format("DD MMM YYYY");
+                                  setDeliverySchedule(updated);
+                                }
+                              }}
+                              format="DD/MM/YYYY"
+                              slotProps={{ textField: { size: "small", sx: { width: "130px" } } }}
+                            />
+                          </LocalizationProvider>
+                        </Box>
                       </TableCell>
                       <TableCell align="right">
-                        {item.quantity}
+                        <TextField
+                          size="small"
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => {
+                            const updated = [...deliverySchedule];
+                            updated[idx].quantity = parseInt(e.target.value) || 0;
+                            setDeliverySchedule(updated);
+                          }}
+                          sx={{ width: "100px" }}
+                        />
                       </TableCell>
                       <TableCell align="right">
                         <IconButton
