@@ -187,17 +187,19 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
   }, [damagedTransformers, usedByOthersRepairedSerials]);
 
   useEffect(() => {
-    if (inspectionData && (inspectionData.grandTotal !== undefined && inspectionData.grandTotal !== null)) {
-      setTotal(inspectionData.grandTotal);
-    } else if (totalInspectedQuantityData !== undefined) {
-      const currentInspected = parseInt(inspectedQuantity, 10);
-      if (!isNaN(currentInspected)) {
-        setTotal(totalInspectedQuantityData + currentInspected);
+    if (totalInspectedQuantityData !== undefined) {
+      const currentInspected = parseInt(inspectedQuantity, 10) || 0;
+      
+      // If we are editing and the selected TN is the same as the original TN
+      if (inspectionData && tnDetail?.id === inspectionData.deliveryScheduleId) {
+        const previousInspected = inspectionData.inspectedQuantity || 0;
+        setTotal(totalInspectedQuantityData - previousInspected + currentInspected);
       } else {
-        setTotal(totalInspectedQuantityData);
+        // If it's a new TN, this record wasn't part of its total yet
+        setTotal(totalInspectedQuantityData + currentInspected);
       }
     }
-  }, [inspectionData, totalInspectedQuantityData, inspectedQuantity, tnDetail]);
+  }, [totalInspectedQuantityData, inspectedQuantity, tnDetail, inspectionData]);
 
   const totalRepairedPool = useMemo(() => {
     const assigned = consigneeList.flatMap(c => (c.repairedTransformerIds || []).map(String));
@@ -412,7 +414,22 @@ const FinalInspectionModal = ({ open, handleClose, inspectionData }) => {
             </Stack>
             <Box mt={2} display="flex" flexWrap="wrap" gap={1}>{selectedInspectionOfficer.map((officer, idx) => <Chip key={idx} label={officer} onDelete={() => handleRemove(officer)} />)}</Box>
             <DatePicker label="Inspection Date" value={inspectionDate} onChange={setInspectionDate} format="DD/MM/YYYY" slotProps={{ textField: { fullWidth: true } }} sx={{ mt: 2, width: "100%" }} />
-            <TextField label="Inspected Quantity" fullWidth value={inspectedQuantity} onChange={(e) => setInspectedQuantity(e.target.value)} sx={{ mt: 2 }} />
+            <TextField
+              label="Inspected Quantity"
+              fullWidth
+              value={inspectedQuantity}
+              onChange={(e) => {
+                setInspectedQuantity(e.target.value);
+                const currentInspected = parseInt(e.target.value, 10) || 0;
+                if (inspectionData && tnDetail?.id === inspectionData.deliveryScheduleId) {
+                  const previousInspected = inspectionData.inspectedQuantity || 0;
+                  setTotal(totalInspectedQuantityData - previousInspected + currentInspected);
+                } else {
+                  setTotal(totalInspectedQuantityData + currentInspected);
+                }
+              }}
+              sx={{ mt: 2 }}
+            />
             <TextField label="Grand Total" fullWidth value={total} onChange={(e) => setTotal(e.target.value)} sx={{ mt: 2 }} />
             <TextField label="DI No" fullWidth value={diNo} onChange={(e) => setDiNo(e.target.value)} sx={{ mt: 2 }} />
             <DatePicker label="DI Date" value={diDate} onChange={setDiDate} format="DD/MM/YYYY" slotProps={{ textField: { fullWidth: true } }} sx={{ mt: 2, width: "100%" }} />
