@@ -241,7 +241,7 @@ export default function PdfTemplate({ item }) {
 
         {/* Row 3: Consignee (left) and Consignor (right) */}
         <div className="row g-0 bottom-border">
-          <div className="col-6 px-3 py-2">
+          <div className="col-6 ps-3 py-2">
             <div className="d-flex align-items-start">
               <div style={{ width: "70%" }}>
                 <div className="fw-bold small">{formData.consigneeName}</div>
@@ -259,7 +259,7 @@ export default function PdfTemplate({ item }) {
                   <img
                     src={formData.companyImage}
                     alt="logo"
-                    style={{ width: "100%", height: "50px" }}
+                    style={{ height: "70px" }}
                   />
                 )}
               </div>
