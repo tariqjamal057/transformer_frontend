@@ -259,7 +259,7 @@ export default function PdfTemplate({ item }) {
                   <img
                     src={formData.companyImage}
                     alt="logo"
-                    style={{ height: "70px" }}
+                    style={{ weight: "100%", height: "70px" }}
                   />
                 )}
               </div>
