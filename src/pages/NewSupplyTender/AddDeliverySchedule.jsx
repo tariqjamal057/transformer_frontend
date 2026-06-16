@@ -67,7 +67,6 @@ const AddDeliverySchedule = () => {
   const [newScheduleTo, setNewScheduleTo] = useState(null);
   const [newScheduleQty, setNewScheduleQty] = useState("");
 
-
   const addDeliveryScheduleMutation = useMutation({
     mutationFn: (newSchedule) => api.post("/delivery-schedules", newSchedule),
     onSuccess: () => {
@@ -79,7 +78,6 @@ const AddDeliverySchedule = () => {
       setAlertBox({ open: true, msg: error.message, error: true });
     },
   });
-
 
   // Auto calculate CP Date based on commencement days
   useEffect(() => {
@@ -169,20 +167,20 @@ const AddDeliverySchedule = () => {
       // Calculate original active days (how many non-deferred days were in the original entry)
       // This is slightly complex because we need to know the state WHEN it was added.
       // Instead, we store the "intended duration" in a more robust way or recalculate.
-      // For now, let's assume the user intended a specific number of calendar days if no deferment, 
+      // For now, let's assume the user intended a specific number of calendar days if no deferment,
       // or we use the current duration and just shift it.
-      
+
       const prevStart = dayjs(seg.start, "DD MMM YYYY");
       const prevEnd = dayjs(seg.end, "DD MMM YYYY");
-      
+
       // Calculate how many active days were in this segment previously
       let activeDays = 0;
       let temp = prevStart;
       while (temp.isBefore(prevEnd) || temp.isSame(prevEnd, "day")) {
-         // Note: This recalculation uses the OLD deferment state? No, we don't have it.
-         // Let's assume the user wants to keep the CURRENT duration but shift for NEW deferments.
-         activeDays++; 
-         temp = temp.add(1, "day");
+        // Note: This recalculation uses the OLD deferment state? No, we don't have it.
+        // Let's assume the user wants to keep the CURRENT duration but shift for NEW deferments.
+        activeDays++;
+        temp = temp.add(1, "day");
       }
 
       // If it's the first segment, start at commencement
@@ -259,7 +257,7 @@ const AddDeliverySchedule = () => {
 
     const sumOfQuantities = deliverySchedule.reduce(
       (sum, item) => sum + (parseInt(item.quantity) || 0),
-      0
+      0,
     );
 
     if (totalQuantity && sumOfQuantities !== parseInt(totalQuantity)) {
@@ -272,7 +270,7 @@ const AddDeliverySchedule = () => {
     }
 
     const data = {
-      tnNumber : tnDetail, // Use selectedTnId
+      tnNumber: tnDetail, // Use selectedTnId
       rating: rating ? parseInt(rating) : null,
       loa,
       loaDate: loaDate ? dayjs(loaDate).toISOString() : null,
@@ -280,7 +278,9 @@ const AddDeliverySchedule = () => {
       poDate: poDate ? dayjs(poDate).toISOString() : null,
       commencementDays: commencementDays ? parseInt(commencementDays) : null,
       commencementDate: commencementDate ? dayjs(commencementDate).toISOString() : null,
-      deliveryScheduleDate: deliveryScheduleDate ? dayjs(deliveryScheduleDate).toISOString() : null,
+      deliveryScheduleDate: deliveryScheduleDate
+        ? dayjs(deliveryScheduleDate).toISOString()
+        : null,
       imposedLetters: imposedLiftingPairs
         .filter((p) => p.imposedLetterNo)
         .map((p) => ({
@@ -314,7 +314,10 @@ const AddDeliverySchedule = () => {
   const isScheduleComplete = () => {
     if (deliverySchedule.length === 0) return false;
     const lastSchedule = deliverySchedule[deliverySchedule.length - 1];
-    return dayjs(lastSchedule.end).isSame(dayjs(deliveryScheduleDate), "day") || dayjs(lastSchedule.end).isAfter(dayjs(deliveryScheduleDate), "day");
+    return (
+      dayjs(lastSchedule.end).isSame(dayjs(deliveryScheduleDate), "day") ||
+      dayjs(lastSchedule.end).isAfter(dayjs(deliveryScheduleDate), "day")
+    );
   };
 
   return (
@@ -335,7 +338,6 @@ const AddDeliverySchedule = () => {
                 value={tnDetail}
                 required
                 onChange={(e) => setTnDetail(e.target.value)}
-                
               />
             </Grid>
 
@@ -436,7 +438,6 @@ const AddDeliverySchedule = () => {
             <Grid item size={1}>
               <DatePicker
                 label="CP Date"
-                minDate={today}
                 value={commencementDate}
                 readOnly
                 //disabled
@@ -448,11 +449,8 @@ const AddDeliverySchedule = () => {
             <Grid item size={1}>
               <DatePicker
                 label="Delivery Schedule End Date"
-                minDate={today}
                 value={deliveryScheduleDate}
-                onChange={(date) =>
-                  setDeliveryScheduleDate(date ? dayjs(date) : null)
-                }
+                onChange={(date) => setDeliveryScheduleDate(date ? dayjs(date) : null)}
                 format="DD/MM/YYYY"
                 slotProps={{ textField: { fullWidth: true } }}
               />
@@ -472,7 +470,6 @@ const AddDeliverySchedule = () => {
                 }}
               />
             </Grid>
-
 
             {/* Deferment Pairs Logic */}
             <Grid item size={2}>
@@ -513,8 +510,12 @@ const AddDeliverySchedule = () => {
 
             {/* Conditional Add Imposed/Lifting Inputs */}
             {(() => {
-              const showAddImposed = imposedLiftingPairs.length === 0 || imposedLiftingPairs[imposedLiftingPairs.length - 1].liftingLetterNo;
-              const showAddLifting = imposedLiftingPairs.length > 0 && !imposedLiftingPairs[imposedLiftingPairs.length - 1].liftingLetterNo;
+              const showAddImposed =
+                imposedLiftingPairs.length === 0 ||
+                imposedLiftingPairs[imposedLiftingPairs.length - 1].liftingLetterNo;
+              const showAddLifting =
+                imposedLiftingPairs.length > 0 &&
+                !imposedLiftingPairs[imposedLiftingPairs.length - 1].liftingLetterNo;
 
               return (
                 <>
@@ -563,7 +564,11 @@ const AddDeliverySchedule = () => {
                             format="DD/MM/YYYY"
                             slotProps={{ textField: { fullWidth: true } }}
                           />
-                          <Button variant="contained" color="success" onClick={handleAddLiftingLetter}>
+                          <Button
+                            variant="contained"
+                            color="success"
+                            onClick={handleAddLiftingLetter}
+                          >
                             Add
                           </Button>
                         </Box>
@@ -573,7 +578,6 @@ const AddDeliverySchedule = () => {
                 </>
               );
             })()}
-
 
             <Grid item size={1}>
               <TextField
@@ -613,8 +617,8 @@ const AddDeliverySchedule = () => {
                       label="From Date"
                       value={newScheduleFrom}
                       onChange={(date) => setNewScheduleFrom(date)}
-                      minDate={getMinFromDate()}
-                      maxDate={deliveryScheduleDate}
+                      // minDate={getMinFromDate()}
+                      // maxDate={deliveryScheduleDate}
                       format="DD/MM/YYYY"
                       slotProps={{ textField: { fullWidth: true, size: "small" } }}
                     />
@@ -624,8 +628,8 @@ const AddDeliverySchedule = () => {
                       label="To Date"
                       value={newScheduleTo}
                       onChange={(date) => setNewScheduleTo(date)}
-                      minDate={newScheduleFrom || getMinFromDate()}
-                      maxDate={deliveryScheduleDate}
+                      // minDate={newScheduleFrom || getMinFromDate()}
+                      // maxDate={deliveryScheduleDate}
                       format="DD/MM/YYYY"
                       slotProps={{ textField: { fullWidth: true, size: "small" } }}
                     />
@@ -699,9 +703,7 @@ const AddDeliverySchedule = () => {
                       <TableCell>
                         {item.start} - {item.end}
                       </TableCell>
-                      <TableCell align="right">
-                        {item.quantity}
-                      </TableCell>
+                      <TableCell align="right">{item.quantity}</TableCell>
                       <TableCell align="right">
                         <IconButton
                           size="small"
@@ -722,7 +724,7 @@ const AddDeliverySchedule = () => {
                       <strong>
                         {deliverySchedule.reduce(
                           (sum, item) => sum + (parseInt(item.quantity) || 0),
-                          0
+                          0,
                         )}
                         / {totalQuantity}
                       </strong>
@@ -731,14 +733,13 @@ const AddDeliverySchedule = () => {
                 </TableBody>
               </Table>
               {/* ✅ Live validation alert */}
-              {totalQuantity && deliverySchedule.reduce(
-                (sum, item) => sum + (parseInt(item.quantity) || 0),
-                0
-              ) !== parseInt(totalQuantity) && (
-                <Typography color="error" mt={2}>
-                  ⚠️ Quantities do not match the total order quantity!
-                </Typography>
-              )}
+              {totalQuantity &&
+                deliverySchedule.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0) !==
+                  parseInt(totalQuantity) && (
+                  <Typography color="error" mt={2}>
+                    ⚠️ Quantities do not match the total order quantity!
+                  </Typography>
+                )}
             </Paper>
           )}
         </Paper>

@@ -1321,7 +1321,7 @@ const DeliverySchedule = () => {
           />
 
           {/* Manual Delivery Schedule Entry */}
-          {commencementDate && deliveryScheduleDate && !isScheduleComplete() && (
+          {commencementDate && deliveryScheduleDate && (
             <Box mt={3}>
               <Typography variant="h6" mb={2}>
                 Add Delivery Schedule
@@ -1333,8 +1333,6 @@ const DeliverySchedule = () => {
                       label="From Date"
                       value={newScheduleFrom}
                       onChange={(date) => setNewScheduleFrom(date)}
-                      minDate={getMinFromDate()}
-                      maxDate={dayjs(deliveryScheduleDate)}
                       format="DD/MM/YYYY"
                       slotProps={{ textField: { fullWidth: true, size: "small" } }}
                     />
@@ -1346,8 +1344,6 @@ const DeliverySchedule = () => {
                       label="To Date"
                       value={newScheduleTo}
                       onChange={(date) => setNewScheduleTo(date)}
-                      minDate={newScheduleFrom || getMinFromDate()}
-                      maxDate={dayjs(deliveryScheduleDate)}
                       format="DD/MM/YYYY"
                       slotProps={{ textField: { fullWidth: true, size: "small" } }}
                     />
