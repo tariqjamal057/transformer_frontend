@@ -209,8 +209,8 @@ const NominationDone = () => {
                         <TableCell>
                           {row.offerDate ? dayjs(row.offerDate).format("DD/MM/YY") : ""}
                         </TableCell>
-                        <TableCell>{row.companyName}</TableCell>
-                        <TableCell>{row.discom}</TableCell>
+                        <TableCell>{row.deliverySchedule?.supplyTender?.company?.name}</TableCell>
+                        <TableCell>{row.deliverySchedule?.supplyTender?.name}</TableCell>
                         <TableCell>{row?.deliverySchedule?.tnNumber}</TableCell>
                         <TableCell>
                           {row.deliverySchedule.rating} KVA{" "}
