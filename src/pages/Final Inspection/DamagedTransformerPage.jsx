@@ -57,10 +57,6 @@ export default function DamagedTransformerPage() {
   const [liftingFromAcos, setLiftingFromAcos] = useState("");
   const [dateOfInspectionAfterRepair, setDateOfInspectionAfterRepair] =
     useState(null);
-  const [challanNo, setChallanNo] = useState("");
-  const [challanDate, setChallanDate] = useState(null);
-  const [deliveredToAcos, setDeliveredToAcos] = useState("");
-  const [selectedChallanNo, setSelectedChallanNo] = useState("");
 
   const { mutate: addDamagedTransformer, isPending } = useMutation({
     mutationFn: (payload) => api.post("/damaged-transformers", payload),
@@ -102,18 +98,12 @@ export default function DamagedTransformerPage() {
     );
   }, [deliveryChallanList, selectedSr]);
 
-  const challanNoOptions = useMemo(() => {
-    return challanOptions.map((challan) => challan.challanNo);
-  }, [challanOptions]);
-
-  const challanDateOptions = useMemo(() => {
-    return challanOptions.map((challan) =>
-      dayjs(challan.challanCreatedAt).format("YYYY-MM-DD"),
+  // Latest challan for the selected SR (list is sorted by createdAt desc from API)
+  const latestChallan = useMemo(() => {
+    if (challanOptions.length === 0) return null;
+    return challanOptions.reduce((latest, curr) =>
+      new Date(curr.challanCreatedAt) > new Date(latest.challanCreatedAt) ? curr : latest,
     );
-  }, [challanOptions]);
-
-  const deliveredFromAcosOptions = useMemo(() => {
-    return challanOptions.map((challan) => challan.consignorName);
   }, [challanOptions]);
 
   const trfsiOptions = useMemo(() => {
@@ -143,9 +133,6 @@ export default function DamagedTransformerPage() {
   const handleSrNumberChange = (_, value) => {
     setSelectedSr(value);
     setSelectedTrfsiNo([]);
-    setSelectedChallanNo(null);
-    setSelectedChallanDate(null);
-    setSelectedDeliveredFromAcos(null);
   };
 
   const handleSubmit = () => {
@@ -183,11 +170,11 @@ export default function DamagedTransformerPage() {
         ? dayjs(dateOfInspectionAfterRepair).toISOString()
         : null,
 
-      challanNo: selectedSr.challan.challanNo,
+      challanNo: latestChallan?.challanNo || selectedSr.challan.challanNo,
 
-      challanDate: selectedSr.challan.challanCreatedAt,
+      challanDate: latestChallan?.challanCreatedAt || selectedSr.challan.challanCreatedAt,
 
-      deliveredToAcos: selectedSr.challan.consignorName,
+      deliveredToAcos: latestChallan?.consignee?.name || "",
     };
 
     addDamagedTransformer(payload);
@@ -387,7 +374,7 @@ export default function DamagedTransformerPage() {
                 <TextField
                   fullWidth
                   label="Challan No"
-                  value={selectedSr?.challan?.challanNo || ""}
+                  value={latestChallan?.challanNo || selectedSr?.challan?.challanNo || ""}
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
@@ -396,11 +383,15 @@ export default function DamagedTransformerPage() {
                   fullWidth
                   label="Challan Date"
                   value={
-                    selectedSr?.challan?.challanCreatedAt
-                      ? dayjs(selectedSr?.challan?.challanCreatedAt).format(
+                    latestChallan?.challanCreatedAt
+                      ? dayjs(latestChallan.challanCreatedAt).format(
                           "YYYY-MM-DD",
                         )
-                      : ""
+                      : selectedSr?.challan?.challanCreatedAt
+                        ? dayjs(selectedSr.challan.challanCreatedAt).format(
+                            "YYYY-MM-DD",
+                          )
+                        : ""
                   }
                   InputProps={{ readOnly: true }}
                 />
@@ -410,7 +401,7 @@ export default function DamagedTransformerPage() {
                 <TextField
                   fullWidth
                   label="Delivered From ACOS"
-                  value={selectedSr?.challan?.consignorName || ""}
+                  value={latestChallan?.consignee?.name || selectedSr?.challan?.consignee?.name || ""}
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
